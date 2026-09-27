@@ -192,6 +192,7 @@ function U:ClearApplyFeedback(row)
     row.switchRemaining=nil
     row:SetScript("OnUpdate",nil)
     row.progress:SetText("")
+    if row.more then row.more:Show() end
 end
 function U:ShowApplySuccess(buildID,startedAt)
     if not self.frame or not self.frame:IsShown() then return end
@@ -201,8 +202,9 @@ function U:ShowApplySuccess(buildID,startedAt)
             row.switchRemaining=math.max(0,1.5-(GetTime()-(startedAt or GetTime())))
             row.successRemaining=1.5
             row.progress:SetText(row.switchRemaining>0 and L.APPLYING_SHORT or L.APPLIED_SHORT)
-            row.title:SetWidth(95)
+            row.title:SetWidth(122)
             row.link:Hide()
+            row.more:Hide()
             row:SetScript("OnUpdate",function(r,elapsed)
                 if not r.build or r.build.id~=buildID or A.Apply.op then
                     U:ClearApplyFeedback(r);return
@@ -259,9 +261,10 @@ function U:Refresh()
             row.title:SetText(A.Catalog:Title(b))
             if applying then self:ClearApplyFeedback(row) end
             row.progress:SetText((b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
+            row.more:SetShown(b.id~=applying and not row.successRemaining)
             local linked=b.source=="user" and type(b.contexts)=="table" and next(b.contexts)~=nil
             row.link:SetShown(linked and not applying and not row.successRemaining)
-            row.title:SetWidth((b.id==applying or row.successRemaining) and 95 or linked and 122 or 154)
+            row.title:SetWidth((b.id==applying or row.successRemaining or linked) and 122 or 154)
             row:SetEnabled(not applying); row.more:SetEnabled(not applying)
             row.icon:SetTexture(b.icon or 134400)
             row.mark:SetShown(b.id==self.currentID); row.bg:SetShown(b.id==self.currentID or b.id==self.selected)
@@ -840,7 +843,7 @@ function U:Create()
         row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
-        row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-34,0)
+        row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
         row:SetScript("OnEnter",function(r)
             if not r.build then return end
             r.bg:Show(); U:ShowTooltip(r,r.build)

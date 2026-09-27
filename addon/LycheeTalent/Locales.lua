@@ -157,4 +157,4 @@ end
 
 
 
-A.L.APPLIED_SHORT=GetLocale()=="zhCN" and "已切换" or "Applied"
+A.L.APPLIED_SHORT=GetLocale()=="zhCN" and "已应用" or "Applied"

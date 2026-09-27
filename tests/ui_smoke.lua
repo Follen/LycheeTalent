@@ -151,24 +151,29 @@ A.UI:Refresh();assert(first.mark:IsShown(),"verified state renders current accen
 A.Apply.CurrentBuildID=function()return nil end
 A.Apply.op={buildID=first.build.id};A.UI:Refresh()
 assert(not first:IsEnabled() and first.progress:GetText()==A.L.APPLYING_SHORT,"busy state blocks repeated click and shows progress")
+assert(not first.more:IsShown(),"status replaces the menu button while applying")
 assert(not first.mark:IsShown(),"in-flight state has no false success mark")
 A.Apply.op=nil;A.Apply.CurrentBuildID=currentReader;A.UI:Refresh()
 assert(first:IsEnabled() and first.progress:GetText()=="","finished operation releases row")
+assert(first.more:IsShown(),"menu returns on failure or cleared status")
 -- Explicit completion feedback does not depend on differing talent contents.
 local feedbackID=first.build.id
 GetTime=function()return 100 end
 A.UI:ShowApplySuccess(feedbackID,GetTime()-.1)
 assert(first.progress:GetText()==A.L.APPLYING_SHORT and not first.successFlash,"fast completion keeps text-only switching feedback")
+assert(not first.more:IsShown(),"minimum display time keeps menu hidden")
 first.scripts.OnUpdate(first,1.3)
 assert(first.progress:GetText()==A.L.APPLYING_SHORT,"switching remains for at least 1.5 seconds total")
 A.UI:Refresh()
 assert(first.progress:GetText()==A.L.APPLYING_SHORT,"ordinary refresh preserves the minimum display time")
 first.scripts.OnUpdate(first,.11)
 assert(first.progress:GetText()==A.L.APPLIED_SHORT,"success follows minimum switching time")
+assert(not first.more:IsShown(),"success occupies the same menu position")
 first.scripts.OnUpdate(first,1.4)
 assert(first.progress:GetText()==A.L.APPLIED_SHORT,"success text stays readable too")
 first.scripts.OnUpdate(first,.1)
 assert(first.progress:GetText()=="" and not first.scripts.OnUpdate,"feedback expires without a permanent update driver")
+assert(first.more:IsShown(),"menu returns after confirmation expires")
 local previousReducedMotion=A.Store.db.reducedMotion
 A.Store.db.reducedMotion=true
 A.UI:ShowApplySuccess(feedbackID,GetTime()-2)
