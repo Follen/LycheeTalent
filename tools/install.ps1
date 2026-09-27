@@ -45,6 +45,6 @@ foreach ($package in $packages) {
         if ((Get-FileHash -LiteralPath $target).Hash -ne $sourceHash) { throw "Copy mismatch: $relative" }
         $files+=@{path=$relative;sha256=$sourceHash};$fileCount++
     }
-    @{package=$package.Name;version='1.0.0';files=$files} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $destination 'lychee-talent.install.json') -Encoding utf8
+    @{package=$package.Name;version=((Get-Content -LiteralPath (Join-Path $package.FullName ($package.Name+'.toc')) | Where-Object { $_ -match '^## Version: ' }) -replace '^## Version: ','').Trim();files=$files} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $destination 'lychee-talent.install.json') -Encoding utf8
 }
 [pscustomobject]@{Packages=$packages.Count;VerifiedFiles=$fileCount;Destination=$targetRoot}
