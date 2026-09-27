@@ -105,7 +105,10 @@ function X:Finish(ok,key)
     char.recovery.stage=op.stage
     A:Message(char.lastAttempt.reason)
     if ok and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
-    if A.UI.frame and A.UI.frame:IsShown() then A.UI:Refresh() end
+    if A.UI.frame and A.UI.frame:IsShown() then
+        A.UI:Refresh()
+        if ok and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID) end
+    end
 end
 function X:CheckContext()
     local op=self.op

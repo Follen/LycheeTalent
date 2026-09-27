@@ -187,6 +187,39 @@ function U:Scale()
     self.frame:SetPoint("TOPLEFT",native,"TOPRIGHT",8,0)
 
 end
+function U:ClearApplyFeedback(row)
+    row.successRemaining=nil
+    row:SetScript("OnUpdate",nil)
+    if row.successFlash then row.successFlash:Hide() end
+    row.progress:SetText("")
+end
+function U:ShowApplySuccess(buildID)
+    if not self.frame or not self.frame:IsShown() then return end
+    for _,row in ipairs(self.rows) do
+        self:ClearApplyFeedback(row)
+        if row:IsShown() and row.build and row.build.id==buildID then
+            row.successRemaining=1.4
+            row.progress:SetText(L.APPLIED_SHORT)
+            row.title:SetWidth(95)
+            row.link:Hide()
+            row.successFlash:SetAlpha(.28);row.successFlash:Show()
+            row:SetScript("OnUpdate",function(r,elapsed)
+                if not r.build or r.build.id~=buildID or A.Apply.op then
+                    U:ClearApplyFeedback(r);return
+                end
+                r.successRemaining=r.successRemaining-elapsed
+                if r.successRemaining<=0 then
+                    U:ClearApplyFeedback(r);U:Refresh();return
+                end
+                if not A.Store.db.reducedMotion then
+                    local t=1.4-r.successRemaining
+                    local alpha=t<.28 and (.12+.28*math.sin(t/.28*math.pi)) or .12*math.min(1,r.successRemaining/.35)
+                    r.successFlash:SetAlpha(alpha)
+                end
+            end)
+        end
+    end
+end
 function U:Refresh()
     if self.options then self.options:Hide() end
     if not self.frame or not self.frame:IsShown() then return end
@@ -215,16 +248,18 @@ function U:Refresh()
         local context=self.scene..":"..self.difficulty
         if row.boundID~=id or row.boundRevision~=revision or row.boundContext~=context then
             self:HideTooltip(row)
+            self:ClearApplyFeedback(row)
             row.generation=row.generation+1; row.pressed=nil; row.lastClickID=nil; row.lastClickGeneration=nil
             row.boundID=id; row.boundRevision=revision; row.boundContext=context
         end
         row.build=b
         if b then
             row.title:SetText(A.Catalog:Title(b))
-            row.progress:SetText(b.id==applying and L.APPLYING_SHORT or "")
+            if applying then self:ClearApplyFeedback(row) end
+            row.progress:SetText(b.id==applying and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
             local linked=b.source=="user" and type(b.contexts)=="table" and next(b.contexts)~=nil
-            row.link:SetShown(linked and not applying)
-            row.title:SetWidth(b.id==applying and 95 or linked and 122 or 154)
+            row.link:SetShown(linked and not applying and not row.successRemaining)
+            row.title:SetWidth((b.id==applying or row.successRemaining) and 95 or linked and 122 or 154)
             row:SetEnabled(not applying); row.more:SetEnabled(not applying)
             row.icon:SetTexture(b.icon or 134400)
             row.mark:SetShown(b.id==self.currentID); row.bg:SetShown(b.id==self.currentID or b.id==self.selected)
@@ -800,7 +835,7 @@ function U:Create()
     list:SetScript("OnMouseWheel",function(_,delta) U.offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3)); U:Refresh() end)
     for i=1,18 do
         local row=CreateFrame("Button",nil,list); row:SetPoint("TOPLEFT",0,-(i-1)*ROW_STEP); row:SetSize(250,ROW_HEIGHT); row.generation=0
-        row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
+        row.bg=fill(row,C.selected); row.successFlash=row:CreateTexture(nil,"ARTWORK");row.successFlash:SetAllPoints();row.successFlash:SetColorTexture(unpack(C.red));row.successFlash:Hide(); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
         row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-34,0)
@@ -833,7 +868,7 @@ function U:Create()
                 else A:Message(err) end
             end
         end)
-        row:SetScript("OnHide",function(r) r.pressed=nil; r.lastClickID=nil; r.lastClickGeneration=nil; r.build=nil; if U.options and U.options.owner==r.more then U.options:Hide() end; U:HideTooltip(r) end)
+        row:SetScript("OnHide",function(r) U:ClearApplyFeedback(r); r.pressed=nil; r.lastClickID=nil; r.lastClickGeneration=nil; r.build=nil; if U.options and U.options.owner==r.more then U.options:Hide() end; U:HideTooltip(r) end)
         row.link=button(row,"",0,0,32,function()if row.build then U:Action("edit",row.build.id)end end)
         row.link:ClearAllPoints();row.link:SetPoint("RIGHT",-34,0);row.link:SetSize(32,32)
         row.link.label:Hide()
