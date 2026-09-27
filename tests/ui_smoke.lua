@@ -66,7 +66,7 @@ C_AddOns={DoesAddOnExist=function()return true end,LoadAddOn=function()dofile("a
 local timers={}
 C_Timer={NewTimer=function(_,fn)local t={fn=fn,Cancel=function(self)self.cancelled=true end};timers[#timers+1]=t;return t end}
 local A={}
-for _,name in ipairs({"Locales","Storage","Scenarios","Catalog","Talents","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
+for _,name in ipairs({"Locales","Storage","Scenarios","Catalog","Talents","TalentEx","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
 A.Store:Init();A.Store.db.reducedMotion=true
 PlayerSpellsFrame=new("Frame",UIParent);PlayerSpellsFrame:SetSize(1100,820);PlayerSpellsFrame:Hide()
 PlayerSpellsFrame.TalentsFrame=new("Frame",PlayerSpellsFrame)
@@ -453,6 +453,20 @@ local overlayObjects=#objects
 for i=1,100 do A.UI:ContextSettings(imported.id);contexts:Hide();A.UI:ShowReminder(prompt);A.UI.reminder:Hide()end
 assert(#objects==overlayObjects,'association and reminder controls reused across 100 openings')
 A.UI:Settings()
+local settings=A.UI.settings
+settings.importEX.scripts.OnClick(settings.importEX)
+assert(settings.importResult:GetText()==A.L.TEX_UNAVAILABLE and not settings.viewImports:IsShown(),"missing Talent EX is explained in settings")
+local validateEX=A.Talents.Validate
+A.Talents.Validate=function(_,code)return code,71 end
+TalentLoadoutEx={WARRIOR={[1]={{name="EX imported",text="ex-ui-fixture",icon=456}}}}
+settings.importEX.scripts.OnClick(settings.importEX)
+assert(settings.viewImports:IsShown() and settings.importedID,"settings import offers navigation to saved builds")
+local exID=settings.importedID
+settings.viewImports.scripts.OnClick(settings.viewImports)
+assert(A.UI.scene=="mine" and A.UI.selected==exID and not settings:IsShown(),"import destination is My Builds")
+A.UI:Settings();settings.importEX.scripts.OnClick(settings.importEX)
+assert(settings.importResult:GetText()==A.L.TEX_RESULT:format(0,1,0),"repeated UI import skips duplicates")
+A.Talents.Validate=validateEX;TalentLoadoutEx=nil
 assert(#A.UI.social.buttons==3 and A.UI.social.buttons[2].entry.icon=='wechat' and A.UI.social.buttons[3].entry.icon=='support','Chinese footer exposes GitHub and WeChat only')
 local social=A.UI.social
 A.UI:OpenSocial(social.buttons[1].entry,social.buttons[1])

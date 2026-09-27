@@ -61,5 +61,10 @@ check(not ignored and wrongSpec=="WRONG_SPEC","cached built-in code rejects anot
 packed.specIndex=1;packed.nodes="100:1;bad";local malformed,reason=A.Talents:Code(packed)
 check(not malformed and reason=="BAD_CODE","malformed packed entries are rejected before cache reuse")
 combat=true;check(not A.Talents:Export(),"combat blocks export preparation");combat=false
+load("TalentEx.lua",A);A.Apply={};UnitClass=function()return "Warrior","WARRIOR"end
+TalentLoadoutEx={WARRIOR={[1]={{name="From EX",text=exported,icon=123},{name="Truncated",text=exported:sub(1,-3)}}}}
+local imported=assert(A.TalentEx:Import())
+check(imported.imported==1 and imported.invalid==1,"Talent EX imports only streams accepted by pinned native parser")
+check(s.builds[1].code==exported and s.builds[1].specID==71,"Talent EX persists the native string under actual spec ID")
 
 print("PASS "..count.." checks: storage and pinned talent serialization")

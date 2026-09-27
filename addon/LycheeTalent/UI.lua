@@ -996,6 +996,24 @@ function U:Settings()
         p.toggle:SetHeight(40);rounded(p.toggle,C.field,6)
         p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",10,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,16,"")
         p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-10,0);p.mark:SetTexture(media.."choice-checkbox.tga")
+        text(p,16,C.text,L.TEX_IMPORT,22,-136,290)
+        local help=text(p,12,C.muted,L.TEX_HELP,22,-174,290);help:SetSpacing(4)
+        local scope=text(p,10,C.dim,L.TEX_SCOPE,22,-248,290);scope:SetSpacing(3)
+        p.importEX=button(p,L.TEX_IMPORT,22,-320,296,function()
+            if not p:IsShown() then return end
+            local result,why=A.TalentEx:Import()
+            if not result then p.importResult:SetText(L[why] or why);p.viewImports:Hide();return end
+            local message=L.TEX_RESULT:format(result.imported,result.duplicate,result.invalid)
+            if result.reason then message=message.."\n"..L.TEX_REMAINING:format(result.remaining,L[result.reason] or result.reason) end
+            if result.imported+result.duplicate+result.invalid==0 then message=L.TEX_EMPTY end
+            p.importResult:SetText(message);p.importedID=result.firstID
+            p.viewImports:SetShown(result.imported>0 or result.duplicate>0)
+        end)
+        p.importEX:SetHeight(40);primaryButton(p.importEX,6)
+        p.importResult=text(p,10,C.muted,"",22,-374,290);p.importResult:SetSpacing(4)
+        p.viewImports=button(p,L.TEX_VIEW,22,-456,296,function()
+            p:Hide();U.scene="mine";U.offset=0;U.selected=p.importedID;U:Refresh()
+        end,true);p.viewImports:Hide()
         self:CreateAbout(p)
         function p:Render()local state=A.Store.db.remindersEnabled~=false and 2 or 0;self.mark:SetTexCoord(state/4,(state+1)/4,0,1)end
         p:SetScript("OnHide",function()U:CloseSocial();U:ClosePage(p)end);p:Hide()

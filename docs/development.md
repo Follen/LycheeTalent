@@ -4,6 +4,7 @@
 
 ```powershell
 lua tests/run.lua
+lua tests/talent_ex.lua
 lua tests/ui_smoke.lua
 lua tests/ui_smoke.lua same-build-refresh
 lua tests/ui_smoke.lua pending-prompt

@@ -158,3 +158,12 @@ end
 
 
 A.L.APPLIED_SHORT=GetLocale()=="zhCN" and "已应用" or "Applied"
+local zh=GetLocale()=="zhCN"
+A.L.TEX_IMPORT=zh and "导入 Talent EX" or "Import Talent EX"
+A.L.TEX_HELP=zh and "将当前专精的方案导入我的方案，保留名称和图标。重复方案会跳过。" or "Copy this specialization's builds to My Builds, keeping names and icons. Duplicates are skipped."
+A.L.TEX_SCOPE=zh and "仅导入天赋方案，不包含分组、PvP 天赋和动作条。" or "Imports talent builds only, without groups, PvP talents or action bars."
+A.L.TEX_UNAVAILABLE=zh and "请先启用 Talent Loadout Ex，并重载界面。" or "Enable Talent Loadout Ex and reload the UI first."
+A.L.TEX_EMPTY=zh and "Talent EX 中没有当前专精的方案。" or "Talent EX has no builds for this specialization."
+A.L.TEX_RESULT=zh and "已导入 %d · 重复 %d · 无效或旧版 %d" or "Imported %d · Duplicates %d · Invalid or legacy %d"
+A.L.TEX_REMAINING=zh and "还有 %d 条未处理：%s" or "%d entries remain: %s"
+A.L.TEX_VIEW=zh and "查看我的方案" or "View My Builds"
