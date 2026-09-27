@@ -71,20 +71,21 @@ function B:ReadSlot(slot)
     end
     local entry={kind=kind,id=id,sub=sub}
     if kind=="macro" then
-        local name=C_ActionBar.GetActionText(slot)
-        if secret(name) or type(name)~="string" then return nil,"BARS_MACRO" end
-        local index=GetMacroIndexByName(name)
-        local found,_,body=GetMacroInfo(index)
-        if found~=name or type(body)~="string" then return nil,"BARS_MACRO" end
-        local account,character=GetNumMacros()
-        if account+character>512 then return nil,"BARS_MACRO" end
-        for offset=1,account+character do
-            local candidate=offset<=account and offset or (MAX_ACCOUNT_MACROS or 120)+offset-account
-            local other,_,text=GetMacroInfo(candidate)
-            if other==name and (text~=body or (candidate>(MAX_ACCOUNT_MACROS or 120))~=(index>(MAX_ACCOUNT_MACROS or 120))) then
-                return nil,"BARS_MACRO_AMBIGUOUS"
-            end
-        end
+        -- GetActionInfo may describe the macro's spell/item, not its index.
+        -- The native action button uses ignoreActionRemoval=true to copy an
+        -- action to the cursor without removing the original slot.
+        if InCombatLockdown() then return nil,"COMBAT" end
+        if GetCursorInfo() then return nil,"BARS_CURSOR" end
+        local ok,cursorKind,index=pcall(function()
+            PickupAction(slot,true)
+            return GetCursorInfo()
+        end)
+        ClearCursor()
+        if not ok or secret(cursorKind) or secret(index) then return nil,"BARS_MACRO" end
+        if cursorKind~="macro" or type(index)~="number" or index<1 or index%1~=0 then return nil,"BARS_MACRO" end
+        local name,_,body=GetMacroInfo(index)
+        if secret(name) or secret(body) then return nil,"BARS_SECRET" end
+        if type(name)~="string" or type(body)~="string" then return nil,"BARS_MACRO" end
         entry.id=index;entry.name=name;entry.body=body
         entry.character=index>(MAX_ACCOUNT_MACROS or 120)
     end
