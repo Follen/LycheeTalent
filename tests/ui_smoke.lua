@@ -156,25 +156,34 @@ A.Apply.op=nil;A.Apply.CurrentBuildID=currentReader;A.UI:Refresh()
 assert(first:IsEnabled() and first.progress:GetText()=="","finished operation releases row")
 -- Explicit completion feedback does not depend on differing talent contents.
 local feedbackID=first.build.id
-A.UI:ShowApplySuccess(feedbackID)
-assert(first.progress:GetText()==A.L.APPLIED_SHORT and first.successFlash:IsShown(),"success is visible on the completed row")
-local update=first.scripts.OnUpdate
-update(first,.15)
-assert(first.successRemaining and first.successFlash:IsShown(),"success pulse remains visible")
+GetTime=function()return 100 end
+A.UI:ShowApplySuccess(feedbackID,GetTime()-.1)
+assert(first.progress:GetText()==A.L.APPLYING_SHORT and not first.successFlash,"fast completion keeps text-only switching feedback")
+first.scripts.OnUpdate(first,1.3)
+assert(first.progress:GetText()==A.L.APPLYING_SHORT,"switching remains for at least 1.5 seconds total")
 A.UI:Refresh()
-assert(first.progress:GetText()==A.L.APPLIED_SHORT,"ordinary refresh preserves success feedback")
-first.scripts.OnUpdate(first,2)
-assert(not first.successFlash:IsShown() and not first.scripts.OnUpdate,"feedback expires without a permanent update driver")
+assert(first.progress:GetText()==A.L.APPLYING_SHORT,"ordinary refresh preserves the minimum display time")
+first.scripts.OnUpdate(first,.11)
+assert(first.progress:GetText()==A.L.APPLIED_SHORT,"success follows minimum switching time")
+first.scripts.OnUpdate(first,1.4)
+assert(first.progress:GetText()==A.L.APPLIED_SHORT,"success text stays readable too")
+first.scripts.OnUpdate(first,.1)
+assert(first.progress:GetText()=="" and not first.scripts.OnUpdate,"feedback expires without a permanent update driver")
 local previousReducedMotion=A.Store.db.reducedMotion
 A.Store.db.reducedMotion=true
-A.UI:ShowApplySuccess(feedbackID)
-local alpha=first.successFlash.alpha
+A.UI:ShowApplySuccess(feedbackID,GetTime()-2)
+assert(first.progress:GetText()==A.L.APPLIED_SHORT,"slow completion does not add a second switching delay")
 first.scripts.OnUpdate(first,.2)
-assert(first.successFlash.alpha==alpha and first.progress:GetText()==A.L.APPLIED_SHORT,"reduced motion keeps static confirmation")
+assert(not first.successFlash and first.progress:GetText()==A.L.APPLIED_SHORT,"reduced motion uses the same text-only confirmation")
 A.Store.db.reducedMotion=previousReducedMotion
 A.UI.scene="raid";A.UI:Refresh()
-assert(not first.successFlash:IsShown() and not first.scripts.OnUpdate,"recycled row clears prior success")
+assert(not first.successRemaining and not first.switchRemaining and not first.scripts.OnUpdate,"recycled row clears prior feedback")
 A.UI.scene="mythic";A.UI:Refresh()
+A.UI:ShowApplySuccess(first.build.id,GetTime())
+A.Apply.op={buildID=first.build.id};A.UI:Refresh()
+assert(not first.switchRemaining and not first.successRemaining and first.progress:GetText()==A.L.APPLYING_SHORT,"new operation replaces old feedback")
+A.Apply.op=nil;A.UI:Refresh()
+assert(first.progress:GetText()=="","failed operation does not inherit success feedback")
 local id=A.UI.rows[1].build.id
 local shift=false
 IsShiftKeyDown=function()return shift end
@@ -460,4 +469,3 @@ for _,locale in ipairs({'enUS','deDE','zhTW'})do
 end
 GetLocale=priorLocale;A.UI.social=social
 print("PASS UI lifecycle: 100 open/close cycles, 100 dialog cycles, fixed row pools, stale click rejection, hidden cleanup; objects="..#objects)
-
