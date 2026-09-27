@@ -1,0 +1,13 @@
+{
+  "game": "wow",
+  "type": "mod",
+  "id": 27799,
+  "name": "",
+  "version": "",
+  "game_versions": [],
+  "changelog_file": "",
+  "ignore": [
+    "*.psd",
+    "node_modules/**"
+  ]
+}

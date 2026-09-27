@@ -1,0 +1,16 @@
+{
+  "expected_readback": "addon/ncc.json matches created ID",
+  "name": "02-init",
+  "argv": [
+    "wow",
+    "addons",
+    "init",
+    "addon",
+    "--id",
+    "27799",
+    "-o",
+    "json"
+  ],
+  "channel": "official-ncc",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent"
+}

@@ -1,0 +1,23 @@
+{
+  "argv": [
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.0",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\publish\\20260927-165033-newbee-plugin-create\\changelog.txt",
+    "--game-versions",
+    "12.1.0",
+    "-o",
+    "json"
+  ],
+  "expected_readback": "info and versions: 1.0.0, 12.1.0, moderation state",
+  "preflight": "same command with --dry-run before upload",
+  "channel": "official-ncc",
+  "name": "03-push",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent"
+}

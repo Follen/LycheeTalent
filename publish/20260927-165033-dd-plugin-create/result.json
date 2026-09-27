@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "name": "荔枝天赋",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "version": "1.0.0",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "scope": "public",
+  "status": 3,
+  "verification": "author list confirms version 1.0.0; detail confirms metadata and six images; public approval not confirmed",
+  "version_history_empty": true,
+  "cleanup_complete": true
+}

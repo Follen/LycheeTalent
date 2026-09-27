@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "wow",
+    "addons",
+    "create",
+    "--name",
+    "荔枝天赋",
+    "--description",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\docs\\publishing\\description.zh-CN.md",
+    "--categories",
+    "1014,1020",
+    "--logo",
+    "D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\logo.png",
+    "--screenshots",
+    "D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\release-cover.png,D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\talents-overview.png,D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\raid-builds.png,D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\personal-builds.png,D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\build-editor.png,D:\\Code\\wow\\addons\\Lychee Talent\\docs\\media\\encounter-reminder.png",
+    "--intro",
+    "按副本与首领选 WCL 推荐天赋，管理个人方案与独立动作条，到场提醒，双击切换。",
+    "--home-page",
+    "GitHub",
+    "--home-page-link",
+    "https://github.com/Follen/LycheeTalent",
+    "--origin",
+    "original",
+    "-o",
+    "json"
+  ],
+  "expected_readback": "info: name, description, categories, media, public review state",
+  "channel": "official-ncc",
+  "business": {
+    "channel_dynamic": false,
+    "origin": "original",
+    "subscription": "none",
+    "visibility": "public"
+  },
+  "name": "01-create",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent"
+}
