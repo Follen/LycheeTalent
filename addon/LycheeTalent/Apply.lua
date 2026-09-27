@@ -107,7 +107,7 @@ function X:Finish(ok,key)
     if ok and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
     if A.UI.frame and A.UI.frame:IsShown() then
         A.UI:Refresh()
-        if ok and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID) end
+        if ok and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID,op.startedAt) end
     end
 end
 function X:CheckContext()
@@ -326,7 +326,7 @@ function X:Start(build,shared,consent)
     if current and previous and not previous.shared then A.ActionBars:SaveIndependent(spec,current,before) end
     local originalCode=A.Talents:Export();if not originalCode then return nil,"NOT_READY" end
     local selected=C_ClassTalents.GetLastSelectedSavedConfigID(spec)
-    local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="preparing",originalSaved=selected}
+    local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="preparing",originalSaved=selected,startedAt=GetTime()}
     self.op=op
     A.Store.character.recovery={revision=self.revision,status="active",spec=spec,code=originalCode,bars=before,
         originalSaved=selected,targetCode=code,buildID=build.id,shared=shared,time=time()}
@@ -351,4 +351,3 @@ function X:Restore()
     if saved.bars then A.ActionBars:SaveIndependent(saved.spec,key,saved.bars) end
     return self:Start({id=key,name=A.L.RESTORE,code=saved.code},false)
 end
-

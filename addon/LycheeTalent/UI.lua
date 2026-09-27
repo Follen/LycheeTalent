@@ -189,32 +189,38 @@ function U:Scale()
 end
 function U:ClearApplyFeedback(row)
     row.successRemaining=nil
+    row.switchRemaining=nil
     row:SetScript("OnUpdate",nil)
-    if row.successFlash then row.successFlash:Hide() end
     row.progress:SetText("")
+    if row.more then row.more:Show() end
 end
-function U:ShowApplySuccess(buildID)
+function U:ShowApplySuccess(buildID,startedAt)
     if not self.frame or not self.frame:IsShown() then return end
     for _,row in ipairs(self.rows) do
         self:ClearApplyFeedback(row)
         if row:IsShown() and row.build and row.build.id==buildID then
-            row.successRemaining=1.4
-            row.progress:SetText(L.APPLIED_SHORT)
-            row.title:SetWidth(95)
+            row.switchRemaining=math.max(0,1.5-(GetTime()-(startedAt or GetTime())))
+            row.successRemaining=1.5
+            row.progress:SetText(row.switchRemaining>0 and L.APPLYING_SHORT or L.APPLIED_SHORT)
+            color(row.progress,row.switchRemaining>0 and C.muted or C.red)
+            row.title:SetWidth(122)
             row.link:Hide()
-            row.successFlash:SetAlpha(.28);row.successFlash:Show()
+            row.more:Hide()
             row:SetScript("OnUpdate",function(r,elapsed)
                 if not r.build or r.build.id~=buildID or A.Apply.op then
                     U:ClearApplyFeedback(r);return
                 end
+                if r.switchRemaining>0 then
+                    local remaining=r.switchRemaining-elapsed
+                    r.switchRemaining=math.max(0,remaining)
+                    if remaining>0 then return end
+                    elapsed=-remaining
+                    r.progress:SetText(L.APPLIED_SHORT)
+                    color(r.progress,C.red)
+                end
                 r.successRemaining=r.successRemaining-elapsed
                 if r.successRemaining<=0 then
                     U:ClearApplyFeedback(r);U:Refresh();return
-                end
-                if not A.Store.db.reducedMotion then
-                    local t=1.4-r.successRemaining
-                    local alpha=t<.28 and (.12+.28*math.sin(t/.28*math.pi)) or .12*math.min(1,r.successRemaining/.35)
-                    r.successFlash:SetAlpha(alpha)
                 end
             end)
         end
@@ -256,10 +262,12 @@ function U:Refresh()
         if b then
             row.title:SetText(A.Catalog:Title(b))
             if applying then self:ClearApplyFeedback(row) end
-            row.progress:SetText(b.id==applying and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
+            row.progress:SetText((b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
+            color(row.progress,(b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and C.muted or row.successRemaining and C.red or C.muted)
+            row.more:SetShown(b.id~=applying and not row.successRemaining)
             local linked=b.source=="user" and type(b.contexts)=="table" and next(b.contexts)~=nil
             row.link:SetShown(linked and not applying and not row.successRemaining)
-            row.title:SetWidth((b.id==applying or row.successRemaining) and 95 or linked and 122 or 154)
+            row.title:SetWidth((b.id==applying or row.successRemaining or linked) and 122 or 154)
             row:SetEnabled(not applying); row.more:SetEnabled(not applying)
             row.icon:SetTexture(b.icon or 134400)
             row.mark:SetShown(b.id==self.currentID); row.bg:SetShown(b.id==self.currentID or b.id==self.selected)
@@ -835,10 +843,10 @@ function U:Create()
     list:SetScript("OnMouseWheel",function(_,delta) U.offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3)); U:Refresh() end)
     for i=1,18 do
         local row=CreateFrame("Button",nil,list); row:SetPoint("TOPLEFT",0,-(i-1)*ROW_STEP); row:SetSize(250,ROW_HEIGHT); row.generation=0
-        row.bg=fill(row,C.selected); row.successFlash=row:CreateTexture(nil,"ARTWORK");row.successFlash:SetAllPoints();row.successFlash:SetColorTexture(unpack(C.red));row.successFlash:Hide(); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
+        row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
-        row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-34,0)
+        row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
         row:SetScript("OnEnter",function(r)
             if not r.build then return end
             r.bg:Show(); U:ShowTooltip(r,r.build)
