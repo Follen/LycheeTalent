@@ -465,7 +465,7 @@ function U:LayoutRows()
     self.difficultyButton:ClearAllPoints(); self.difficultyButton:SetPoint("TOPRIGHT",-15,-142)
     for _,b in ipairs(self.difficultyChoices) do
         local active=b.difficulty==self.difficulty
-        b.selected:SetShown(active); color(b.label,active and C.text or C.muted)
+        b.selected:SetShown(active); color(b.label,active and C.red or C.muted)
     end
 end
 function U:ScrollDialog(delta)
@@ -827,7 +827,7 @@ function U:Create()
         choice.selected=CreateFrame("Frame",nil,choice); choice.selected:SetAllPoints(); choice.selected:SetFrameLevel(math.max(0,choice:GetFrameLevel()-1))
         rounded(choice.selected,{.175,.115,.125},4)
         choice.label:SetDrawLayer("OVERLAY")
-        choice:SetScript("OnLeave",function(btn) color(btn.label,btn.difficulty==U.difficulty and C.text or C.muted) end)
+        choice:SetScript("OnLeave",function(btn) color(btn.label,btn.difficulty==U.difficulty and C.red or C.muted) end)
         self.difficultyChoices[i]=choice
     end
     self.count=text(f,11,C.dim,"0",290,-596,30)
@@ -843,7 +843,7 @@ function U:Create()
     list:SetScript("OnMouseWheel",function(_,delta) U.offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3)); U:Refresh() end)
     for i=1,18 do
         local row=CreateFrame("Button",nil,list); row:SetPoint("TOPLEFT",0,-(i-1)*ROW_STEP); row:SetSize(250,ROW_HEIGHT); row.generation=0
-        row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
+        row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(4,28); row.mark:SetColorTexture(unpack(C.red))
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
         row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
