@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.5.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.5",
+  "release_type": 1,
+  "update_desc": "<p>切换成功后，方案行显示红色高亮动画和已切换提示，两套天赋内容相同时也有反馈。</p><p>开启减少动画时使用静态高亮；失败时不显示成功反馈。</p>"
+}
