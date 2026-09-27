@@ -16,6 +16,7 @@ Storage.lua
 Scenarios.lua
 Catalog.lua
 Talents.lua
+TalentEx.lua
 ActionBars.lua
 Apply.lua
 Reminders.lua

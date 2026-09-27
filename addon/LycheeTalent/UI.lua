@@ -8,6 +8,16 @@ local C={bg={.055,.055,.063},hover={.09,.09,.09},selected={.085,.085,.085},
 local media="Interface\\AddOns\\LycheeTalent\\Media\\"
 local ROW_HEIGHT,ROW_STEP,MENU_STEP=58,64,44
 local function color(fs,c) fs:SetTextColor(c[1],c[2],c[3]) end
+-- Talent EX stores hero icons as atlas names; keep the saved value intact.
+local function buildIcon(texture,value,cropped)
+    value=value or 134400
+    if type(value)=="string" and C_Texture and C_Texture.GetAtlasInfo then
+        local ok,atlas=pcall(C_Texture.GetAtlasInfo,value)
+        if ok and atlas then texture:SetAtlas(value,false);return end
+    end
+    texture:SetTexture(tonumber(value) or value)
+    if cropped then texture:SetTexCoord(.08,.92,.08,.92) else texture:SetTexCoord(0,1,0,1) end
+end
 local function text(parent,size,c,value,x,y,w)
     x=x*280/340; if w then w=w*280/340 end
     local t=parent:CreateFontString(nil,"OVERLAY")
@@ -147,7 +157,7 @@ function U:ShowTooltip(owner,build,title)
     end
     tip.title:SetText(build and A.Catalog:Title(build) or title or "")
     tip.title:ClearAllPoints();tip.title:SetPoint("TOPLEFT",build and 60 or 14,-14);tip.title:SetWidth(build and 224 or 272);tip.title:SetMaxLines(1)
-    tip.buildIcon:SetShown(build~=nil);if build then tip.buildIcon:SetTexture(build.icon or 134400)end
+    tip.buildIcon:SetShown(build~=nil);if build then buildIcon(tip.buildIcon,build.icon)end
     tip.meta:ClearAllPoints();tip.meta:SetPoint("TOPLEFT",60,-39)
     tip.meta:SetShown(build~=nil and not tip.bindings);tip.detail:Hide();tip.hint:SetShown(not tip.bindings)
     for i,row in ipairs(tip.bindingRows)do
@@ -184,7 +194,7 @@ function U:Scale()
     self.frame:SetScale(native:GetEffectiveScale()/A.Dock.host:GetEffectiveScale())
     self.frame:SetHeight(native:GetHeight())
     self.frame:ClearAllPoints()
-    self.frame:SetPoint("TOPLEFT",native,"TOPRIGHT",8,0)
+    self.frame:SetPoint("TOPLEFT",A.Dock:Anchor(),"TOPRIGHT",8,0)
 
 end
 function U:ClearApplyFeedback(row)
@@ -237,7 +247,12 @@ function U:Refresh()
         if self.results[i].kind=="popular" then table.remove(self.results,i) end
     end
     self:LayoutRows()
-    self.offset=math.min(self.offset,math.max(0,#self.results-self.visibleRows))
+    local maximum=math.max(0,#self.results-self.visibleRows)
+    self.offset=math.max(0,math.min(self.offset,maximum))
+    self.listScroll.syncing=true
+    self.listScroll:SetMinMaxValues(0,maximum);self.listScroll:SetValue(self.offset)
+    self.listScroll:SizeThumb(#self.results,self.visibleRows)
+    self.listScroll.syncing=nil;self.listScroll:SetShown(maximum>0)
     local selected=false
     for _,b in ipairs(self.results) do if b.id==self.selected then selected=true; break end end
     if not selected then self.selected=self.results[1] and self.results[1].id or nil end
@@ -245,7 +260,6 @@ function U:Refresh()
         local active=b.scene==self.scene
         b.mark:SetShown(active); color(b.label,active and C.text or C.muted)
     end
-    self.count:SetText(tostring(#self.results))
     self.currentID=A.Apply:CurrentBuildID()
     local applying=A.Apply.op and A.Apply.op.buildID
     for i,row in ipairs(self.rows) do
@@ -269,7 +283,7 @@ function U:Refresh()
             row.link:SetShown(linked and not applying and not row.successRemaining)
             row.title:SetWidth((b.id==applying or row.successRemaining or linked) and 122 or 154)
             row:SetEnabled(not applying); row.more:SetEnabled(not applying)
-            row.icon:SetTexture(b.icon or 134400)
+            buildIcon(row.icon,b.icon,true)
             row.mark:SetShown(b.id==self.currentID); row.bg:SetShown(b.id==self.currentID or b.id==self.selected)
             row:Show()
         else row:Hide() end
@@ -280,7 +294,6 @@ function U:Refresh()
         self.emptyTitle:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED or L.EMPTY)
         self.emptyHelp:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED_HELP or L.EMPTY_HELP)
     end
-    self.up:SetEnabled(self.offset>0); self.down:SetEnabled(self.offset+self.visibleRows<#self.results)
     local modes=A.Store.character.modes or {}
     self.shared=self.selected and modes[tostring(self.selected)]==true or false
     local secondary=(self.dialog and self.dialog:IsShown()) or (self.contextSettings and self.contextSettings:IsShown()) or (self.settings and self.settings:IsShown())
@@ -288,7 +301,7 @@ function U:Refresh()
     if self.settingsButton then self.settingsButton:SetShown(not secondary) end
     for _,nav in ipairs(self.nav) do nav:SetShown(not secondary) end
     if secondary then
-        for _,control in ipairs({self.buildList,self.footer,self.difficultyButton,self.up,self.down,self.count}) do control:Hide() end
+        for _,control in ipairs({self.buildList,self.footer,self.difficultyButton,self.listScroll}) do control:Hide() end
     end
 end
 function U:SetShared(shared,id)
@@ -446,7 +459,7 @@ function U:LayoutRows()
     local personal=self.scene=="mine"
     self.footer:SetShown(personal)
 
-    local room=math.max(56,self.frame:GetHeight()-top-(personal and 104 or 32))
+    local room=math.max(56,self.frame:GetHeight()-top-(personal and 68 or 20))
     -- A full-height sidebar gets breathing room; short windows remain scrollable.
     local step=math.max(56,math.min(68,math.floor(room/9/2)*2))
     self.visibleRows=math.max(1,math.min(18,math.floor(room/step)))
@@ -455,12 +468,8 @@ function U:LayoutRows()
     end
     self.buildList:ClearAllPoints(); self.buildList:SetPoint("TOPLEFT",15,-top); self.buildList:SetHeight(room)
     self.buildList:Show()
-    self.up:SetShown(#self.results>self.visibleRows); self.down:SetShown(#self.results>self.visibleRows)
-    self.count:SetShown(#self.results>self.visibleRows)
-    local pageY=personal and 72 or 20
-    self.up:ClearAllPoints(); self.up:SetPoint("BOTTOMLEFT",self.frame,"BOTTOMLEFT",158,pageY)
-    self.down:ClearAllPoints(); self.down:SetPoint("BOTTOMLEFT",self.frame,"BOTTOMLEFT",194,pageY)
-    self.count:ClearAllPoints(); self.count:SetPoint("BOTTOMRIGHT",self.frame,"BOTTOMRIGHT",-15,pageY+10)
+    self.listScroll:ClearAllPoints();self.listScroll:SetPoint("TOPRIGHT",self.frame,"TOPRIGHT",-2,-top)
+    self.listScroll:SetHeight(self.visibleRows*step-6)
     self.difficultyButton:SetShown(self.scene=="raid")
     self.difficultyButton:ClearAllPoints(); self.difficultyButton:SetPoint("TOPRIGHT",-15,-142)
     for _,b in ipairs(self.difficultyChoices) do
@@ -543,7 +552,7 @@ function U:Dialog(exportOnly,preset)
     for id,enabled in pairs(preset and preset.contexts or {})do if enabled then d.associationDraft.contexts[id]=true end end
     if self.iconPicker then self.iconPicker:Hide() end
     local _,_,_,specIcon=A:GetSpec()
-    d.iconValue=preset and preset.icon or specIcon or 134400; d.iconButton.icon:SetTexture(d.iconValue); d.iconButton:SetShown(not exportOnly)
+    d.iconValue=preset and preset.icon or specIcon or 134400; buildIcon(d.iconButton.icon,d.iconValue); d.iconButton:SetShown(not exportOnly)
     d.header:SetWidth(exportOnly and 250 or 194)
     d.exportOnly=exportOnly; d.specID=A:GetSpec(); d.editID=preset and preset.editID; d.targetID=preset and preset.scenarioID
     d.header:SetText(exportOnly and L.EXPORT or d.editID and L.EDIT or preset and preset.code and L.SAVE or L.IMPORT_TITLE)
@@ -642,7 +651,7 @@ function U:ChooseIcon()
             b:SetScript("OnHide",function() b.pressed=nil; b.icon:SetAlpha(1) end)
             b:SetScript("OnClick",function(_,mouse)
                 if mouse~="LeftButton" or not p:IsShown() or not p.expanded or b.pressed~=p.revision or not b.value then return end
-                d.iconValue=b.value; d.iconButton.icon:SetTexture(b.value);U:ExpandIcons(false)
+                d.iconValue=b.value; buildIcon(d.iconButton.icon,b.value);U:ExpandIcons(false)
             end)
         end
         p.scroll=scrollbar(p);p.scroll:SetHeight(264);p.scroll:SetPoint("TOPRIGHT",-14,-40)
@@ -830,7 +839,6 @@ function U:Create()
         choice:SetScript("OnLeave",function(btn) color(btn.label,btn.difficulty==U.difficulty and C.red or C.muted) end)
         self.difficultyChoices[i]=choice
     end
-    self.count=text(f,11,C.dim,"0",290,-596,30)
     local footer=CreateFrame("Frame",nil,f); self.footer=footer
     footer:SetPoint("BOTTOMLEFT",0,16); footer:SetSize(280,36)
     button(footer,L.IMPORT,18,0,140,function() U:Dialog(false) end,true)
@@ -840,7 +848,18 @@ function U:Create()
         local _,spec=A:GetSpec(); U:Dialog(false,{name=(spec or "").." · "..L.CURRENT,code=code,scene=U.scene=="raid" and "raid" or "mythic",target=""})
     end)
     local list=CreateFrame("Frame",nil,f); list:SetPoint("TOPLEFT",15,-220); list:SetSize(250,344); self.buildList=list; list:EnableMouseWheel(true)
-    list:SetScript("OnMouseWheel",function(_,delta) U.offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3)); U:Refresh() end)
+    local function scrollList(_,delta)
+        local offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3))
+        if offset~=U.offset then U.offset=offset;U:Refresh() end
+    end
+    list:SetScript("OnMouseWheel",scrollList)
+    self.listScroll=scrollbar(f);self.listScroll:EnableMouseWheel(true)
+    self.listScroll:SetScript("OnMouseWheel",scrollList)
+    self.listScroll:SetScript("OnValueChanged",function(bar,value)
+        if bar.syncing then return end
+        local offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),math.floor(value+.5)))
+        if offset~=U.offset then U.offset=offset;U:Refresh() end
+    end)
     for i=1,18 do
         local row=CreateFrame("Button",nil,list); row:SetPoint("TOPLEFT",0,-(i-1)*ROW_STEP); row:SetSize(250,ROW_HEIGHT); row.generation=0
         row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(4,28); row.mark:SetColorTexture(unpack(C.red))
@@ -904,11 +923,6 @@ function U:Create()
     self.empty=CreateFrame("Frame",nil,list); self.empty:SetAllPoints()
     self.emptyTitle=text(self.empty,16,C.text,L.EMPTY,12,-70,280)
     self.emptyHelp=text(self.empty,12,C.muted,L.EMPTY_HELP,12,-124,280); self.emptyHelp:SetSpacing(5)
-    self.up=button(f,"<",192,-586,36,function() U.offset=math.max(0,U.offset-U.visibleRows); U:Refresh() end)
-    self.down=button(f,">",236,-586,36,function() U.offset=math.min(math.max(0,#U.results-U.visibleRows),U.offset+U.visibleRows); U:Refresh() end)
-    self.up:ClearAllPoints(); self.up:SetPoint("BOTTOMLEFT",f,"BOTTOMLEFT",158,72)
-    self.down:ClearAllPoints(); self.down:SetPoint("BOTTOMLEFT",f,"BOTTOMLEFT",194,72)
-    self.count:ClearAllPoints(); self.count:SetPoint("BOTTOMRIGHT",f,"BOTTOMRIGHT",-15,82)
     f:SetScript("OnMouseDown",function() if U.options then U.options:Hide() end end)
     f:SetScript("OnShow",function()
         for _,event in ipairs({"TRAIT_NODE_CHANGED","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED","SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED"}) do f:RegisterEvent(event) end
@@ -993,11 +1007,59 @@ function U:Settings()
         p.toggle=button(p,L.GLOBAL_REMINDERS,22,-64,296,function()
             A.Store:SetRemindersEnabled(A.Store.db.remindersEnabled==false);p:Render()
         end)
-        p.toggle:SetHeight(40);rounded(p.toggle,C.field,6)
-        p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",10,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,16,"")
-        p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-10,0);p.mark:SetTexture(media.."choice-checkbox.tga")
+        p.toggle:ClearAllPoints();p.toggle:SetPoint("TOPLEFT",18,-64);p.toggle:SetSize(244,52);rounded(p.toggle,C.field,6)
+        p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",14,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,16,"")
+        p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-12,0);p.mark:SetTexture(media.."choice-checkbox.tga")
+        local card=CreateFrame("Frame",nil,p);p.importCard=card
+        card:SetPoint("TOPLEFT",18,-124);card:SetSize(244,64);rounded(card,C.field,6)
+        card:EnableMouse(true)
+        local function importHelp()
+            p:Render()
+            GameTooltip:SetOwner(card,"ANCHOR_RIGHT");GameTooltip:SetText("Talent EX")
+            GameTooltip:AddLine(p.importSummary:GetText(),.94,.932,.91,true)
+            GameTooltip:AddLine(L.TEX_HELP,.71,.705,.69,true)
+            GameTooltip:AddLine(L.TEX_SCOPE,.71,.705,.69,true)
+            if p.importWhy then GameTooltip:AddLine(L[p.importWhy] or p.importWhy,.71,.705,.69,true) end
+            if p.importScan and p.importScan.invalid>0 then GameTooltip:AddLine(L.TEX_INVALID:format(p.importScan.invalid),.71,.705,.69,true) end
+            GameTooltip:Show()
+        end
+        card:SetScript("OnEnter",importHelp)
+        card:SetScript("OnLeave",function()GameTooltip:Hide()end)
+        card:SetScript("OnHide",function()if GameTooltip:IsOwned(card)then GameTooltip:Hide()end end)
+        local title=text(card,14,C.text,"Talent EX",0,0)
+        title:ClearAllPoints();title:SetPoint("TOPLEFT",14,-12);title:SetFont(STANDARD_TEXT_FONT,16,"")
+        p.importSummary=text(card,12,C.muted,"",0,0)
+        p.importSummary:ClearAllPoints();p.importSummary:SetPoint("TOPLEFT",14,-34)
+        p.importSummary:SetFont(STANDARD_TEXT_FONT,14,"");p.importSummary:SetWidth(126);p.importSummary:SetMaxLines(1)
+        p.importEX=button(card,L.TEX_ACTION,0,0,78,function()
+            if not p:IsShown() or not p.importEX:IsEnabled() then return end
+            local result,why=A.TalentEx:Import()
+            if not result then p:Render(L[why] or why);return end
+            p:Render(result.reason and L.TEX_REMAINING:format(result.remaining,L[result.reason] or result.reason))
+        end)
+        p.importEX:ClearAllPoints();p.importEX:SetPoint("RIGHT",-12,0);p.importEX:SetSize(80,32)
+        p.importEX.label:SetFont(STANDARD_TEXT_FONT,15,"")
+        primaryButton(p.importEX,5)
+        p.importEX:HookScript("OnEnter",importHelp)
+        p.importEX:HookScript("OnLeave",function()GameTooltip:Hide()end)
+        p.importResult=text(p,12,C.muted,"",39,-200,278);p.importResult:SetFont(STANDARD_TEXT_FONT,14,"");p.importResult:SetSpacing(5)
         self:CreateAbout(p)
-        function p:Render()local state=A.Store.db.remindersEnabled~=false and 2 or 0;self.mark:SetTexCoord(state/4,(state+1)/4,0,1)end
+        function p:Render(issue)
+            local state=A.Store.db.remindersEnabled~=false and 2 or 0
+            self.mark:SetTexCoord(state/4,(state+1)/4,0,1)
+            local scan,why=A.TalentEx:Inspect()
+            self.importScan=scan
+            self.importWhy=A.Store.readonly and "SCHEMA" or A.Apply.op and "APPLY_BUSY" or why
+            local _,name=A:GetSpec()
+            local labels={ready=L.TEX_ACTION,updates=L.TEX_UPDATES,imported=L.TEX_DONE,empty=L.TEX_ACTION}
+            self.importEX.label:SetText(labels[scan and scan.state or "empty"])
+            self.importSummary:SetText(not scan and (why=="TEX_UNAVAILABLE" and L.TEX_NOT_FOUND or L.TEX_NO_BUILDS)
+                or scan.total==0 and L.TEX_NO_BUILDS or scan.state=="updates" and L.TEX_PENDING:format(name or "",#scan.pending)
+                or L.TEX_COUNT:format(name or "",scan.total))
+            self.importEX:SetEnabled(scan~=nil and #scan.pending>0 and not self.importWhy)
+            self.importEX:RefreshStyle()
+            self.importResult:SetText(issue or "");self.importResult:SetShown(issue~=nil)
+        end
         p:SetScript("OnHide",function()U:CloseSocial();U:ClosePage(p)end);p:Hide()
     end
     self.settings:Render();self:OpenPage(self.settings)
@@ -1191,7 +1253,7 @@ function U:ShowReminder(prompt)
             self:SetScale(math.min(1,(UIParent:GetHeight()-40)/height,(UIParent:GetWidth()-40)/380))
             for i,row in ipairs(self.rows) do
                 local build=self.prompt.builds[self.offset+i];row.buildID=build and build.id;row:SetShown(build~=nil)
-                if build then row.label:SetText(build.source=="builtin" and L.LYCHEE_RECOMMENDATION or build.name);row.icon:SetTexture(build.icon or 134400)end
+                if build then row.label:SetText(build.source=="builtin" and L.LYCHEE_RECOMMENDATION or build.name);buildIcon(row.icon,build.icon,true)end
             end
             self.previous:ClearAllPoints();self.previous:SetPoint("TOPRIGHT",-56,-footer)
             self.next:ClearAllPoints();self.next:SetPoint("TOPRIGHT",-18,-footer)
