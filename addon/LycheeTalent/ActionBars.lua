@@ -109,26 +109,19 @@ function B:Capture(spec)
 end
 local function same(a,b)
     if a.kind~=b.kind then return false end
-    if a.kind=="macro" then return a.name==b.name and a.body==b.body and a.character==b.character end
+    if a.kind=="macro" then return a.id==b.id and a.name==b.name and a.body==b.body and a.character==b.character end
     return a.id==b.id and a.sub==b.sub
 end
 function B:MacroIndex(entry)
-    local account,character=GetNumMacros()
-    local maximum=MAX_ACCOUNT_MACROS or 120
-    local first=entry.character and maximum+1 or 1
-    local last=entry.character and maximum+character or account
-    if last-first>512 then return nil end
-    local found
-    for i=first,last do
-        local name,_,body=GetMacroInfo(i)
-        if name==entry.name and body==entry.body then
-            -- Two identical macros have identical behavior; preserve the old
-            -- index if it still identifies the same macro.
-            if i==entry.id then return i end
-            found=found or i
-        end
-    end
-    return found
+    -- Macro indices are the identity available to the action bar. Never
+    -- substitute another index merely because its name/body looks equivalent.
+    local index=entry.id
+    if type(index)~="number" or index<1 or index%1~=0 then return nil end
+    if (index>(MAX_ACCOUNT_MACROS or 120))~=entry.character then return nil end
+    local name,_,body=GetMacroInfo(index)
+    if secret(name) or secret(body) then return nil end
+    if name==entry.name and body==entry.body then return index end
+    return nil
 end
 function B:Pickup(entry)
     if entry.kind=="spell" then C_Spell.PickupSpell(entry.id)

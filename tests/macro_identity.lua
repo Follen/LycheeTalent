@@ -46,10 +46,19 @@ combat=false;fail=true
 ok,why=B:ReadSlot(1)
 assert(not ok and not cursor and slots[1]==1,"failed copied pickup cleans cursor without removing action")
 fail=false
-macros[1],macros[2]=macros[2],macros[1]
-assert(B:MacroIndex(a)==2 and B:MacroIndex(b)==1 and B:MacroIndex(c)==121,"restore resolves reordered same-name macros by content and scope")
-assert(B:Pickup(a) and cursor.id==2)
-ClearCursor()
-macros[2]=nil
-assert(not B:MacroIndex(a),"never substitute same name with different body or scope")
-print("PASS duplicate macro capture: exact identity, scope, reorder, cursor, combat and failure cleanup")
+-- Equal text does not make two macro slots interchangeable.
+macros[2]={"same","/cast Alpha"}
+local identical=assert(B:Capture(62))
+identical.slots[1],identical.slots[2]=identical.slots[2],identical.slots[1]
+assert(B:Restore(identical) and slots[1]==2 and slots[2]==1,
+ "identical macros must restore their exact saved indices")
+macros[1]={"other","/cast Beta"}
+assert(not B:MacroIndex(a),"changed original index must not fall back to identical macro")
+local before1,before2=slots[1],slots[2]
+local invalid=assert(B:Capture(62));invalid.slots[1]=a
+assert(not B:Restore(invalid) and slots[1]==before1 and slots[2]==before2 and not cursor,
+ "unresolved identity must fail before touching any slot")
+macros[1]=nil
+assert(not B:MacroIndex(a),"deleted original index must not fall back to another macro")
+assert(B:MacroIndex(c)==121,"character macro keeps its own index")
+print("PASS exact macro identity: identical-body swaps, changed/deleted index rejection, cursor, combat and cleanup")
