@@ -6,7 +6,7 @@
   "game": "World of Warcraft",
   "branch": "retail",
   "interface": 120100,
-  "summary_zh": "按副本与首领选 WCL 推荐天赋，管理个人方案与独立动作条，到场提醒，双击切换。",
+  "summary_zh": "全自动推荐基于WCL顶尖玩家的天赋，进本智能提醒。更聪明的天赋-动作条管理。",
   "summary_en": "Encounter-based WCL builds, personal loadouts, independent action bars and timely switch reminders.",
   "repository": "https://github.com/Follen/LycheeTalent",
   "license": "LicenseRef-Lychee-NC-1.0",
@@ -27,5 +27,6 @@
       "status": "approved-public",
       "version": "1.0.0"
     }
-  }
+  },
+  "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word"
 }

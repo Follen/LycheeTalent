@@ -1,0 +1,19 @@
+{
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent",
+  "channel": "official-ncc",
+  "authorization": "User approved displayed copy and requested push",
+  "effects": "Existing public content may reenter review; no new version or media upload",
+  "expected_readback": "intro and description match; omitted fields preserved",
+  "argv": [
+    "wow",
+    "addons",
+    "edit",
+    "27799",
+    "--intro",
+    "全自动推荐基于WCL顶尖玩家的天赋，进本智能提醒。更聪明的天赋-动作条管理。",
+    "--description",
+    "@docs/publishing/description.zh-CN.md",
+    "-o",
+    "json"
+  ]
+}
