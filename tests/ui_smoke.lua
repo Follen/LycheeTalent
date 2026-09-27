@@ -374,6 +374,23 @@ A:Toggle();assert(A.UI.frame:IsShown(),"slash command reopens collapsed panel")
 local count=#objects
 for i=1,100 do A.Dock:Attach() end
 assert(#objects==count,"attachment is idempotent")
+-- Talent EX may create its frame after our native addon-loaded handler.
+TalentLoadoutExMainFrame=new("Frame",PlayerSpellsFrame)
+A.Dock.events.scripts.OnEvent(A.Dock.events,"ADDON_LOADED","TalentLoadoutsEx")
+assert(A.Dock.anchorTimer,"late addon load schedules discovery")
+A.Dock.anchorTimer.fn()
+A.UI:Scale()
+assert(A.UI.frame.point[2]==TalentLoadoutExMainFrame and A.UI.frame.point[3]=="TOPRIGHT","dock follows visible Talent EX")
+local exShow=TalentLoadoutExMainFrame.scripts.OnShow
+for i=1,100 do A.Dock:Anchor()end
+assert(TalentLoadoutExMainFrame.scripts.OnShow==exShow,"external hooks installed only once")
+TalentLoadoutExMainFrame:Hide()
+assert(A.UI.frame.point[2]==PlayerSpellsFrame,"hidden Talent EX restores native anchor")
+TalentLoadoutExMainFrame:Show()
+assert(A.UI.frame.point[2]==TalentLoadoutExMainFrame,"reopened Talent EX restores adjacent docking")
+TalentLoadoutExMainFrame.scripts.OnSizeChanged(TalentLoadoutExMainFrame)
+assert(A.UI.frame.point[2]==TalentLoadoutExMainFrame,"resizing preserves adjacent docking")
+TalentLoadoutExMainFrame:Hide()
 -- Scene associations are draft-only until saved, and both overlays reuse pools.
 A.UI:ContextSettings(imported.id)
 local contexts=A.UI.contextSettings
