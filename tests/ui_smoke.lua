@@ -154,6 +154,27 @@ assert(not first:IsEnabled() and first.progress:GetText()==A.L.APPLYING_SHORT,"b
 assert(not first.mark:IsShown(),"in-flight state has no false success mark")
 A.Apply.op=nil;A.Apply.CurrentBuildID=currentReader;A.UI:Refresh()
 assert(first:IsEnabled() and first.progress:GetText()=="","finished operation releases row")
+-- Explicit completion feedback does not depend on differing talent contents.
+local feedbackID=first.build.id
+A.UI:ShowApplySuccess(feedbackID)
+assert(first.progress:GetText()==A.L.APPLIED_SHORT and first.successFlash:IsShown(),"success is visible on the completed row")
+local update=first.scripts.OnUpdate
+update(first,.15)
+assert(first.successRemaining and first.successFlash:IsShown(),"success pulse remains visible")
+A.UI:Refresh()
+assert(first.progress:GetText()==A.L.APPLIED_SHORT,"ordinary refresh preserves success feedback")
+first.scripts.OnUpdate(first,2)
+assert(not first.successFlash:IsShown() and not first.scripts.OnUpdate,"feedback expires without a permanent update driver")
+local previousReducedMotion=A.Store.db.reducedMotion
+A.Store.db.reducedMotion=true
+A.UI:ShowApplySuccess(feedbackID)
+local alpha=first.successFlash.alpha
+first.scripts.OnUpdate(first,.2)
+assert(first.successFlash.alpha==alpha and first.progress:GetText()==A.L.APPLIED_SHORT,"reduced motion keeps static confirmation")
+A.Store.db.reducedMotion=previousReducedMotion
+A.UI.scene="raid";A.UI:Refresh()
+assert(not first.successFlash:IsShown() and not first.scripts.OnUpdate,"recycled row clears prior success")
+A.UI.scene="mythic";A.UI:Refresh()
 local id=A.UI.rows[1].build.id
 local shift=false
 IsShiftKeyDown=function()return shift end
