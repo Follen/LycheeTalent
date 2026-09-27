@@ -136,7 +136,14 @@ function B:MacroIndex(entry)
     return nil
 end
 function B:Pickup(entry)
-    if entry.kind=="spell" then C_Spell.PickupSpell(entry.id)
+    if entry.kind=="spell" then
+        C_Spell.PickupSpell(entry.id)
+        -- A saved talent override may no longer be directly pickable after
+        -- switching builds. Resolve its native base ID, never a name match.
+        if not GetCursorInfo() and (entry.sub==nil or entry.sub=="spell") then
+            local base=baseSpell(entry.id)
+            if base~=entry.id then C_Spell.PickupSpell(base) end
+        end
     elseif entry.kind=="item" then C_Item.PickupItem(entry.id)
     elseif entry.kind=="macro" then
         local index=self:MacroIndex(entry)

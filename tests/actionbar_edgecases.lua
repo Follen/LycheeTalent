@@ -36,7 +36,23 @@ local function assertLayout(snapshot)
  end
  assert(not cursor,"cursor must be clean")
 end
-if arg[1]=="override" then
+if arg[1]=="pickup-fallback" then
+ reset()
+ local picked={}
+ C_Spell.PickupSpell=function(id)
+  picked[#picked+1]=id
+  if id==100 then cursor={kind="spell",id=100,sub="spell"}end
+ end
+ local target=assert(B:Capture(62));target.slots[1]={kind="spell",id=101,sub="spell"}
+ local ok,why=B:Restore(target)
+ assert(ok,"saved override must fall back to its base spell: "..tostring(why))
+ assert(slots[1].id==100 and picked[1]==101 and picked[2]==100 and not cursor)
+ -- Missing spells must still fail preflight without changing the bar.
+ target.slots[1]={kind="spell",id=999,sub="spell"}
+ ok,why=B:Restore(target)
+ assert(not ok and why=="BARS_UNAVAILABLE" and slots[1].id==100 and not cursor)
+ print("PASS saved override pickup falls back to base; unknown spell preserves layout")
+elseif arg[1]=="override" then
  reset();slots[1]={kind="item",id=200}
  local target=assert(B:Capture(62));target.slots[1]={kind="spell",id=100,sub="spell"}
  override=true
