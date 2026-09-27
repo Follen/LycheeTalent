@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+data/private/
+*.tmp.json
+__pycache__/
+*.pyc
+dist/
+
+# Local investigation and third-party reference checkouts
+analyze/
+docs/validation/
+tools/probes/
+docs/single-config-actionbars.md
+# Local agent/product working notes
+PRODUCT.md
+design.md

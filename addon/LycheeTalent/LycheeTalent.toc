@@ -1,0 +1,27 @@
+## Interface: 120100
+## Title: |cffd53c49Lychee|r Talent
+## Title-zhCN: |cffd53c49荔枝|r天赋
+## Title-zhTW: |cffd53c49荔枝|r天賦
+## Notes: Find your best talent build for each dungeon and boss with high-performing WCL builds, personal loadouts, independent action bars and timely switch reminders.
+## Notes-zhCN: 参考 WCL 高表现天赋，寻找每个副本与首领的天赋最优解。支持个人方案、独立动作条与切换提醒。
+## Author: Follen
+## X-License: LicenseRef-Lychee-NC-1.0
+## X-Website: https://github.com/Follen/LycheeTalent
+## Version: 1.0.0
+## SavedVariables: LycheeTalentDB
+## SavedVariablesPerCharacter: LycheeTalentCharacterDB
+## IconTexture: Interface\AddOns\LycheeTalent\Media\logo.tga
+Locales.lua
+Storage.lua
+Scenarios.lua
+Catalog.lua
+Talents.lua
+ActionBars.lua
+Apply.lua
+Reminders.lua
+Motion.lua
+Icons.lua
+UI.lua
+Dock.lua
+Core.lua
+

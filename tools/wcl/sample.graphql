@@ -1,0 +1,8 @@
+{
+  metrics: __type(name:"CharacterRankingMetricType") { enumValues { name } }
+  fightMetrics: __type(name:"FightRankingMetricType") { enumValues { name } }
+  worldData {
+    encounter(id:12993) { characterRankings(className:"Warrior",specName:"Arms",includeCombatantInfo:true,page:1) }
+    zone(id:55) { id name partitions { id name } }
+  }
+}

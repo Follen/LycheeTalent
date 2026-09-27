@@ -1,0 +1,145 @@
+Lychee 非商业署名许可证 1.0
+Lychee Non-Commercial Attribution License 1.0
+Identifier: LicenseRef-Lychee-NC-1.0 (custom; not an OSI-approved license)
+
+Copyright (c) 2026 Follen and applicable contributors.
+Project: https://github.com/Follen/LycheeTalent
+
+中文条款
+========
+
+1. 范围
+本许可证适用于以本许可证提供的 Lychee Talent 代码、文档及原创素材（“本作品”），
+且仅限于权利人有权授予的权利。明确标注其他授权的文件、第三方素材及游戏
+厂商内容不因本许可证而被重新授权，其原有条款继续适用。本许可证不撤销
+已经依据其他许可证合法取得的权利。法律另行赋予且不可排除的权利不受影响。
+
+2. 免费使用与私人修改
+遵守本许可证时，你可以为非商业用途免费、非独占地下载、运行、复制和研究
+本作品，并为个人非商业用途修改本作品。除第 3、5 条外，本许可证不授予
+公开发布、分发或提供修改版及衍生作品的权利。
+
+3. 完整原版分发
+你可以免费、非商业地分发完整、未经修改的官方源码或官方插件安装目录，
+也可以将完整、未经修改的插件包含在免费、非商业的整合包中。压缩格式和
+外层目录的调整不视为修改，但必须满足全部条件：
+  a. 保留 Lychee Talent / 荔枝天赋名称、作者及已有版权和授权声明；
+  b. 随分发内容附上本许可证全文及适用的第三方声明；
+  c. 在分发页面、整合包说明或其他接收者容易看到的位置明确标注：
+     “Lychee Talent（荔枝天赋）— Follen · https://github.com/Follen/LycheeTalent”；
+     或对应英文：“Lychee Talent — Follen · https://github.com/Follen/LycheeTalent”；
+  d. 不得收取插件、下载、访问或包含它的整合包的费用；
+  e. 不得暗示分发者是本作品的原创作者、官方维护者或获得作者背书。
+
+4. 禁止商用与冒名
+未经相关权利人事先书面许可，不得为商业目的使用、复制、修改、分发本作品，
+或将其用于付费插件、付费整合包、订阅、收费访问、以本作品为交付内容的收费
+服务或与其分发挂钩的广告变现。
+不得移除或篡改作者、版权、许可和来源信息，不得将本作品或复制了其受版权
+保护内容的衍生作品宣称为自己的独立原创作品。改名、换标识或少量代码修改
+不会免除上述义务。禁止通过单独抽取本作品的受版权保护内容来规避本条款。
+除第 5 条外，公开发布修改版、移植版或衍生作品需要事先取得书面许可，即使
+该发布是免费且有署名的。
+
+5. 贡献与独立 Provider
+仅为向本项目提出改进、供作者审查而公开的非商业 Fork、分支和补丁，可以
+包含修改，但必须保留本许可证和署名，明确标明非官方、标记修改，并且不得
+将其宣传或分发为独立产品、替代发行版。此例外不自动允许其他用途的改版发布。
+你只可提交自己有权授权的内容。主动提交供本项目合入的原创贡献，表示允许
+本项目按本许可证使用、修改及分发该贡献；贡献者保留自身版权。
+独立编写、仅调用公开 Provider API、没有复制本作品受版权保护内容的第三方
+插件，不因接口调用本身受到本许可证的分发限制。
+
+6. 其他权利与终止
+未明确授予的权利由各权利人保留。本许可证不授予商标背书或重新许可本作品
+的权利。违反条款时，本许可证授予你的权利自动终止；你必须停止未经授权的
+使用和分发。恢复授权或获得额外许可需要相关权利人的书面同意。
+
+7. 无担保
+在适用法律允许的范围内，本作品按“原样”提供，不附带适销性、特定用途适用性、
+不侵权或其他明示或默示担保。权利人及贡献者不对使用或无法使用本作品造成的
+损失承担责任。本条不排除适用法律规定不得排除的担保或责任。
+
+8. 语言
+中文为正式条款，以下英文为对应译文；两者不一致时以中文条款为准。
+额外授权请求请通过项目维护者的公开联系方式或项目仓库提出。
+
+English translation
+===================
+
+1. Scope
+This license covers Lychee Talent code, documentation and original assets made available
+under it (the "Work"), only to the extent the rights holders can grant these rights.
+Files with separate terms, third-party materials and game-publisher content retain
+their own terms and are not relicensed by this license. This license does not revoke
+rights already lawfully obtained under another license. Non-waivable statutory
+rights remain unaffected.
+
+2. Free use and private modification
+Subject to these terms, you receive a royalty-free, non-exclusive permission to
+download, run, copy and study the Work for non-commercial purposes, and modify it
+for personal, non-commercial use. Except under sections 3 and 5, no right to publicly
+release, distribute or provide modified versions or derivative works is granted.
+
+3. Complete, unchanged redistribution
+You may redistribute complete, unchanged official source or the official addon
+installation directory, free of charge and non-commercially. You may also include
+the complete, unchanged addon in a free, non-commercial addon collection. Changes
+to compression format or the enclosing directory are not modifications, provided
+that you meet all of the following conditions:
+  a. Keep the Lychee Talent / 荔枝天赋 name, authorship, copyright and license notices.
+  b. Include this entire license and all applicable third-party notices.
+  c. Prominently credit the project on the distribution page, collection description
+     or another place readily visible to recipients:
+     "Lychee Talent — Follen · https://github.com/Follen/LycheeTalent",
+     or its Chinese equivalent:
+     "Lychee Talent（荔枝天赋）— Follen · https://github.com/Follen/LycheeTalent".
+  d. Do not charge for the addon, its download, access, or a collection containing it.
+  e. Do not imply that the distributor is the original author, an official
+     maintainer, or endorsed by the author.
+
+4. No commercial use or misrepresentation
+Without prior written permission from the applicable rights holders, you must not
+use, copy, modify or distribute the Work for commercial purposes, including paid
+addons or collections, subscriptions, paid access, paid services delivering the
+Work, or advertising monetization tied to its distribution.
+Do not remove or alter authorship, copyright, license or source information, or
+present the Work or derivatives copying its copyright-protected material as your
+own independently original work. Renaming, rebranding or minor code changes do
+not remove these obligations. Extracting copyright-protected portions to evade
+these terms is prohibited.
+Except under section 5, publicly releasing modified versions, ports or derivative
+works requires prior written permission, even if the release is free and credited.
+
+5. Contributions and independent Providers
+Non-commercial forks, branches and patches published solely to propose improvements
+to this project for the author's review may contain modifications. They must retain
+this license and attribution, identify themselves as unofficial, mark modifications,
+and must not be promoted or distributed as independent products or alternative
+releases. This exception does not otherwise authorize modified releases.
+Submit only material you have the right to license. By intentionally submitting an
+original contribution for inclusion, you permit the project to use, modify and
+distribute that contribution under this license. Contributors retain their copyright.
+An independently written third-party addon that only calls the public Provider API
+and does not copy copyright-protected material from the Work is not subject to this
+license's distribution restrictions merely because it calls that API.
+
+6. Reserved rights and termination
+All rights not expressly granted are reserved by their respective holders. This
+license does not grant trademark endorsement or a right to relicense the Work.
+Permissions granted to you terminate automatically upon breach. You must stop
+unauthorized use and distribution. Reinstatement or additional permissions require
+written consent from the applicable rights holders.
+
+7. No warranty
+To the extent allowed by applicable law, the Work is provided "AS IS", without
+express or implied warranties, including merchantability, fitness for a particular
+purpose and non-infringement. Rights holders and contributors are not liable for
+losses arising from use of, or inability to use, the Work. This section does not
+exclude warranties or liability that applicable law does not allow to be excluded.
+
+8. Language
+The Chinese text is authoritative. This English translation is provided for
+convenience; the Chinese text prevails in case of inconsistency. Requests for
+additional permission may be submitted through the maintainer's public contact
+channels or the project repository.

@@ -1,0 +1,305 @@
+local _, A = ...
+local B = {slotCount=180,profileLimit=1000}
+A.ActionBars=B
+-- Each specialization has one default and independent profiles per build.
+function B:Spec(spec)
+    local char=A.Store.character
+    if not char or A.Store.readonly or type(spec)~="number" or spec<=0 or spec%1~=0 then return nil end
+    char.actionBars=char.actionBars or {version=1,specs={}}
+    if type(char.actionBars)~="table" or char.actionBars.version~=1 or type(char.actionBars.specs)~="table" then return nil end
+    local specs=char.actionBars.specs
+    if not specs[spec] then specs[spec]={profiles={}} end
+    if type(specs[spec])~="table" or type(specs[spec].profiles)~="table" then return nil end
+    return specs[spec]
+end
+local function clone(value)
+    local out={}
+    for k,v in pairs(value) do out[k]=type(v)=="table" and clone(v) or v end
+    return out
+end
+function B:Valid(snapshot,spec)
+    if type(snapshot)~="table" or snapshot.version~=1 or snapshot.spec~=spec
+        or type(snapshot.slots)~="table" or #snapshot.slots~=self.slotCount then return false end
+    for i=1,self.slotCount do
+        local entry=snapshot.slots[i]
+        if type(entry)~="table" then return false end
+        if entry.kind~=nil and (type(entry.kind)~="string" or
+            (type(entry.id)~="number" and type(entry.id)~="string")) then return false end
+    end
+    return true
+end
+function B:SeedDefault(spec,snapshot,source)
+    local state=self:Spec(spec)
+    if not state then return nil,"SCHEMA" end
+    if state.default then return true end -- upgrades never replace an existing default
+    if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
+    state.default=clone(snapshot);state.defaultSource=source
+    return true
+end
+function B:SaveIndependent(spec,buildID,snapshot)
+    local state=self:Spec(spec)
+    if not state then return nil,"SCHEMA" end
+    if not self:Valid(snapshot,spec) or buildID==nil then return nil,"BARS_INVALID" end
+    local key=tostring(buildID)
+    if not state.profiles[key] then
+        local count=0;for _ in pairs(state.profiles) do count=count+1 end
+        if count>=self.profileLimit then return nil,"CAPACITY" end
+    end
+    state.profiles[key]=clone(snapshot)
+    return true
+end
+function B:Get(spec,buildID,shared)
+    local state=self:Spec(spec)
+    if not state then return nil,"SCHEMA" end
+    local snapshot
+    if shared then snapshot=state.default else snapshot=state.profiles[tostring(buildID)] end
+    if not snapshot then return nil,"BARS_MISSING" end
+    if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
+    return clone(snapshot)
+end
+local function secret(value) return issecretvalue and issecretvalue(value) end
+function B:ReadSlot(slot)
+    local kind,id,sub=GetActionInfo(slot)
+    if secret(kind) or secret(id) or secret(sub) then return nil,"BARS_SECRET" end
+    if not kind then return {} end
+    -- PickupSpell mounts are reported as companion/spellID until the native
+    -- loadout serializer normalizes them to summonmount/mountID.
+    if kind=="companion" and sub=="MOUNT" then
+        local mount=C_MountJournal.GetMountFromSpell(id)
+        if not mount then return nil,"BARS_UNAVAILABLE" end
+        kind,id,sub="summonmount",mount,nil
+    end
+    local entry={kind=kind,id=id,sub=sub}
+    if kind=="macro" then
+        local name=C_ActionBar.GetActionText(slot)
+        if secret(name) or type(name)~="string" then return nil,"BARS_MACRO" end
+        local index=GetMacroIndexByName(name)
+        local found,_,body=GetMacroInfo(index)
+        if found~=name or type(body)~="string" then return nil,"BARS_MACRO" end
+        local account,character=GetNumMacros()
+        if account+character>512 then return nil,"BARS_MACRO" end
+        for offset=1,account+character do
+            local candidate=offset<=account and offset or (MAX_ACCOUNT_MACROS or 120)+offset-account
+            local other,_,text=GetMacroInfo(candidate)
+            if other==name and (text~=body or (candidate>(MAX_ACCOUNT_MACROS or 120))~=(index>(MAX_ACCOUNT_MACROS or 120))) then
+                return nil,"BARS_MACRO_AMBIGUOUS"
+            end
+        end
+        entry.id=index;entry.name=name;entry.body=body
+        entry.character=index>(MAX_ACCOUNT_MACROS or 120)
+    end
+    return entry
+end
+function B:Capture(spec)
+    if InCombatLockdown() then return nil,"COMBAT" end
+    if A:GetSpec()~=spec then return nil,"APPLY_SPEC_CHANGED" end
+    if C_ActionBar then
+        for _,name in ipairs({"HasVehicleActionBar","HasOverrideActionBar","IsPossessBarVisible"}) do
+            if C_ActionBar[name] and C_ActionBar[name]() then return nil,"BARS_CONTEXT" end
+        end
+    end
+    local slots={}
+    for i=1,self.slotCount do
+        local entry,why=self:ReadSlot(i)
+        if not entry then return nil,why,i end
+        slots[i]=entry
+    end
+    return {version=1,spec=spec,slots=slots}
+end
+local function same(a,b)
+    if a.kind~=b.kind then return false end
+    if a.kind=="macro" then return a.name==b.name and a.body==b.body and a.character==b.character end
+    return a.id==b.id and a.sub==b.sub
+end
+function B:MacroIndex(entry)
+    local account,character=GetNumMacros()
+    local maximum=MAX_ACCOUNT_MACROS or 120
+    local first=entry.character and maximum+1 or 1
+    local last=entry.character and maximum+character or account
+    if last-first>512 then return nil end
+    local found
+    for i=first,last do
+        local name,_,body=GetMacroInfo(i)
+        if name==entry.name and body==entry.body then
+            -- Two identical macros have identical behavior; preserve the old
+            -- index if it still identifies the same macro.
+            if i==entry.id then return i end
+            found=found or i
+        end
+    end
+    return found
+end
+function B:Pickup(entry)
+    if entry.kind=="spell" then C_Spell.PickupSpell(entry.id)
+    elseif entry.kind=="item" then C_Item.PickupItem(entry.id)
+    elseif entry.kind=="macro" then
+        local index=self:MacroIndex(entry)
+        if not index then return nil,"BARS_MACRO" end
+        PickupMacro(index)
+    elseif entry.kind=="summonmount" then
+        local _,spell=C_MountJournal.GetMountInfoByID(entry.id)
+        if not spell then return nil,"BARS_UNAVAILABLE" end
+        C_Spell.PickupSpell(spell)
+    elseif entry.kind=="equipmentset" and C_EquipmentSet and C_EquipmentSet.PickupEquipmentSet then
+        C_EquipmentSet.PickupEquipmentSet(entry.id)
+    elseif entry.kind=="summonpet" and C_PetJournal and C_PetJournal.PickupPet then
+        C_PetJournal.PickupPet(entry.id)
+    elseif entry.kind=="flyout" then
+        local bank=Enum.SpellBookSpellBank.Player
+        local found
+        for index=1,1024 do
+            local info=C_SpellBook.GetSpellBookItemInfo(index,bank)
+            if info and info.itemType==Enum.SpellBookItemType.Flyout and info.actionID==entry.id then found=index;break end
+        end
+        if not found then return nil,"BARS_UNAVAILABLE" end
+        C_SpellBook.PickupSpellBookItem(found,bank)
+    else return nil,"BARS_UNSUPPORTED" end
+    if not GetCursorInfo() then return nil,"BARS_UNAVAILABLE" end
+    return true
+end
+function B:FindSlot(entry,except)
+    for slot=1,self.slotCount do
+        if slot~=except then
+            local actual=self:ReadSlot(slot)
+            if actual and same(actual,entry) then return slot end
+        end
+    end
+end
+function B:Restore(snapshot)
+    local spec=A:GetSpec()
+    if InCombatLockdown() then return nil,"COMBAT" end
+    if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
+    if GetCursorInfo() then return nil,"BARS_CURSOR" end
+    local before,why=self:Capture(spec)
+    if not before then return nil,why end
+    local changes={}
+    for slot=1,self.slotCount do
+        if not same(before.slots[slot],snapshot.slots[slot]) then changes[#changes+1]=slot end
+    end
+    -- Preflight every pickup before removing/replacing any action. Unknown
+    -- action types can remain in place but are never silently discarded.
+    local moveFirst={}
+    for _,slot in ipairs(changes) do
+        local desired=snapshot.slots[slot]
+        if desired.kind then
+            local called,ok,reason=pcall(self.Pickup,self,desired)
+            ClearCursor()
+            if not called or not ok then
+                if desired.kind=="spell" and self:FindSlot(desired) then moveFirst[slot]=true
+                else return nil,reason or "BARS_UNAVAILABLE",slot end
+            end
+        end
+        local old=before.slots[slot]
+        if old.kind then
+            local called,ok,reason=pcall(self.Pickup,self,old)
+            ClearCursor()
+            if (not called or not ok) and not (old.kind=="spell" and self:FindSlot(old)) then return nil,reason or "BARS_UNAVAILABLE",slot end
+        end
+    end
+    -- Move unavailable spells to their final slots before any replacement can
+    -- discard their only existing action-bar instance.
+    table.sort(changes,function(a,b)
+        if moveFirst[a]~=moveFirst[b] then return moveFirst[a]==true end
+        return a<b
+    end)
+    self.restoring=true
+    local touched,seen={},{}
+    local function remember(slot)
+        if not seen[slot] then seen[slot]=true;touched[#touched+1]=slot end
+    end
+    local function put(slot,entry)
+        local current=self:ReadSlot(slot)
+        if current and same(current,entry) then return end
+        remember(slot)
+        if entry.kind then
+            local source=self:FindSlot(entry,slot)
+            if source then
+                remember(source)
+                PickupAction(source)
+                local ok,reason=pcall(function()
+                    PlaceAction(slot)
+                    if GetCursorInfo() then PlaceAction(source) end
+                end)
+                if not ok then
+                    if GetCursorInfo() then pcall(PlaceAction,source) end
+                    ClearCursor();error(reason)
+                end
+            else
+                local ok,reason=self:Pickup(entry)
+                if not ok then error(reason) end
+                PlaceAction(slot)
+            end
+        else PickupAction(slot) end
+        ClearCursor()
+        local actual=self:ReadSlot(slot)
+        if not actual or not same(entry,actual) then error("BARS_VERIFY:"..slot..":"..tostring(actual and actual.kind)..":"..tostring(actual and actual.id)..":"..tostring(actual and actual.sub)) end
+    end
+    local ok,reason=pcall(function()
+        for _,slot in ipairs(changes) do
+            if InCombatLockdown() or A:GetSpec()~=spec then error("BARS_CONTEXT") end
+            put(slot,snapshot.slots[slot])
+        end
+    end)
+    local rolledBack=true
+    if not ok then
+        ClearCursor()
+        if not InCombatLockdown() and A:GetSpec()==spec then
+            for i=#touched,1,-1 do
+                local slot=touched[i]
+                local restored=pcall(put,slot,before.slots[slot])
+                rolledBack=restored and rolledBack
+            end
+        else rolledBack=false end
+        self.recovery={before=before,requested=clone(snapshot),rolledBack=rolledBack}
+    end
+    self.restoring=nil
+    if not ok then return nil,"BARS_RESTORE",{reason=tostring(reason),rolledBack=rolledBack} end
+    return true
+end
+-- Trust only the exact saved ID and name, including our pending rename.
+function B:Working(spec)
+    local state=self:Spec(spec)
+    local binding=state and state.working
+    if not binding then return end
+    for _,id in ipairs(C_ClassTalents.GetConfigIDsBySpecID(spec) or {}) do
+        if id==binding.id then
+            local info=C_Traits.GetConfigInfo(id)
+            if info and info.type==Enum.TraitConfigType.Combat then
+                if binding.pendingName and info.name==binding.pendingName then binding.name=info.name;binding.pendingName=nil end
+                if info.name==binding.name then return binding,info end
+            end
+            return
+        end
+    end
+end
+function B:SaveActive()
+    if not A.Apply or A.Apply.op or self.restoring then return end
+    local applied=A.Store.character.applied
+    if not applied or applied.shared or applied.spec~=A:GetSpec() then return end
+    if A.Apply:CurrentBuildID()~=applied.id then return end
+    local snapshot=self:Capture(applied.spec)
+    if snapshot then self:SaveIndependent(applied.spec,applied.id,snapshot) end
+end
+function B:InitializeSpec()
+    local spec=A:GetSpec()
+    if not spec or InCombatLockdown() then return end
+    local state=self:Spec(spec)
+    if state and not state.default then
+        local snapshot=self:Capture(spec)
+        if snapshot then self:SeedDefault(spec,snapshot,"first-use") end
+    end
+end
+function B:Init()
+    if self.events then return end
+    local frame=CreateFrame("Frame");self.events=frame
+    for _,event in ipairs({"PLAYER_ENTERING_WORLD","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT"}) do frame:RegisterEvent(event) end
+    frame:SetScript("OnEvent",function(_,event)
+        if event=="PLAYER_LOGOUT" then self:SaveActive();return end
+        if event=="ACTIONBAR_SLOT_CHANGED" then
+            if self.restoring or (A.Apply and A.Apply.op) or self.saveTimer then return end
+            self.saveTimer=C_Timer.NewTimer(0,function()self.saveTimer=nil;self:SaveActive()end)
+        else self:InitializeSpec() end
+    end)
+    self:InitializeSpec()
+end
+

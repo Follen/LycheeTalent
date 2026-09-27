@@ -1,0 +1,6 @@
+{
+  encounter: __type(name: "Encounter") { fields { name args { name type { kind name ofType { name kind } } } type { name kind ofType { name kind } } } }
+  zone: __type(name: "Zone") { fields { name args { name type { kind name ofType { name kind } } } } }
+  classes: gameData { classes { id name specs { id name } } }
+  worldData { zones { id name expansion { id name } encounters { id name } } }
+}

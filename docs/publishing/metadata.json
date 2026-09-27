@@ -1,0 +1,17 @@
+{
+  "name": "荔枝天赋",
+  "name_en": "Lychee Talent",
+  "version": "1.0.0",
+  "author": "Follen",
+  "game": "World of Warcraft",
+  "branch": "retail",
+  "interface": 120100,
+  "summary_zh": "按副本与首领选 WCL 推荐天赋，管理个人方案与独立动作条，到场提醒，双击切换。",
+  "summary_en": "Encounter-based WCL builds, personal loadouts, independent action bars and timely switch reminders.",
+  "repository": "https://github.com/Follen/LycheeTalent",
+  "license": "LicenseRef-Lychee-NC-1.0",
+  "package": "dist/LycheeTalent-1.0.0.zip",
+  "cover": "docs/media/release-cover.png",
+  "logo": "docs/media/logo.png",
+  "status": "prepared-not-submitted"
+}

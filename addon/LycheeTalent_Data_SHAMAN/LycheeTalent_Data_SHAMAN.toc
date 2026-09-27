@@ -1,0 +1,7 @@
+## Interface: 120100
+## Title: |cffd53c49Lychee|r Talent Data - SHAMAN
+## IconTexture: Interface\AddOns\LycheeTalent\Media\logo.tga
+## LoadOnDemand: 1
+## Dependencies: LycheeTalent
+## Version: 1.0.0
+Data.lua

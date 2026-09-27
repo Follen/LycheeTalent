@@ -1,0 +1,51 @@
+{
+  "build": "12.1.0.69933",
+  "snapshot": "PIN-e32991d54917ec6aff1e63725999c380b110e8e3140b10857e0f4dc48a648647",
+  "encounters": {
+    "3429": {
+      "uiMapID": 2610,
+      "journalInstanceID": 1320,
+      "journalID": 2883
+    },
+    "3470": {
+      "uiMapID": 2606,
+      "journalInstanceID": 1320,
+      "journalID": 2888
+    },
+    "3445": {
+      "uiMapID": 2608,
+      "journalInstanceID": 1320,
+      "journalID": 2874
+    },
+    "3379": {
+      "uiMapID": 2632,
+      "journalInstanceID": 1317,
+      "journalID": 2849
+    },
+    "3421": {
+      "uiMapID": 2607,
+      "journalInstanceID": 1320,
+      "journalID": 2887
+    },
+    "3455": {
+      "uiMapID": 2608,
+      "journalInstanceID": 1320,
+      "journalID": 2882
+    },
+    "3492": {
+      "uiMapID": 2610,
+      "journalInstanceID": 1320,
+      "journalID": 2895
+    },
+    "3420": {
+      "uiMapID": 2609,
+      "journalInstanceID": 1320,
+      "journalID": 2871
+    },
+    "3497": {
+      "uiMapID": 2609,
+      "journalInstanceID": 1320,
+      "journalID": 2894
+    }
+  }
+}
