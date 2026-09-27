@@ -13,7 +13,7 @@ function time()return 1 end
 function GetCursorInfo()return cursor and cursor.kind end
 function ClearCursor()cursor=nil end
 function GetActionInfo(i)local s=slots[i];return s.kind,s.id,s.sub end
-function PickupAction(i)cursor=slots[i];slots[i]={}end
+function PickupAction(i,keep)cursor=slots[i];if not keep then slots[i]={}end end
 function PlaceAction(i)local old=slots[i];slots[i]=cursor;cursor=old.kind and old or nil end
 C_Spell={PickupSpell=function(id)cursor={kind='spell',id=id,sub='spell'}end}
 function CreateFrame()

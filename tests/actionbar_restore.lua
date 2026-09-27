@@ -13,7 +13,7 @@ GetActionInfo=function(i)local s=slots[i];return s.kind,s.id,s.sub end
 C_Spell={PickupSpell=function(id)cursor={kind='spell',id=id,sub='spell'} end}
 C_Item={PickupItem=function(id)cursor={kind='item',id=id}end}
 C_ActionBar={}
-PickupAction=function(i)cursor=slots[i];slots[i]={}end
+PickupAction=function(i,keep)cursor=slots[i];if not keep then slots[i]={}end end
 local failOnce=false
 PlaceAction=function(i)
  placements=placements+1
