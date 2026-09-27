@@ -1,0 +1,11 @@
+{
+  "version": "1.0.2",
+  "release_type": 1,
+  "schema": "fupload.v1.dd.plugin.update",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.2.zip",
+  "update_desc": "<p>修复同名宏内容或账号、角色范围不同时阻止天赋切换的问题。读取确切宏编号，恢复时核对内容与归属，支持宏索引重排。</p>",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "sn": "40ce264bd1714ceb89132f5157f22869"
+}
