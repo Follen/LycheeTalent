@@ -122,7 +122,7 @@ local function sameMacroBody(a,b)
 end
 local function same(a,b)
     if a.kind~=b.kind then return false end
-    if a.kind=="macro" then return a.id==b.id and a.name==b.name and sameMacroBody(a.body,b.body) and a.character==b.character end
+    if a.kind=="macro" then return not a.macroInvalid and not b.macroInvalid and a.id==b.id and a.name==b.name and sameMacroBody(a.body,b.body) and a.character==b.character end
     -- Talent overrides can change the ID reported by GetActionInfo. Only
     -- normalize player spells; pet actions and macro identities stay exact.
     if a.kind=="spell" and (a.sub==nil or a.sub=="spell") and (b.sub==nil or b.sub=="spell") then
@@ -134,12 +134,61 @@ function B:MacroIndex(entry)
     -- Macro indices are the identity available to the action bar. Never
     -- substitute another index merely because its name/body looks equivalent.
     local index=entry.id
+    if entry.macroInvalid then return nil end
     if type(index)~="number" or index<1 or index%1~=0 then return nil end
     if (index>(MAX_ACCOUNT_MACROS or 120))~=entry.character then return nil end
     local name,_,body=GetMacroInfo(index)
     if secret(name) or secret(body) then return nil end
     if name==entry.name and sameMacroBody(body,entry.body) then return index end
     return nil
+end
+-- Observe each synchronous UPDATE_MACROS separately: an edit may update saved
+-- references, but deletion followed by creation must not adopt a replacement.
+function B:UpdateMacros()
+    if not GetNumMacros or not GetMacroInfo then return end
+    local account,character=GetNumMacros()
+    if secret(account) or secret(character) or type(account)~="number" or type(character)~="number" then return end
+    local current={}
+    local limit=MAX_ACCOUNT_MACROS or 120
+    for _,range in ipairs({{1,account},{limit+1,limit+character}}) do
+        for index=range[1],range[2] do
+            local name,_,body=GetMacroInfo(index)
+            if secret(name) or secret(body) or type(name)~="string" or type(body)~="string" then return end
+            current[index]={kind="macro",id=index,name=name,body=body,character=index>limit}
+        end
+    end
+    local previous=self.macroCatalog
+    local stableCounts=account==self.macroAccountCount and character==self.macroCharacterCount
+    self.macroCatalog=current
+    self.macroAccountCount,self.macroCharacterCount=account,character
+    if not previous or A.Store.readonly then return end
+    local bars=A.Store.character and A.Store.character.actionBars
+    if type(bars)~="table" or bars.version~=1 or type(bars.specs)~="table" then return end
+    local function update(snapshot,spec)
+        if not self:Valid(snapshot,spec) then return end
+        for _,entry in ipairs(snapshot.slots) do
+            local old=entry.kind=="macro" and previous[entry.id]
+            if old and same(entry,old) then
+                local new=current[entry.id]
+                if new and same(old,new) then
+                    entry.body=new.body
+                elseif new and new.name==old.name and stableCounts then
+                    -- Only an observed content edit at the original index.
+                    entry.body=new.body
+                else
+                    entry.macroInvalid=true
+                end
+            end
+        end
+    end
+    for spec,state in pairs(bars.specs) do
+        if type(state)=="table" then
+            update(state.default,spec)
+            if type(state.profiles)=="table" then
+                for _,snapshot in pairs(state.profiles) do update(snapshot,spec) end
+            end
+        end
+    end
 end
 function B:Pickup(entry)
     if entry.kind=="spell" then
@@ -315,13 +364,15 @@ end
 function B:Init()
     if self.events then return end
     local frame=CreateFrame("Frame");self.events=frame
-    for _,event in ipairs({"PLAYER_ENTERING_WORLD","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT"}) do frame:RegisterEvent(event) end
+    for _,event in ipairs({"PLAYER_ENTERING_WORLD","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","UPDATE_MACROS"}) do frame:RegisterEvent(event) end
     frame:SetScript("OnEvent",function(_,event)
+        if event=="UPDATE_MACROS" then self:UpdateMacros();return end
         if event=="PLAYER_LOGOUT" then self:SaveActive();return end
         if event=="ACTIONBAR_SLOT_CHANGED" then
             if self.restoring or (A.Apply and A.Apply.op) or self.saveTimer then return end
             self.saveTimer=C_Timer.NewTimer(0,function()self.saveTimer=nil;self:SaveActive()end)
         else self:InitializeSpec() end
     end)
+    self:UpdateMacros()
     self:InitializeSpec()
 end

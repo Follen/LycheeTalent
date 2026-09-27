@@ -74,3 +74,30 @@ assert(not B:MacroIndex(newlineSnapshot.slots[1]),"internal newlines remain sign
 newlineSnapshot.slots[1].body="/cast Alpha "
 assert(not B:MacroIndex(newlineSnapshot.slots[1]),"do not broaden normalization to arbitrary whitespace")
 print("PASS exact macro identity: identical-body swaps, changed/deleted index rejection, cursor, combat and cleanup")
+-- An observed edit updates references across layouts without copying positions.
+local original=assert(B:Capture(62))
+assert(B:SeedDefault(62,original,"test"))
+assert(B:SaveIndependent(62,"one",original))
+local alternate=assert(B:Capture(62))
+alternate.slots[1],alternate.slots[2]=alternate.slots[2],alternate.slots[1]
+assert(B:SaveIndependent(62,"two",alternate))
+B:UpdateMacros()
+macros[1][2]="/cast Changed"
+B:UpdateMacros()
+local updated=assert(B:Get(62,"one",false))
+local swapped=assert(B:Get(62,"two",false))
+assert(updated.slots[1].body=="/cast Changed" and swapped.slots[2].body=="/cast Changed")
+assert(swapped.slots[1].id==2 and swapped.slots[1].body=="/cast Alpha","same-name macro remains separate")
+assert(B:Get(62,nil,true).slots[1].body=="/cast Changed","shared layout reference updates too")
+assert(B:Restore(swapped),"edited macro restores without resaving layouts")
+-- Observe deletion and recreation, even when the replacement has identical text.
+macros[2]=nil
+GetNumMacros=function()return 1,1 end
+B:UpdateMacros()
+macros[2]={"same","/cast Alpha"}
+GetNumMacros=function()return 2,1 end
+B:UpdateMacros()
+local deleted=assert(B:Get(62,"two",false)).slots[1]
+assert(deleted.macroInvalid and not B:MacroIndex(deleted),"recreated macro must not revive a deleted reference")
+assert(B:MacroIndex(B:Get(62,"one",false).slots[1])==1,"unaffected macro remains usable")
+print("PASS observed macro edits update shared and independent references; deleted identities stay invalid")
