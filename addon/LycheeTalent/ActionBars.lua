@@ -107,9 +107,21 @@ function B:Capture(spec)
     end
     return {version=1,spec=spec,slots=slots}
 end
+local function baseSpell(id)
+    if C_Spell and C_Spell.GetBaseSpell then
+        local base=C_Spell.GetBaseSpell(id)
+        if not secret(base) and type(base)=="number" and base>0 then return base end
+    end
+    return id
+end
 local function same(a,b)
     if a.kind~=b.kind then return false end
     if a.kind=="macro" then return a.id==b.id and a.name==b.name and a.body==b.body and a.character==b.character end
+    -- Talent overrides can change the ID reported by GetActionInfo. Only
+    -- normalize player spells; pet actions and macro identities stay exact.
+    if a.kind=="spell" and (a.sub==nil or a.sub=="spell") and (b.sub==nil or b.sub=="spell") then
+        return a.id==b.id or baseSpell(a.id)==baseSpell(b.id)
+    end
     return a.id==b.id and a.sub==b.sub
 end
 function B:MacroIndex(entry)
@@ -124,7 +136,14 @@ function B:MacroIndex(entry)
     return nil
 end
 function B:Pickup(entry)
-    if entry.kind=="spell" then C_Spell.PickupSpell(entry.id)
+    if entry.kind=="spell" then
+        C_Spell.PickupSpell(entry.id)
+        -- A saved talent override may no longer be directly pickable after
+        -- switching builds. Resolve its native base ID, never a name match.
+        if not GetCursorInfo() and (entry.sub==nil or entry.sub=="spell") then
+            local base=baseSpell(entry.id)
+            if base~=entry.id then C_Spell.PickupSpell(base) end
+        end
     elseif entry.kind=="item" then C_Item.PickupItem(entry.id)
     elseif entry.kind=="macro" then
         local index=self:MacroIndex(entry)
@@ -190,7 +209,7 @@ function B:Restore(snapshot)
             if (not called or not ok) and not (old.kind=="spell" and self:FindSlot(old)) then return nil,reason or "BARS_UNAVAILABLE",slot end
         end
     end
-    -- Move unavailable spells to their final slots before any replacement can
+    -- Copy unavailable spells to their final slots before any replacement can
     -- discard their only existing action-bar instance.
     table.sort(changes,function(a,b)
         if moveFirst[a]~=moveFirst[b] then return moveFirst[a]==true end
@@ -208,16 +227,11 @@ function B:Restore(snapshot)
         if entry.kind then
             local source=self:FindSlot(entry,slot)
             if source then
-                remember(source)
-                PickupAction(source)
-                local ok,reason=pcall(function()
-                    PlaceAction(slot)
-                    if GetCursorInfo() then PlaceAction(source) end
-                end)
-                if not ok then
-                    if GetCursorInfo() then pcall(PlaceAction,source) end
-                    ClearCursor();error(reason)
-                end
+                -- Copy, never move: the source may already be correct, and
+                -- multiple destinations may need the same unavailable spell.
+                PickupAction(source,true)
+                if not GetCursorInfo() then error("BARS_UNAVAILABLE") end
+                PlaceAction(slot)
             else
                 local ok,reason=self:Pickup(entry)
                 if not ok then error(reason) end
@@ -228,11 +242,18 @@ function B:Restore(snapshot)
         local actual=self:ReadSlot(slot)
         if not actual or not same(entry,actual) then error("BARS_VERIFY:"..slot..":"..tostring(actual and actual.kind)..":"..tostring(actual and actual.id)..":"..tostring(actual and actual.sub)) end
     end
+    local function verify(layout)
+        for slot=1,self.slotCount do
+            local actual=self:ReadSlot(slot)
+            if not actual or not same(layout.slots[slot],actual) then error("BARS_LAYOUT_VERIFY:"..slot) end
+        end
+    end
     local ok,reason=pcall(function()
         for _,slot in ipairs(changes) do
             if InCombatLockdown() or A:GetSpec()~=spec then error("BARS_CONTEXT") end
             put(slot,snapshot.slots[slot])
         end
+        verify(snapshot)
     end)
     local rolledBack=true
     if not ok then
@@ -243,6 +264,8 @@ function B:Restore(snapshot)
                 local restored=pcall(put,slot,before.slots[slot])
                 rolledBack=restored and rolledBack
             end
+            local verified=pcall(verify,before)
+            rolledBack=verified and rolledBack
         else rolledBack=false end
         self.recovery={before=before,requested=clone(snapshot),rolledBack=rolledBack}
     end
@@ -296,4 +319,3 @@ function B:Init()
     end)
     self:InitializeSpec()
 end
-

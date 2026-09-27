@@ -10,6 +10,9 @@ lua tests/ui_smoke.lua pending-prompt
 lua tests/single_config.lua
 lua tests/actionbar_profiles.lua
 lua tests/actionbar_restore.lua
+lua tests/actionbar_edgecases.lua
+lua tests/actionbar_edgecases.lua override
+lua tests/actionbar_edgecases.lua pickup-fallback
 lua tests/macro_identity.lua
 lua tests/inactive_hero.lua
 lua tests/native_open.lua
