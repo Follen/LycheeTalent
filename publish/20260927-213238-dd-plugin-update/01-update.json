@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.4.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.4",
+  "release_type": 1,
+  "update_desc": "<p>修复恢复动作条时移走其他槽位中重复技能的问题。</p><p>修复替代技能 ID 变化导致的恢复误判，无法直接拾取时尝试基础技能。</p><p>恢复及回滚后校验完整布局，宏继续严格保留原编号。</p>"
+}
