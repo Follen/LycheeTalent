@@ -21,18 +21,32 @@ TalentLoadoutEx={MAGE={[1]={
  [9]={name="Wrong",text="other"},[10]={name="",text="code"},[11]=false,
  },[2]={{name="Other spec",text="code"}}},WARRIOR={[1]={{name="Other class",text="code"}}}}
 local source=TalentLoadoutEx.MAGE[1]
+local scan=assert(A.TalentEx:Inspect())
+assert(scan.state=="ready" and scan.total==3 and #scan.pending==3 and scan.invalid==5)
+assert(#A.Store.builds==0 and not A.Store.db.talentExImports,"inspection is read-only")
 local result=assert(A.TalentEx:Import())
 assert(result.imported==3 and result.duplicate==1 and result.invalid==5 and result.groups==1)
 assert(#A.Store.builds==3 and A.Store.builds[1].icon==123)
 assert(A.Store.builds[3].icon==source[6].icon and A.Store.builds[1].source=="user")
 assert(source[3].name==" Alpha " and source[4].text==" code ","external data unchanged")
 result=assert(A.TalentEx:Import());assert(result.imported==0 and result.duplicate==4)
-assert(A.Store:Delete(A.Store.builds[1].id));result=assert(A.TalentEx:Import());assert(result.imported==1)
+scan=assert(A.TalentEx:Inspect());assert(scan.state=="imported" and #scan.pending==0 and scan.matched==3)
+source[6].text="changed"
+scan=assert(A.TalentEx:Inspect());assert(scan.state=="updates" and #scan.pending==1,"same-count content changes are detected")
+source[6].text="code"
+assert(A.Store:Delete(A.Store.builds[1].id))
+scan=assert(A.TalentEx:Inspect());assert(scan.state=="updates" and #scan.pending==1,"deleted local builds can be reimported")
+result=assert(A.TalentEx:Import());assert(result.imported==1)
 combat=true;ok,why=A.TalentEx:Import();assert(not ok and why=="COMBAT");combat=false
 A.Apply.op={};ok,why=A.TalentEx:Import();assert(not ok and why=="APPLY_BUSY");A.Apply.op=nil
 A.Store.readonly=true;ok,why=A.TalentEx:Import();assert(not ok and why=="SCHEMA");A.Store.readonly=false
 TalentLoadoutEx.MAGE[1]={{name="New",text="new"},{name="Next",text="next"}}
+A.Store:Init()
+scan=assert(A.TalentEx:Inspect());assert(scan.state=="updates" and #scan.pending==2,"history survives reinitialization and full source replacement")
 for i=#A.Store.builds+1,999 do A.Store.builds[i]={name="filler",code="filler",specID=62} end
 result=assert(A.TalentEx:Import());assert(result.imported==1 and result.remaining==1 and result.reason=="CAPACITY")
 assert(#A.Store.builds==1000)
-print("PASS Talent EX: sparse rows, scope, validation, duplicates, names, icons, source preservation, guards and partial capacity")
+scan=assert(A.TalentEx:Inspect());assert(scan.state=="updates" and #scan.pending==1,"partial imports remain actionable")
+TalentLoadoutEx.MAGE[1]={{name="Group"},{name="Old",text="old",isLegacy=true},{name="Broken",text="bad"}}
+scan=assert(A.TalentEx:Inspect());assert(scan.state=="empty" and #scan.pending==0,"invalid data never presents a permanent update")
+print("PASS Talent EX: read-only differences, import states, sparse rows, scope, validation, duplicates, icons, source preservation, guards and partial capacity")

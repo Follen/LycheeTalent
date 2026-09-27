@@ -247,7 +247,12 @@ function U:Refresh()
         if self.results[i].kind=="popular" then table.remove(self.results,i) end
     end
     self:LayoutRows()
-    self.offset=math.min(self.offset,math.max(0,#self.results-self.visibleRows))
+    local maximum=math.max(0,#self.results-self.visibleRows)
+    self.offset=math.max(0,math.min(self.offset,maximum))
+    self.listScroll.syncing=true
+    self.listScroll:SetMinMaxValues(0,maximum);self.listScroll:SetValue(self.offset)
+    self.listScroll:SizeThumb(#self.results,self.visibleRows)
+    self.listScroll.syncing=nil;self.listScroll:SetShown(maximum>0)
     local selected=false
     for _,b in ipairs(self.results) do if b.id==self.selected then selected=true; break end end
     if not selected then self.selected=self.results[1] and self.results[1].id or nil end
@@ -255,7 +260,6 @@ function U:Refresh()
         local active=b.scene==self.scene
         b.mark:SetShown(active); color(b.label,active and C.text or C.muted)
     end
-    self.count:SetText(tostring(#self.results))
     self.currentID=A.Apply:CurrentBuildID()
     local applying=A.Apply.op and A.Apply.op.buildID
     for i,row in ipairs(self.rows) do
@@ -290,7 +294,6 @@ function U:Refresh()
         self.emptyTitle:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED or L.EMPTY)
         self.emptyHelp:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED_HELP or L.EMPTY_HELP)
     end
-    self.up:SetEnabled(self.offset>0); self.down:SetEnabled(self.offset+self.visibleRows<#self.results)
     local modes=A.Store.character.modes or {}
     self.shared=self.selected and modes[tostring(self.selected)]==true or false
     local secondary=(self.dialog and self.dialog:IsShown()) or (self.contextSettings and self.contextSettings:IsShown()) or (self.settings and self.settings:IsShown())
@@ -298,7 +301,7 @@ function U:Refresh()
     if self.settingsButton then self.settingsButton:SetShown(not secondary) end
     for _,nav in ipairs(self.nav) do nav:SetShown(not secondary) end
     if secondary then
-        for _,control in ipairs({self.buildList,self.footer,self.difficultyButton,self.up,self.down,self.count}) do control:Hide() end
+        for _,control in ipairs({self.buildList,self.footer,self.difficultyButton,self.listScroll}) do control:Hide() end
     end
 end
 function U:SetShared(shared,id)
@@ -456,7 +459,7 @@ function U:LayoutRows()
     local personal=self.scene=="mine"
     self.footer:SetShown(personal)
 
-    local room=math.max(56,self.frame:GetHeight()-top-(personal and 104 or 32))
+    local room=math.max(56,self.frame:GetHeight()-top-(personal and 68 or 20))
     -- A full-height sidebar gets breathing room; short windows remain scrollable.
     local step=math.max(56,math.min(68,math.floor(room/9/2)*2))
     self.visibleRows=math.max(1,math.min(18,math.floor(room/step)))
@@ -465,12 +468,8 @@ function U:LayoutRows()
     end
     self.buildList:ClearAllPoints(); self.buildList:SetPoint("TOPLEFT",15,-top); self.buildList:SetHeight(room)
     self.buildList:Show()
-    self.up:SetShown(#self.results>self.visibleRows); self.down:SetShown(#self.results>self.visibleRows)
-    self.count:SetShown(#self.results>self.visibleRows)
-    local pageY=personal and 72 or 20
-    self.up:ClearAllPoints(); self.up:SetPoint("BOTTOMLEFT",self.frame,"BOTTOMLEFT",158,pageY)
-    self.down:ClearAllPoints(); self.down:SetPoint("BOTTOMLEFT",self.frame,"BOTTOMLEFT",194,pageY)
-    self.count:ClearAllPoints(); self.count:SetPoint("BOTTOMRIGHT",self.frame,"BOTTOMRIGHT",-15,pageY+10)
+    self.listScroll:ClearAllPoints();self.listScroll:SetPoint("TOPRIGHT",self.frame,"TOPRIGHT",-2,-top)
+    self.listScroll:SetHeight(self.visibleRows*step-6)
     self.difficultyButton:SetShown(self.scene=="raid")
     self.difficultyButton:ClearAllPoints(); self.difficultyButton:SetPoint("TOPRIGHT",-15,-142)
     for _,b in ipairs(self.difficultyChoices) do
@@ -840,7 +839,6 @@ function U:Create()
         choice:SetScript("OnLeave",function(btn) color(btn.label,btn.difficulty==U.difficulty and C.red or C.muted) end)
         self.difficultyChoices[i]=choice
     end
-    self.count=text(f,11,C.dim,"0",290,-596,30)
     local footer=CreateFrame("Frame",nil,f); self.footer=footer
     footer:SetPoint("BOTTOMLEFT",0,16); footer:SetSize(280,36)
     button(footer,L.IMPORT,18,0,140,function() U:Dialog(false) end,true)
@@ -850,7 +848,18 @@ function U:Create()
         local _,spec=A:GetSpec(); U:Dialog(false,{name=(spec or "").." · "..L.CURRENT,code=code,scene=U.scene=="raid" and "raid" or "mythic",target=""})
     end)
     local list=CreateFrame("Frame",nil,f); list:SetPoint("TOPLEFT",15,-220); list:SetSize(250,344); self.buildList=list; list:EnableMouseWheel(true)
-    list:SetScript("OnMouseWheel",function(_,delta) U.offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3)); U:Refresh() end)
+    local function scrollList(_,delta)
+        local offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),U.offset-delta*3))
+        if offset~=U.offset then U.offset=offset;U:Refresh() end
+    end
+    list:SetScript("OnMouseWheel",scrollList)
+    self.listScroll=scrollbar(f);self.listScroll:EnableMouseWheel(true)
+    self.listScroll:SetScript("OnMouseWheel",scrollList)
+    self.listScroll:SetScript("OnValueChanged",function(bar,value)
+        if bar.syncing then return end
+        local offset=math.max(0,math.min(math.max(0,#U.results-U.visibleRows),math.floor(value+.5)))
+        if offset~=U.offset then U.offset=offset;U:Refresh() end
+    end)
     for i=1,18 do
         local row=CreateFrame("Button",nil,list); row:SetPoint("TOPLEFT",0,-(i-1)*ROW_STEP); row:SetSize(250,ROW_HEIGHT); row.generation=0
         row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(4,28); row.mark:SetColorTexture(unpack(C.red))
@@ -914,11 +923,6 @@ function U:Create()
     self.empty=CreateFrame("Frame",nil,list); self.empty:SetAllPoints()
     self.emptyTitle=text(self.empty,16,C.text,L.EMPTY,12,-70,280)
     self.emptyHelp=text(self.empty,12,C.muted,L.EMPTY_HELP,12,-124,280); self.emptyHelp:SetSpacing(5)
-    self.up=button(f,"<",192,-586,36,function() U.offset=math.max(0,U.offset-U.visibleRows); U:Refresh() end)
-    self.down=button(f,">",236,-586,36,function() U.offset=math.min(math.max(0,#U.results-U.visibleRows),U.offset+U.visibleRows); U:Refresh() end)
-    self.up:ClearAllPoints(); self.up:SetPoint("BOTTOMLEFT",f,"BOTTOMLEFT",158,72)
-    self.down:ClearAllPoints(); self.down:SetPoint("BOTTOMLEFT",f,"BOTTOMLEFT",194,72)
-    self.count:ClearAllPoints(); self.count:SetPoint("BOTTOMRIGHT",f,"BOTTOMRIGHT",-15,82)
     f:SetScript("OnMouseDown",function() if U.options then U.options:Hide() end end)
     f:SetScript("OnShow",function()
         for _,event in ipairs({"TRAIT_NODE_CHANGED","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED","SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED"}) do f:RegisterEvent(event) end
@@ -1006,61 +1010,62 @@ function U:Settings()
         p.toggle:SetHeight(52);rounded(p.toggle,C.field,6)
         p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",14,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,15,"")
         p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-10,0);p.mark:SetTexture(media.."choice-checkbox.tga")
+        local divider=p:CreateTexture(nil,"BACKGROUND");divider:SetColorTexture(unpack(C.border))
+        divider:SetPoint("TOPLEFT",18,-132);divider:SetSize(244,1)
         local card=CreateFrame("Frame",nil,p);p.importCard=card
-        card:SetPoint("TOPLEFT",18,-136);card:SetSize(244,76)
+        card:SetPoint("TOPLEFT",18,-144);card:SetSize(244,76)
         card:EnableMouse(true)
-        card:SetScript("OnEnter",function()
+        local function importHelp()
+            p:Render()
             GameTooltip:SetOwner(card,"ANCHOR_RIGHT");GameTooltip:SetText("Talent EX")
             GameTooltip:AddLine(L.TEX_HELP,.71,.705,.69,true)
-            GameTooltip:AddLine(L.TEX_SCOPE,.71,.705,.69,true);GameTooltip:Show()
-        end)
+            GameTooltip:AddLine(L.TEX_SCOPE,.71,.705,.69,true)
+            if p.importWhy then GameTooltip:AddLine(L[p.importWhy] or p.importWhy,.71,.705,.69,true) end
+            if p.importScan and p.importScan.invalid>0 then GameTooltip:AddLine(L.TEX_INVALID:format(p.importScan.invalid),.71,.705,.69,true) end
+            GameTooltip:Show()
+        end
+        card:SetScript("OnEnter",importHelp)
         card:SetScript("OnLeave",function()GameTooltip:Hide()end)
         card:SetScript("OnHide",function()if GameTooltip:IsOwned(card)then GameTooltip:Hide()end end)
         local title=text(card,14,C.text,"Talent EX",0,0)
-        title:ClearAllPoints();title:SetPoint("TOPLEFT",0,-8);title:SetFont(STANDARD_TEXT_FONT,15,"")
+        title:ClearAllPoints();title:SetPoint("TOPLEFT",14,-12);title:SetFont(STANDARD_TEXT_FONT,15,"")
         p.importSummary=text(card,12,C.muted,"",0,0)
-        p.importSummary:ClearAllPoints();p.importSummary:SetPoint("TOPLEFT",0,-36)
-        p.importSummary:SetFont(STANDARD_TEXT_FONT,13,"");p.importSummary:SetWidth(142);p.importSummary:SetMaxLines(1)
+        p.importSummary:ClearAllPoints();p.importSummary:SetPoint("TOPLEFT",14,-42)
+        p.importSummary:SetFont(STANDARD_TEXT_FONT,13,"");p.importSummary:SetWidth(216);p.importSummary:SetMaxLines(1)
         p.importEX=button(card,L.TEX_ACTION,0,0,78,function()
             if not p:IsShown() or not p.importEX:IsEnabled() then return end
             local result,why=A.TalentEx:Import()
-            if not result then p.importResult:SetText(L[why] or why);color(p.importResult,C.muted);p.viewImports:Hide();return end
-            local message=L.TEX_IMPORTED:format(result.imported)
-            if result.duplicate>0 then message=message.."\n"..L.TEX_DUPLICATES:format(result.duplicate) end
-            if result.invalid>0 then message=message.."\n"..L.TEX_INVALID:format(result.invalid) end
-            if result.reason then message=message.."\n"..L.TEX_REMAINING:format(result.remaining,L[result.reason] or result.reason) end
-            if result.imported+result.duplicate+result.invalid==0 then message=L.TEX_EMPTY end
-            p.importResult:SetText(message);color(p.importResult,result.imported>0 and C.text or C.muted);p.importedID=result.firstID
-            local lines=1;for _ in message:gmatch("\n")do lines=lines+1 end
-            p.viewImports:ClearAllPoints();p.viewImports:SetPoint("TOPLEFT",18,-226-lines*20-10)
-            p.viewImports:SetShown(result.imported>0 or result.duplicate>0)
+            if not result then p:Render(L[why] or why);return end
+            p:Render(result.reason and L.TEX_REMAINING:format(result.remaining,L[result.reason] or result.reason))
         end)
-        p.importEX:ClearAllPoints();p.importEX:SetPoint("TOPRIGHT",0,-10);p.importEX:SetSize(64,34)
-        primaryButton(p.importEX,5);p.importEX.label:SetFont(STANDARD_TEXT_FONT,14,"")
-        p.importResult=text(p,12,C.muted,"",22,-226,296);p.importResult:SetFont(STANDARD_TEXT_FONT,13,"");p.importResult:SetSpacing(5)
-        p.viewImports=button(p,L.TEX_VIEW,22,-278,296,function()
-            p:Hide();U.scene="mine";U.offset=0;U.selected=p.importedID;U:Refresh()
-        end,true)
-        p.viewImports.label:ClearAllPoints();p.viewImports.label:SetPoint("LEFT",0,0)
-        p.viewImports.label:SetFont(STANDARD_TEXT_FONT,14,"");p.viewImports:Hide()
+        p.importEX:ClearAllPoints();p.importEX:SetPoint("TOPRIGHT",-6,-2);p.importEX:SetSize(84,36)
+        p.importEX.label:SetFont(STANDARD_TEXT_FONT,14,"")
+        p.importEX.label:ClearAllPoints();p.importEX.label:SetPoint("RIGHT",-8,0)
+        p.importEX.hover=fill(p.importEX,C.hover);p.importEX.hover:Hide()
+        function p.importEX:RefreshStyle()
+            self.hover:SetShown(self:IsEnabled() and self.hovered==true)
+            color(self.label,self:IsEnabled() and (self.hovered and C.hot or C.red) or C.muted)
+        end
+        p.importEX:SetScript("OnEnter",function(b) b.hovered=true;importHelp();b:RefreshStyle() end)
+        p.importEX:SetScript("OnLeave",function(b) b.hovered=nil;b:RefreshStyle();GameTooltip:Hide() end)
+        p.importEX:HookScript("OnHide",function(b) b.hovered=nil;b:RefreshStyle() end)
+        p.importResult=text(p,12,C.muted,"",39,-232,278);p.importResult:SetFont(STANDARD_TEXT_FONT,13,"");p.importResult:SetSpacing(5)
         self:CreateAbout(p)
-        function p:Render()
+        function p:Render(issue)
             local state=A.Store.db.remindersEnabled~=false and 2 or 0
             self.mark:SetTexCoord(state/4,(state+1)/4,0,1)
-            local source,why=A.TalentEx:Source()
-            local count=0
-            for index,entry in pairs(source or {}) do
-                if type(index)=="number" and index>0 and index%1==0 and type(entry)=="table" and type(entry.text)=="string" and not entry.isLegacy then count=count+1 end
-            end
-            local spec,name=A:GetSpec()
-            if self.importSpec~=spec or self.importCount~=count or self.importSource~=source then
-                self.importResult:SetText("");self.viewImports:Hide()
-                self.importSpec=spec;self.importCount=count;self.importSource=source
-            end
-            self.importSummary:SetText(source and L.TEX_COUNT:format(name or "",count) or L.TEX_NOT_FOUND)
-            self.importEX:SetEnabled(count>0 and not A.Store.readonly and not A.Apply.op)
+            local scan,why=A.TalentEx:Inspect()
+            self.importScan=scan
+            self.importWhy=A.Store.readonly and "SCHEMA" or A.Apply.op and "APPLY_BUSY" or why
+            local _,name=A:GetSpec()
+            local labels={ready=L.TEX_ACTION,updates=L.TEX_UPDATES,imported=L.TEX_DONE,empty=L.TEX_ACTION}
+            self.importEX.label:SetText(labels[scan and scan.state or "empty"])
+            self.importSummary:SetText(not scan and (why=="TEX_UNAVAILABLE" and L.TEX_NOT_FOUND or L.TEX_NO_BUILDS)
+                or scan.total==0 and L.TEX_NO_BUILDS or scan.state=="updates" and L.TEX_PENDING:format(name or "",#scan.pending)
+                or L.TEX_COUNT:format(name or "",scan.total))
+            self.importEX:SetEnabled(scan~=nil and #scan.pending>0 and not self.importWhy)
             self.importEX:RefreshStyle()
-            if not source or count==0 then self.importResult:SetText(L[why or "TEX_EMPTY"]);self.viewImports:Hide() end
+            self.importResult:SetText(issue or "");self.importResult:SetShown(issue~=nil)
         end
         p:SetScript("OnHide",function()U:CloseSocial();U:ClosePage(p)end);p:Hide()
     end

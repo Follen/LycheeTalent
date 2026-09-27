@@ -55,6 +55,7 @@ function methods:SetFont(path,size,flags)self.font={path,size,flags}end
 function methods:SetVertexColor(r,g,b,a)self.tint={r,g,b,a}end
 function methods:SetColorTexture(r,g,b,a)self.color={r,g,b,a}end
 function methods:SetValue(value)self.sliderValue=value end
+function methods:SetMinMaxValues(minimum,maximum)self.minimum=minimum;self.maximum=maximum end
 function methods:SetTexture(value)self.texture=value;self.atlas=nil end
 function methods:SetAtlas(value)self.atlas=value end
 CreateFrame=function(kind,name,parent)local f=new(kind,parent);if name then _G[name]=f end;return f end
@@ -95,6 +96,35 @@ PlayerSpellsFrame:SetHeight(900);PlayerSpellsFrame.scripts.OnSizeChanged()
 assert(A.UI.frame:GetHeight()==900 and A.UI.frame.point[5]==0,"native resize preserves aligned edges")
 assert(#objects==beforeResize,"resize reuses row pools")
 PlayerSpellsFrame:SetHeight(820);PlayerSpellsFrame.scripts.OnSizeChanged()
+if arg[1]=="list-scroll" then
+    for i=1,27 do A.Store:Save("Scroll "..i,"scroll-"..i,"mythic","",71) end
+    local u=A.UI;u.scene="mine";u:Refresh()
+    local bar=u.listScroll
+    assert(not u.up and not u.down and not u.count,"pagination controls are gone")
+    assert(bar:IsShown() and bar.maximum==#u.results-u.visibleRows,"long lists expose a bounded scrollbar")
+    local row=u.rows[1]
+    row.scripts.OnMouseDown(row,"LeftButton");row.scripts.OnClick(row,"LeftButton")
+    local generation=row.generation
+    bar.scripts.OnValueChanged(bar,bar.maximum)
+    assert(u.offset==bar.maximum and u.rows[u.visibleRows].build==u.results[#u.results],"dragging reaches the final build")
+    assert(row.generation>generation and not row.lastClickID,"scrolling invalidates clicks bound to the old row")
+    u.buildList.scripts.OnMouseWheel(u.buildList,1)
+    assert(u.offset==bar.maximum-3 and bar.sliderValue==u.offset,"wheel scroll synchronizes thumb")
+    bar.scripts.OnMouseWheel(bar,100)
+    assert(u.offset==0 and bar.sliderValue==0,"wheel over thumb clamps at top")
+    bar.scripts.OnValueChanged(bar,999)
+    assert(u.offset==bar.maximum,"dragging clamps at bottom")
+    PlayerSpellsFrame:SetHeight(600);PlayerSpellsFrame.scripts.OnSizeChanged()
+    assert(bar.maximum==#u.results-u.visibleRows and bar.sliderValue==u.offset,"resize updates range without resetting position")
+    u:Settings();assert(not bar:IsShown(),"secondary pages hide the list scrollbar")
+    u.settings:Hide();assert(bar:IsShown(),"returning restores the scrollbar")
+    for i=#A.Store.builds,2,-1 do A.Store:Delete(A.Store.builds[i].id) end
+    u:Refresh()
+    assert(u.offset==0 and not bar:IsShown() and u.rows[1].build==A.Store.builds[1],"shortened lists clamp and hide the scrollbar")
+    u.scene="raid";u:Refresh()
+    assert(bar.point[5]==-196,"raid scrollbar clears the difficulty controls")
+    print("PASS list scrolling: drag, wheel, row identity, resize, page return, short lists, raid layout");return
+end
 local first=A.UI.rows[1]
 assert(first.build,"selected scenario has a build")
 assert(not A.UI.search and not A.UI.status,"no search controls or footer explanation")
@@ -462,7 +492,7 @@ assert(imported.name=="统一保存" and imported.icon==130032 and imported.code
     'one save updates name, icon, string and associations')
 A.Talents.Validate=oldValidate
 local reminderChoice
-A.Reminders={Apply=function(_,id)reminderChoice=id;return true end,Hide=function()A.UI.reminder:Hide()end}
+A.Reminders={Apply=function(_,id)reminderChoice=id;return true end,Hide=function()A.UI.reminder:Hide()end,RefreshSettings=function()end}
 local prompt={id=contextID,builds={imported}}
 A.UI:ShowReminder(prompt)
 assert(A.UI.reminder.parent==UIParent,'reminder lives independently of native talent window')
@@ -475,7 +505,7 @@ A.UI:Settings()
 local settings=A.UI.settings
 assert(settings.importCard:IsShown() and not settings.importEX:IsEnabled(),"missing source disables one-click import")
 settings.importEX.scripts.OnClick(settings.importEX)
-assert(settings.importResult:GetText()==A.L.TEX_UNAVAILABLE and not settings.viewImports:IsShown(),"missing Talent EX is explained in settings")
+assert(settings.importSummary:GetText()==A.L.TEX_NOT_FOUND and not settings.viewImports,"missing Talent EX is explained without a navigation link")
 local validateEX=A.Talents.Validate
 A.Talents.Validate=function(_,code)return code,71 end
 local heroAtlas="talents-heroclass-paladin-heraldofthesun"
@@ -484,10 +514,12 @@ TalentLoadoutEx={WARRIOR={[1]={{name="EX imported",text="ex-ui-fixture",icon=her
 settings:Render()
 assert(settings.importEX:IsEnabled() and settings.importSummary:GetText():find("1",1,true),"available source shows build count and enables import")
 settings.importEX.scripts.OnClick(settings.importEX)
-assert(settings.viewImports:IsShown() and settings.importedID,"settings import offers navigation to saved builds")
-local exID=settings.importedID
-settings.viewImports.scripts.OnClick(settings.viewImports)
-assert(A.UI.scene=="mine" and A.UI.selected==exID and not settings:IsShown(),"import destination is My Builds")
+assert(not settings.importEX:IsEnabled() and settings.importEX.label:GetText()==A.L.TEX_DONE,"success becomes a disabled Imported state")
+assert(not settings.importResult:IsShown() and settings:IsShown(),"success stays in settings without extra result paragraphs")
+local exID
+for _,b in ipairs(A.Store.builds)do if b.name=="EX imported" then exID=b.id end end
+assert(exID,"import destination is My Builds")
+settings:Hide();A.UI.scene="mine";A.UI.offset=0;A.UI:Refresh()
 local exRow
 for _,row in ipairs(A.UI.rows)do if row.build and row.build.id==exID then exRow=row end end
 assert(exRow and exRow.icon.atlas==heroAtlas,"imported hero atlas renders instead of a missing texture")
@@ -496,7 +528,18 @@ assert(exRow.icon.texture==456 and not exRow.icon.atlas,"recycled atlas icon res
 A.Store:Find(exID).icon=heroAtlas;A.UI:Refresh()
 assert(exRow.icon.atlas==heroAtlas,"already saved atlas icons need no reimport")
 A.UI:Settings();settings.importEX.scripts.OnClick(settings.importEX)
-assert(settings.importResult:GetText()==A.L.TEX_IMPORTED:format(0).."\n"..A.L.TEX_DUPLICATES:format(1),"repeated UI import skips duplicates")
+assert(not settings.importEX:IsEnabled() and settings.importEX.label:GetText()==A.L.TEX_DONE,"reopening retains Imported based on actual saved contents")
+TalentLoadoutEx.WARRIOR[1][1].text="ex-ui-changed"
+settings.importCard.scripts.OnEnter(settings.importCard)
+assert(settings.importEX:IsEnabled() and settings.importEX.label:GetText()==A.L.TEX_UPDATES,"source edit with unchanged count becomes Update on hover")
+assert(settings.importSummary:GetText()==A.L.TEX_PENDING:format("武器",1),"update subtitle names the pending count")
+settings.importEX.scripts.OnClick(settings.importEX)
+assert(not settings.importEX:IsEnabled() and settings.importEX.label:GetText()==A.L.TEX_DONE,"importing the difference returns to Imported")
+assert(A.Store:Find(exID).code=="ex-ui-fixture","updates preserve the previously saved build")
+local changedID
+for _,b in ipairs(A.Store.builds)do if b.name=="EX imported" and b.code=="ex-ui-changed" then changedID=b.id end end
+assert(changedID and A.Store:Delete(changedID))
+settings:Render();assert(settings.importEX:IsEnabled(),"deleting an imported build makes it available again")
 A.Talents.Validate=validateEX;TalentLoadoutEx=nil
 assert(#A.UI.social.buttons==3 and A.UI.social.buttons[2].entry.icon=='wechat' and A.UI.social.buttons[3].entry.icon=='support','Chinese footer exposes GitHub and WeChat only')
 local social=A.UI.social
