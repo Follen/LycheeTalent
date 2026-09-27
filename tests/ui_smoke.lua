@@ -190,20 +190,24 @@ assert(first:IsEnabled() and first.progress:GetText()=="","finished operation re
 assert(first.more:IsShown(),"menu returns on failure or cleared status")
 -- Explicit completion feedback does not depend on differing talent contents.
 local feedbackID=first.build.id
-GetTime=function()return 100 end
+local feedbackTime=100
+GetTime=function()return feedbackTime end
 A.UI:ShowApplySuccess(feedbackID,GetTime()-.1)
 assert(first.progress:GetText()==A.L.APPLYING_SHORT and not first.successFlash,"fast completion keeps text-only switching feedback")
 assert(not first.more:IsShown(),"minimum display time keeps menu hidden")
-first.scripts.OnUpdate(first,1.3)
+-- The first frame may include time before the callback was installed.
+first.scripts.OnUpdate(first,.2)
+assert(first.switchRemaining>1.39,"pre-feedback frame time must not shorten the minimum")
+feedbackTime=feedbackTime+1.3;first.scripts.OnUpdate(first,1.3)
 assert(first.progress:GetText()==A.L.APPLYING_SHORT,"switching remains for at least 1.5 seconds total")
 A.UI:Refresh()
 assert(first.progress:GetText()==A.L.APPLYING_SHORT,"ordinary refresh preserves the minimum display time")
-first.scripts.OnUpdate(first,.11)
+feedbackTime=feedbackTime+.11;first.scripts.OnUpdate(first,.11)
 assert(first.progress:GetText()==A.L.APPLIED_SHORT,"success follows minimum switching time")
 assert(not first.more:IsShown(),"success occupies the same menu position")
-first.scripts.OnUpdate(first,1.4)
+feedbackTime=feedbackTime+1.4;first.scripts.OnUpdate(first,1.4)
 assert(first.progress:GetText()==A.L.APPLIED_SHORT,"success text stays readable too")
-first.scripts.OnUpdate(first,.1)
+feedbackTime=feedbackTime+.1;first.scripts.OnUpdate(first,.1)
 assert(first.progress:GetText()=="" and not first.scripts.OnUpdate,"feedback expires without a permanent update driver")
 assert(first.more:IsShown(),"menu returns after confirmation expires")
 local previousReducedMotion=A.Store.db.reducedMotion
