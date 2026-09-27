@@ -8,6 +8,16 @@ local C={bg={.055,.055,.063},hover={.09,.09,.09},selected={.085,.085,.085},
 local media="Interface\\AddOns\\LycheeTalent\\Media\\"
 local ROW_HEIGHT,ROW_STEP,MENU_STEP=58,64,44
 local function color(fs,c) fs:SetTextColor(c[1],c[2],c[3]) end
+-- Talent EX stores hero icons as atlas names; keep the saved value intact.
+local function buildIcon(texture,value,cropped)
+    value=value or 134400
+    if type(value)=="string" and C_Texture and C_Texture.GetAtlasInfo then
+        local ok,atlas=pcall(C_Texture.GetAtlasInfo,value)
+        if ok and atlas then texture:SetAtlas(value,false);return end
+    end
+    texture:SetTexture(tonumber(value) or value)
+    if cropped then texture:SetTexCoord(.08,.92,.08,.92) else texture:SetTexCoord(0,1,0,1) end
+end
 local function text(parent,size,c,value,x,y,w)
     x=x*280/340; if w then w=w*280/340 end
     local t=parent:CreateFontString(nil,"OVERLAY")
@@ -147,7 +157,7 @@ function U:ShowTooltip(owner,build,title)
     end
     tip.title:SetText(build and A.Catalog:Title(build) or title or "")
     tip.title:ClearAllPoints();tip.title:SetPoint("TOPLEFT",build and 60 or 14,-14);tip.title:SetWidth(build and 224 or 272);tip.title:SetMaxLines(1)
-    tip.buildIcon:SetShown(build~=nil);if build then tip.buildIcon:SetTexture(build.icon or 134400)end
+    tip.buildIcon:SetShown(build~=nil);if build then buildIcon(tip.buildIcon,build.icon)end
     tip.meta:ClearAllPoints();tip.meta:SetPoint("TOPLEFT",60,-39)
     tip.meta:SetShown(build~=nil and not tip.bindings);tip.detail:Hide();tip.hint:SetShown(not tip.bindings)
     for i,row in ipairs(tip.bindingRows)do
@@ -269,7 +279,7 @@ function U:Refresh()
             row.link:SetShown(linked and not applying and not row.successRemaining)
             row.title:SetWidth((b.id==applying or row.successRemaining or linked) and 122 or 154)
             row:SetEnabled(not applying); row.more:SetEnabled(not applying)
-            row.icon:SetTexture(b.icon or 134400)
+            buildIcon(row.icon,b.icon,true)
             row.mark:SetShown(b.id==self.currentID); row.bg:SetShown(b.id==self.currentID or b.id==self.selected)
             row:Show()
         else row:Hide() end
@@ -543,7 +553,7 @@ function U:Dialog(exportOnly,preset)
     for id,enabled in pairs(preset and preset.contexts or {})do if enabled then d.associationDraft.contexts[id]=true end end
     if self.iconPicker then self.iconPicker:Hide() end
     local _,_,_,specIcon=A:GetSpec()
-    d.iconValue=preset and preset.icon or specIcon or 134400; d.iconButton.icon:SetTexture(d.iconValue); d.iconButton:SetShown(not exportOnly)
+    d.iconValue=preset and preset.icon or specIcon or 134400; buildIcon(d.iconButton.icon,d.iconValue); d.iconButton:SetShown(not exportOnly)
     d.header:SetWidth(exportOnly and 250 or 194)
     d.exportOnly=exportOnly; d.specID=A:GetSpec(); d.editID=preset and preset.editID; d.targetID=preset and preset.scenarioID
     d.header:SetText(exportOnly and L.EXPORT or d.editID and L.EDIT or preset and preset.code and L.SAVE or L.IMPORT_TITLE)
@@ -642,7 +652,7 @@ function U:ChooseIcon()
             b:SetScript("OnHide",function() b.pressed=nil; b.icon:SetAlpha(1) end)
             b:SetScript("OnClick",function(_,mouse)
                 if mouse~="LeftButton" or not p:IsShown() or not p.expanded or b.pressed~=p.revision or not b.value then return end
-                d.iconValue=b.value; d.iconButton.icon:SetTexture(b.value);U:ExpandIcons(false)
+                d.iconValue=b.value; buildIcon(d.iconButton.icon,b.value);U:ExpandIcons(false)
             end)
         end
         p.scroll=scrollbar(p);p.scroll:SetHeight(264);p.scroll:SetPoint("TOPRIGHT",-14,-40)
@@ -997,7 +1007,7 @@ function U:Settings()
         p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",14,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,15,"")
         p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-10,0);p.mark:SetTexture(media.."choice-checkbox.tga")
         local card=CreateFrame("Frame",nil,p);p.importCard=card
-        card:SetPoint("TOPLEFT",18,-136);card:SetSize(244,104);rounded(card,C.field,6)
+        card:SetPoint("TOPLEFT",18,-136);card:SetSize(244,76)
         card:EnableMouse(true)
         card:SetScript("OnEnter",function()
             GameTooltip:SetOwner(card,"ANCHOR_RIGHT");GameTooltip:SetText("Talent EX")
@@ -1007,26 +1017,28 @@ function U:Settings()
         card:SetScript("OnLeave",function()GameTooltip:Hide()end)
         card:SetScript("OnHide",function()if GameTooltip:IsOwned(card)then GameTooltip:Hide()end end)
         local title=text(card,14,C.text,"Talent EX",0,0)
-        title:ClearAllPoints();title:SetPoint("TOPLEFT",14,-15);title:SetFont(STANDARD_TEXT_FONT,15,"")
+        title:ClearAllPoints();title:SetPoint("TOPLEFT",0,-8);title:SetFont(STANDARD_TEXT_FONT,15,"")
         p.importSummary=text(card,12,C.muted,"",0,0)
-        p.importSummary:ClearAllPoints();p.importSummary:SetPoint("TOPLEFT",14,-43)
+        p.importSummary:ClearAllPoints();p.importSummary:SetPoint("TOPLEFT",0,-36)
         p.importSummary:SetFont(STANDARD_TEXT_FONT,13,"");p.importSummary:SetWidth(142);p.importSummary:SetMaxLines(1)
-        local destination=text(card,12,C.dim,L.TEX_DESTINATION,0,0)
-        destination:ClearAllPoints();destination:SetPoint("TOPLEFT",14,-76);destination:SetFont(STANDARD_TEXT_FONT,12,"")
         p.importEX=button(card,L.TEX_ACTION,0,0,78,function()
             if not p:IsShown() or not p.importEX:IsEnabled() then return end
             local result,why=A.TalentEx:Import()
             if not result then p.importResult:SetText(L[why] or why);color(p.importResult,C.muted);p.viewImports:Hide();return end
-            local message=L.TEX_RESULT:format(result.imported,result.duplicate,result.invalid)
+            local message=L.TEX_IMPORTED:format(result.imported)
+            if result.duplicate>0 then message=message.."\n"..L.TEX_DUPLICATES:format(result.duplicate) end
+            if result.invalid>0 then message=message.."\n"..L.TEX_INVALID:format(result.invalid) end
             if result.reason then message=message.."\n"..L.TEX_REMAINING:format(result.remaining,L[result.reason] or result.reason) end
             if result.imported+result.duplicate+result.invalid==0 then message=L.TEX_EMPTY end
             p.importResult:SetText(message);color(p.importResult,result.imported>0 and C.text or C.muted);p.importedID=result.firstID
+            local lines=1;for _ in message:gmatch("\n")do lines=lines+1 end
+            p.viewImports:ClearAllPoints();p.viewImports:SetPoint("TOPLEFT",18,-226-lines*20-10)
             p.viewImports:SetShown(result.imported>0 or result.duplicate>0)
         end)
-        p.importEX:ClearAllPoints();p.importEX:SetPoint("TOPRIGHT",-12,-16);p.importEX:SetSize(64,34)
+        p.importEX:ClearAllPoints();p.importEX:SetPoint("TOPRIGHT",0,-10);p.importEX:SetSize(64,34)
         primaryButton(p.importEX,5);p.importEX.label:SetFont(STANDARD_TEXT_FONT,14,"")
-        p.importResult=text(p,12,C.muted,"",22,-258,296);p.importResult:SetFont(STANDARD_TEXT_FONT,13,"");p.importResult:SetSpacing(5)
-        p.viewImports=button(p,L.TEX_VIEW,22,-330,296,function()
+        p.importResult=text(p,12,C.muted,"",22,-226,296);p.importResult:SetFont(STANDARD_TEXT_FONT,13,"");p.importResult:SetSpacing(5)
+        p.viewImports=button(p,L.TEX_VIEW,22,-278,296,function()
             p:Hide();U.scene="mine";U.offset=0;U.selected=p.importedID;U:Refresh()
         end,true)
         p.viewImports.label:ClearAllPoints();p.viewImports.label:SetPoint("LEFT",0,0)
@@ -1243,7 +1255,7 @@ function U:ShowReminder(prompt)
             self:SetScale(math.min(1,(UIParent:GetHeight()-40)/height,(UIParent:GetWidth()-40)/380))
             for i,row in ipairs(self.rows) do
                 local build=self.prompt.builds[self.offset+i];row.buildID=build and build.id;row:SetShown(build~=nil)
-                if build then row.label:SetText(build.source=="builtin" and L.LYCHEE_RECOMMENDATION or build.name);row.icon:SetTexture(build.icon or 134400)end
+                if build then row.label:SetText(build.source=="builtin" and L.LYCHEE_RECOMMENDATION or build.name);buildIcon(row.icon,build.icon,true)end
             end
             self.previous:ClearAllPoints();self.previous:SetPoint("TOPRIGHT",-56,-footer)
             self.next:ClearAllPoints();self.next:SetPoint("TOPRIGHT",-18,-footer)

@@ -55,6 +55,8 @@ function methods:SetFont(path,size,flags)self.font={path,size,flags}end
 function methods:SetVertexColor(r,g,b,a)self.tint={r,g,b,a}end
 function methods:SetColorTexture(r,g,b,a)self.color={r,g,b,a}end
 function methods:SetValue(value)self.sliderValue=value end
+function methods:SetTexture(value)self.texture=value;self.atlas=nil end
+function methods:SetAtlas(value)self.atlas=value end
 CreateFrame=function(kind,name,parent)local f=new(kind,parent);if name then _G[name]=f end;return f end
 UIParent=new("Frame");UIParent:SetSize(1920,1080);GameTooltip=new("Frame");UISpecialFrames={};SlashCmdList={}
 GetCursorPosition=function()return 700,700 end
@@ -476,7 +478,9 @@ settings.importEX.scripts.OnClick(settings.importEX)
 assert(settings.importResult:GetText()==A.L.TEX_UNAVAILABLE and not settings.viewImports:IsShown(),"missing Talent EX is explained in settings")
 local validateEX=A.Talents.Validate
 A.Talents.Validate=function(_,code)return code,71 end
-TalentLoadoutEx={WARRIOR={[1]={{name="EX imported",text="ex-ui-fixture",icon=456}}}}
+local heroAtlas="talents-heroclass-paladin-heraldofthesun"
+C_Texture={GetAtlasInfo=function(value)if value==heroAtlas then return {} end end}
+TalentLoadoutEx={WARRIOR={[1]={{name="EX imported",text="ex-ui-fixture",icon=heroAtlas}}}}
 settings:Render()
 assert(settings.importEX:IsEnabled() and settings.importSummary:GetText():find("1",1,true),"available source shows build count and enables import")
 settings.importEX.scripts.OnClick(settings.importEX)
@@ -484,8 +488,15 @@ assert(settings.viewImports:IsShown() and settings.importedID,"settings import o
 local exID=settings.importedID
 settings.viewImports.scripts.OnClick(settings.viewImports)
 assert(A.UI.scene=="mine" and A.UI.selected==exID and not settings:IsShown(),"import destination is My Builds")
+local exRow
+for _,row in ipairs(A.UI.rows)do if row.build and row.build.id==exID then exRow=row end end
+assert(exRow and exRow.icon.atlas==heroAtlas,"imported hero atlas renders instead of a missing texture")
+A.Store:Find(exID).icon=456;A.UI:Refresh()
+assert(exRow.icon.texture==456 and not exRow.icon.atlas,"recycled atlas icon resets to a normal texture")
+A.Store:Find(exID).icon=heroAtlas;A.UI:Refresh()
+assert(exRow.icon.atlas==heroAtlas,"already saved atlas icons need no reimport")
 A.UI:Settings();settings.importEX.scripts.OnClick(settings.importEX)
-assert(settings.importResult:GetText()==A.L.TEX_RESULT:format(0,1,0),"repeated UI import skips duplicates")
+assert(settings.importResult:GetText()==A.L.TEX_IMPORTED:format(0).."\n"..A.L.TEX_DUPLICATES:format(1),"repeated UI import skips duplicates")
 A.Talents.Validate=validateEX;TalentLoadoutEx=nil
 assert(#A.UI.social.buttons==3 and A.UI.social.buttons[2].entry.icon=='wechat' and A.UI.social.buttons[3].entry.icon=='support','Chinese footer exposes GitHub and WeChat only')
 local social=A.UI.social
