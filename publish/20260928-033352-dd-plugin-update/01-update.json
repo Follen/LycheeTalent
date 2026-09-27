@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.6.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.6",
+  "release_type": 1,
+  "update_desc": "<p>设置中可导入 Talent EX 当前专精方案，保留名称、字符串和图标，支持已导入和有更新状态。</p><p>修复英雄天赋图标缺失，自动排列双侧栏，避免与 Talent EX 重叠。</p><p>方案列表改用滚动条，支持拖动和滚轮；收紧设置布局。</p><p>行尾显示应用中和已应用，应用中至少保留 1.5 秒；已应用及团本难度选中使用荔枝红，加粗当前方案标记。</p>"
+}

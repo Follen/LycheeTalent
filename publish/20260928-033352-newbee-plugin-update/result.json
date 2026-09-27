@@ -1,0 +1,13 @@
+{
+  "id": 27799,
+  "file_id": 616145,
+  "version": "1.0.6",
+  "success": true,
+  "review_status": "审核通过",
+  "visibility": "公开",
+  "sha256": "c90fcf1fa8123b927d8d4be2bef82486db182d2cce8705281a55a0141290c5ba",
+  "package_content_verified_files": 58,
+  "tag": "v1.0.6",
+  "metadata_preserved": true,
+  "changelog": "设置中可导入 Talent EX 当前专精方案，保留名称、字符串和图标，支持已导入和有更新状态。\r\n修复英雄天赋图标缺失，自动排列双侧栏，避免与 Talent EX 重叠。\r\n方案列表改用滚动条，支持拖动和滚轮；收紧设置布局。\r\n行尾显示应用中和已应用，应用中至少保留 1.5 秒；已应用及团本难度选中使用荔枝红，加粗当前方案标记。"
+}
