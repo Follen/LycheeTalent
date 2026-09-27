@@ -843,7 +843,7 @@ function U:Create()
         row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
-        row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
+        row.progress=text(row,10,C.red,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
         row:SetScript("OnEnter",function(r)
             if not r.build then return end
             r.bg:Show(); U:ShowTooltip(r,r.build)
