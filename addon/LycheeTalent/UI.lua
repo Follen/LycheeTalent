@@ -996,38 +996,61 @@ function U:Settings()
         p.toggle:SetHeight(52);rounded(p.toggle,C.field,6)
         p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",14,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,15,"")
         p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-10,0);p.mark:SetTexture(media.."choice-checkbox.tga")
-        p.importDetails=CreateFrame("Frame",nil,p)
-        p.importDetails:SetPoint("TOPLEFT",18,-190);p.importDetails:SetSize(244,310);p.importDetails:Hide()
-        p.importEntry=button(p,L.TEX_IMPORT,22,-124,296,function()
-            p.importDetails:SetShown(not p.importDetails:IsShown())
-            p.importArrow:SetRotation(p.importDetails:IsShown() and math.pi/2 or math.pi)
+        local card=CreateFrame("Frame",nil,p);p.importCard=card
+        card:SetPoint("TOPLEFT",18,-136);card:SetSize(244,104);rounded(card,C.field,6)
+        card:EnableMouse(true)
+        card:SetScript("OnEnter",function()
+            GameTooltip:SetOwner(card,"ANCHOR_RIGHT");GameTooltip:SetText("Talent EX")
+            GameTooltip:AddLine(L.TEX_HELP,.71,.705,.69,true)
+            GameTooltip:AddLine(L.TEX_SCOPE,.71,.705,.69,true);GameTooltip:Show()
         end)
-        p.importEntry:SetHeight(52);rounded(p.importEntry,C.field,6)
-        p.importEntry.label:ClearAllPoints();p.importEntry.label:SetPoint("LEFT",14,0);p.importEntry.label:SetFont(STANDARD_TEXT_FONT,15,"")
-        p.importArrow=p.importEntry:CreateTexture(nil,"ARTWORK");p.importArrow:SetSize(20,20);p.importArrow:SetPoint("RIGHT",-11,0)
-        p.importArrow:SetTexture(media.."back-search.tga");p.importArrow:SetRotation(math.pi);p.importArrow:SetVertexColor(unpack(C.muted))
-        local detail=p.importDetails
-        local help=text(detail,12,C.muted,L.TEX_HELP,0,0,296);help:SetFont(STANDARD_TEXT_FONT,14,"");help:SetSpacing(5)
-        p.importEX=button(detail,L.TEX_IMPORT_ACTION,0,-68,296,function()
-            if not detail:IsShown() then return end
+        card:SetScript("OnLeave",function()GameTooltip:Hide()end)
+        card:SetScript("OnHide",function()if GameTooltip:IsOwned(card)then GameTooltip:Hide()end end)
+        local title=text(card,14,C.text,"Talent EX",0,0)
+        title:ClearAllPoints();title:SetPoint("TOPLEFT",14,-15);title:SetFont(STANDARD_TEXT_FONT,15,"")
+        p.importSummary=text(card,12,C.muted,"",0,0)
+        p.importSummary:ClearAllPoints();p.importSummary:SetPoint("TOPLEFT",14,-43)
+        p.importSummary:SetFont(STANDARD_TEXT_FONT,13,"");p.importSummary:SetWidth(142);p.importSummary:SetMaxLines(1)
+        local destination=text(card,12,C.dim,L.TEX_DESTINATION,0,0)
+        destination:ClearAllPoints();destination:SetPoint("TOPLEFT",14,-76);destination:SetFont(STANDARD_TEXT_FONT,12,"")
+        p.importEX=button(card,L.TEX_ACTION,0,0,78,function()
+            if not p:IsShown() or not p.importEX:IsEnabled() then return end
             local result,why=A.TalentEx:Import()
-            if not result then p.importResult:SetText(L[why] or why);p.viewImports:Hide();return end
+            if not result then p.importResult:SetText(L[why] or why);color(p.importResult,C.muted);p.viewImports:Hide();return end
             local message=L.TEX_RESULT:format(result.imported,result.duplicate,result.invalid)
             if result.reason then message=message.."\n"..L.TEX_REMAINING:format(result.remaining,L[result.reason] or result.reason) end
             if result.imported+result.duplicate+result.invalid==0 then message=L.TEX_EMPTY end
-            p.importResult:SetText(message);p.importedID=result.firstID
+            p.importResult:SetText(message);color(p.importResult,result.imported>0 and C.text or C.muted);p.importedID=result.firstID
             p.viewImports:SetShown(result.imported>0 or result.duplicate>0)
         end)
-        p.importEX:SetHeight(36);primaryButton(p.importEX,6)
-        p.importEX.label:SetFont(STANDARD_TEXT_FONT,15,"")
-        local scope=text(detail,10,C.dim,L.TEX_SCOPE,0,-120,296);scope:SetFont(STANDARD_TEXT_FONT,12,"");scope:SetSpacing(3)
-        p.importResult=text(detail,10,C.muted,"",0,-178,296);p.importResult:SetFont(STANDARD_TEXT_FONT,13,"");p.importResult:SetSpacing(4)
-        p.viewImports=button(detail,L.TEX_VIEW,0,-250,296,function()
+        p.importEX:ClearAllPoints();p.importEX:SetPoint("TOPRIGHT",-12,-16);p.importEX:SetSize(64,34)
+        primaryButton(p.importEX,5);p.importEX.label:SetFont(STANDARD_TEXT_FONT,14,"")
+        p.importResult=text(p,12,C.muted,"",22,-258,296);p.importResult:SetFont(STANDARD_TEXT_FONT,13,"");p.importResult:SetSpacing(5)
+        p.viewImports=button(p,L.TEX_VIEW,22,-330,296,function()
             p:Hide();U.scene="mine";U.offset=0;U.selected=p.importedID;U:Refresh()
-        end,true);p.viewImports.label:SetFont(STANDARD_TEXT_FONT,14,"");p.viewImports:Hide()
+        end,true)
+        p.viewImports.label:ClearAllPoints();p.viewImports.label:SetPoint("LEFT",0,0)
+        p.viewImports.label:SetFont(STANDARD_TEXT_FONT,14,"");p.viewImports:Hide()
         self:CreateAbout(p)
-        function p:Render()local state=A.Store.db.remindersEnabled~=false and 2 or 0;self.mark:SetTexCoord(state/4,(state+1)/4,0,1)end
-        p:SetScript("OnHide",function()p.importDetails:Hide();p.importArrow:SetRotation(math.pi);U:CloseSocial();U:ClosePage(p)end);p:Hide()
+        function p:Render()
+            local state=A.Store.db.remindersEnabled~=false and 2 or 0
+            self.mark:SetTexCoord(state/4,(state+1)/4,0,1)
+            local source,why=A.TalentEx:Source()
+            local count=0
+            for index,entry in pairs(source or {}) do
+                if type(index)=="number" and index>0 and index%1==0 and type(entry)=="table" and type(entry.text)=="string" and not entry.isLegacy then count=count+1 end
+            end
+            local spec,name=A:GetSpec()
+            if self.importSpec~=spec or self.importCount~=count or self.importSource~=source then
+                self.importResult:SetText("");self.viewImports:Hide()
+                self.importSpec=spec;self.importCount=count;self.importSource=source
+            end
+            self.importSummary:SetText(source and L.TEX_COUNT:format(name or "",count) or L.TEX_NOT_FOUND)
+            self.importEX:SetEnabled(count>0 and not A.Store.readonly and not A.Apply.op)
+            self.importEX:RefreshStyle()
+            if not source or count==0 then self.importResult:SetText(L[why or "TEX_EMPTY"]);self.viewImports:Hide() end
+        end
+        p:SetScript("OnHide",function()U:CloseSocial();U:ClosePage(p)end);p:Hide()
     end
     self.settings:Render();self:OpenPage(self.settings)
 end

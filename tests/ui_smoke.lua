@@ -471,21 +471,20 @@ for i=1,100 do A.UI:ContextSettings(imported.id);contexts:Hide();A.UI:ShowRemind
 assert(#objects==overlayObjects,'association and reminder controls reused across 100 openings')
 A.UI:Settings()
 local settings=A.UI.settings
-assert(not settings.importDetails:IsShown(),"settings starts with compact import entry")
-settings.importEntry.scripts.OnClick(settings.importEntry)
-assert(settings.importDetails:IsShown(),"import entry expands its controls")
+assert(settings.importCard:IsShown() and not settings.importEX:IsEnabled(),"missing source disables one-click import")
 settings.importEX.scripts.OnClick(settings.importEX)
 assert(settings.importResult:GetText()==A.L.TEX_UNAVAILABLE and not settings.viewImports:IsShown(),"missing Talent EX is explained in settings")
 local validateEX=A.Talents.Validate
 A.Talents.Validate=function(_,code)return code,71 end
 TalentLoadoutEx={WARRIOR={[1]={{name="EX imported",text="ex-ui-fixture",icon=456}}}}
+settings:Render()
+assert(settings.importEX:IsEnabled() and settings.importSummary:GetText():find("1",1,true),"available source shows build count and enables import")
 settings.importEX.scripts.OnClick(settings.importEX)
 assert(settings.viewImports:IsShown() and settings.importedID,"settings import offers navigation to saved builds")
 local exID=settings.importedID
 settings.viewImports.scripts.OnClick(settings.viewImports)
 assert(A.UI.scene=="mine" and A.UI.selected==exID and not settings:IsShown(),"import destination is My Builds")
-A.UI:Settings();assert(not settings.importDetails:IsShown(),"reopening settings collapses import details")
-settings.importEntry.scripts.OnClick(settings.importEntry);settings.importEX.scripts.OnClick(settings.importEX)
+A.UI:Settings();settings.importEX.scripts.OnClick(settings.importEX)
 assert(settings.importResult:GetText()==A.L.TEX_RESULT:format(0,1,0),"repeated UI import skips duplicates")
 A.Talents.Validate=validateEX;TalentLoadoutEx=nil
 assert(#A.UI.social.buttons==3 and A.UI.social.buttons[2].entry.icon=='wechat' and A.UI.social.buttons[3].entry.icon=='support','Chinese footer exposes GitHub and WeChat only')

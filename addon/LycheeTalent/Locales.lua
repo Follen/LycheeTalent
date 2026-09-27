@@ -168,3 +168,7 @@ A.L.TEX_EMPTY=zh and "Talent EX 中没有当前专精的方案。" or "Talent EX
 A.L.TEX_RESULT=zh and "已导入 %d · 重复 %d · 无效或旧版 %d" or "Imported %d · Duplicates %d · Invalid or legacy %d"
 A.L.TEX_REMAINING=zh and "还有 %d 条未处理：%s" or "%d entries remain: %s"
 A.L.TEX_VIEW=zh and "查看我的方案" or "View My Builds"
+A.L.TEX_ACTION=zh and "导入" or "Import"
+A.L.TEX_DESTINATION=zh and "存入我的方案 · 自动跳过重复" or "To My Builds · skips duplicates"
+A.L.TEX_COUNT=zh and "%s · %d 套方案" or "%s · %d builds"
+A.L.TEX_NOT_FOUND=zh and "未检测到方案" or "No builds detected"
