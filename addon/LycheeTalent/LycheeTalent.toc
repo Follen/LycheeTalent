@@ -7,7 +7,7 @@
 ## Author: Follen
 ## X-License: LicenseRef-Lychee-NC-1.0
 ## X-Website: https://github.com/Follen/LycheeTalent
-## Version: 1.0.1
+## Version: 1.0.2
 ## SavedVariables: LycheeTalentDB
 ## SavedVariablesPerCharacter: LycheeTalentCharacterDB
 ## IconTexture: Interface\AddOns\LycheeTalent\Media\logo.tga
