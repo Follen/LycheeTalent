@@ -165,12 +165,13 @@ A.UI:Refresh()
 assert(first.progress:GetText()==A.L.APPLIED_SHORT,"ordinary refresh preserves success feedback")
 first.scripts.OnUpdate(first,2)
 assert(not first.successFlash:IsShown() and not first.scripts.OnUpdate,"feedback expires without a permanent update driver")
+local previousReducedMotion=A.Store.db.reducedMotion
 A.Store.db.reducedMotion=true
 A.UI:ShowApplySuccess(feedbackID)
 local alpha=first.successFlash.alpha
 first.scripts.OnUpdate(first,.2)
 assert(first.successFlash.alpha==alpha and first.progress:GetText()==A.L.APPLIED_SHORT,"reduced motion keeps static confirmation")
-A.Store.db.reducedMotion=false
+A.Store.db.reducedMotion=previousReducedMotion
 A.UI.scene="raid";A.UI:Refresh()
 assert(not first.successFlash:IsShown() and not first.scripts.OnUpdate,"recycled row clears prior success")
 A.UI.scene="mythic";A.UI:Refresh()
