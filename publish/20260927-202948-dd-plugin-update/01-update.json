@@ -1,0 +1,11 @@
+{
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.1.zip",
+  "release_type": 1,
+  "version": "1.0.1",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "schema": "fupload.v1.dd.plugin.update",
+  "update_desc": "<p>保存和导入按钮改用红底白字，区分正常、悬停、按下和禁用状态。场景关联页的保存按钮同步调整。</p>"
+}
