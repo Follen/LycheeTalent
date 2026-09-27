@@ -60,6 +60,26 @@ local function button(parent,label,x,y,w,callback,accent)
     b:SetScript("OnClick",function(self) if not U.closing then callback(self) end end)
     return b
 end
+-- Filled primary actions keep white text in every enabled pointer state.
+local function primaryButton(b,radius)
+    local parts=rounded(b,C.red,radius)
+    function b:RefreshStyle()
+        local enabled=self:IsEnabled()
+        local tint=not enabled and C.border or self.pressed and {.70,.17,.22} or self.hovered and C.hot or C.red
+        for i,t in ipairs(parts) do
+            if i<=3 then t:SetColorTexture(tint[1],tint[2],tint[3],1)
+            else t:SetVertexColor(tint[1],tint[2],tint[3]) end
+        end
+        color(self.label,enabled and {1,1,1} or C.dim)
+        self.label:SetAlpha(1)
+    end
+    b:SetScript("OnEnter",function(self) self.hovered=true;self:RefreshStyle() end)
+    b:SetScript("OnLeave",function(self) self.hovered=nil;self.pressed=nil;self:RefreshStyle() end)
+    b:SetScript("OnMouseDown",function(self) self.pressed=self:IsEnabled();self:RefreshStyle() end)
+    b:SetScript("OnMouseUp",function(self) self.pressed=nil;self:RefreshStyle() end)
+    b:SetScript("OnHide",function(self) self.hovered=nil;self.pressed=nil;self:RefreshStyle() end)
+    b:RefreshStyle()
+end
 local function field(parent,x,y,w,h,multiline)
     x=x*280/340; w=w*280/340
     local host=CreateFrame("Frame",nil,parent); host:SetSize(w,h); host:SetPoint("TOPLEFT",x,y)
@@ -639,7 +659,7 @@ function U:CreateDialog()
         if d.exportOnly and user and d.originalCode and edit:GetText()~=d.originalCode then edit:SetText(d.originalCode); edit:HighlightText() end
         if d.save then
             local ready=edit:GetText():find("%S")~=nil
-            d.save:SetEnabled(ready); color(d.save.label,ready and C.text or C.dim); d.save:SetAlpha(ready and 1 or .7)
+            d.save:SetEnabled(ready); d.save:RefreshStyle()
         end
     end)
     d.associationsLabel=text(d,12,C.muted,"",18,-366,304)
@@ -687,7 +707,7 @@ function U:CreateDialog()
         U.scene="mine"; U.selected=b.id; U.offset=0
         A.Motion:Finish(d);d:Hide(); U:Refresh();A.Motion:Slide(U.buildList,-1)
     end,true)
-    d.save:SetSize(250,42); rounded(d.save,{.27,.105,.125},10)
+    d.save:SetSize(250,42); primaryButton(d.save,10)
     for _,edit in ipairs({d.code,d.name}) do edit:SetScript("OnEscapePressed",function()U:Back()end) end
     d:SetScript("OnHide",function()
         if A.Motion.frame==d then A.Motion:Finish(d)end
@@ -1075,7 +1095,7 @@ function U:ContextSettings(id,draft)
                 if ok then p:Hide() else p.name:SetText(L[err] or err) end
             end
         end,true)
-        p.save:ClearAllPoints();p.save:SetPoint("BOTTOMLEFT",18,6);rounded(p.save,C.field,7);p.save:SetHeight(34)
+        p.save:ClearAllPoints();p.save:SetPoint("BOTTOMLEFT",18,6);primaryButton(p.save,7);p.save:SetHeight(34)
         p:SetScript("OnHide",function()
             local fromForm=p.formDraft;p.formDraft=nil;p.draft=nil;p.buildID=nil
             if fromForm and U.frame:IsShown() and not U.closing then
