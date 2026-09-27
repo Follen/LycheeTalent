@@ -202,6 +202,7 @@ function U:ShowApplySuccess(buildID,startedAt)
             row.switchRemaining=math.max(0,1.5-(GetTime()-(startedAt or GetTime())))
             row.successRemaining=1.5
             row.progress:SetText(row.switchRemaining>0 and L.APPLYING_SHORT or L.APPLIED_SHORT)
+            color(row.progress,row.switchRemaining>0 and C.muted or C.red)
             row.title:SetWidth(122)
             row.link:Hide()
             row.more:Hide()
@@ -215,6 +216,7 @@ function U:ShowApplySuccess(buildID,startedAt)
                     if remaining>0 then return end
                     elapsed=-remaining
                     r.progress:SetText(L.APPLIED_SHORT)
+                    color(r.progress,C.red)
                 end
                 r.successRemaining=r.successRemaining-elapsed
                 if r.successRemaining<=0 then
@@ -261,6 +263,7 @@ function U:Refresh()
             row.title:SetText(A.Catalog:Title(b))
             if applying then self:ClearApplyFeedback(row) end
             row.progress:SetText((b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
+            color(row.progress,(b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and C.muted or row.successRemaining and C.red or C.muted)
             row.more:SetShown(b.id~=applying and not row.successRemaining)
             local linked=b.source=="user" and type(b.contexts)=="table" and next(b.contexts)~=nil
             row.link:SetShown(linked and not applying and not row.successRemaining)
@@ -843,7 +846,7 @@ function U:Create()
         row.bg=fill(row,C.selected); row.mark=row:CreateTexture(nil,"ARTWORK"); row.mark:SetPoint("LEFT",0,0); row.mark:SetSize(2,22); row.mark:SetColorTexture(unpack(C.red))
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
-        row.progress=text(row,10,C.red,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
+        row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
         row:SetScript("OnEnter",function(r)
             if not r.build then return end
             r.bg:Show(); U:ShowTooltip(r,r.build)
