@@ -114,9 +114,15 @@ local function baseSpell(id)
     end
     return id
 end
+local function sameMacroBody(a,b)
+    if type(a)~="string" or type(b)~="string" then return false end
+    -- Saved layouts can retain a final newline omitted by GetMacroInfo later.
+    -- Keep commands, internal whitespace and exact macro-slot identity intact.
+    return a==b or a:gsub("[\r\n]+$","")==b:gsub("[\r\n]+$","")
+end
 local function same(a,b)
     if a.kind~=b.kind then return false end
-    if a.kind=="macro" then return a.id==b.id and a.name==b.name and a.body==b.body and a.character==b.character end
+    if a.kind=="macro" then return a.id==b.id and a.name==b.name and sameMacroBody(a.body,b.body) and a.character==b.character end
     -- Talent overrides can change the ID reported by GetActionInfo. Only
     -- normalize player spells; pet actions and macro identities stay exact.
     if a.kind=="spell" and (a.sub==nil or a.sub=="spell") and (b.sub==nil or b.sub=="spell") then
@@ -132,7 +138,7 @@ function B:MacroIndex(entry)
     if (index>(MAX_ACCOUNT_MACROS or 120))~=entry.character then return nil end
     local name,_,body=GetMacroInfo(index)
     if secret(name) or secret(body) then return nil end
-    if name==entry.name and body==entry.body then return index end
+    if name==entry.name and sameMacroBody(body,entry.body) then return index end
     return nil
 end
 function B:Pickup(entry)
