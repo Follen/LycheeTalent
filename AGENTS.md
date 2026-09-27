@@ -41,5 +41,8 @@
 
 - 按改动范围使用 `docs/development.md` 中的检查。打包入口为 `tools/package.ps1`，安装入口为 `tools/install.ps1`。
 - UI 修改应检查正常、悬停、按下、禁用状态；保留现有荔枝黑红风格。
-- 用户要求复制到游戏时安装并校验文件；不要把磁盘复制成功描述成客户端已经加载。
+- **每次 commit 完成后，必须立即把该提交的插件同步到正式服，无需用户再次要求或授权**，包括功能、修复、版本和纯文档提交；纯文档提交也要确认游戏端与该提交的插件一致。
+- 当前正式服目录为 `D:/Game/World of Warcraft/_retail_/Interface/AddOns`。使用 `tools/install.ps1 -AddOnsPath 'D:/Game/World of Warcraft/_retail_/Interface/AddOns'`，同步主包与全部职业数据包并校验文件哈希。
+- 同步应对应刚提交的代码，不夹带后续未提交的插件改动。同步失败必须明确报告，不得声称已安装；目标文件被外部修改时先核对差异，不强行覆盖。
+- 同步只更新插件文件，不修改 SavedVariables 或玩家配置，不自动操作游戏或重载。需要游戏加载新代码时提示用户执行 `/reload`，不要把磁盘复制成功描述成客户端已经加载。
 - 游戏内调查使用 LycheeDev，遵循同一客户端与会话的约束。未经用户解除限制，不使用 Computer Use 操作游戏。
