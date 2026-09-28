@@ -24,7 +24,7 @@ local a=assert(B:ReadSlot(1))
 local b=assert(B:ReadSlot(2))
 local c=assert(B:ReadSlot(3))
 assert(a.id==1 and b.id==2 and c.id==121,"exact macro indices")
-assert(a.body~=b.body and c.character and not a.character,"same names preserve body and scope")
+assert(not a.name and not a.body,"new snapshots store macro indices, not macro text")
 assert(slots[1]==1 and slots[2]==2 and slots[3]==121 and not cursor,"capture leaves bars and cursor intact")
 local snapshot=assert(B:Capture(62))
 snapshot.slots[1],snapshot.slots[2]=snapshot.slots[2],snapshot.slots[1]
@@ -46,58 +46,28 @@ combat=false;fail=true
 ok,why=B:ReadSlot(1)
 assert(not ok and not cursor and slots[1]==1,"failed copied pickup cleans cursor without removing action")
 fail=false
--- Equal text does not make two macro slots interchangeable.
-macros[2]={"same","/cast Alpha"}
-local identical=assert(B:Capture(62))
-identical.slots[1],identical.slots[2]=identical.slots[2],identical.slots[1]
-assert(B:Restore(identical) and slots[1]==2 and slots[2]==1,
- "identical macros must restore their exact saved indices")
-macros[1]={"other","/cast Beta"}
-assert(not B:MacroIndex(a),"changed original index must not fall back to identical macro")
+-- Old layouts must also use the current macro at the recorded index.
+local legacy=assert(B:Capture(62))
+legacy.slots[1]={kind="macro",id=2,name="old name",body="old body",character=true,macroInvalid=true}
+legacy.slots[2]={kind="macro",id=1,name="old name",body="old body",macroInvalid=true}
+macros[1]={"renamed","/cast Changed\n"}
+macros[2]={"renamed","/cast Changed\n"}
+assert(B:MacroIndex(legacy.slots[1])==2 and B:MacroIndex(legacy.slots[2])==1,
+ "old names, bodies, scope flags and invalidation markers must not block original indices")
+assert(B:Restore(legacy) and slots[1]==2 and slots[2]==1 and slots[3]==121,
+ "even identical macros restore to their exact saved positions")
+assert(macros[1][1]=="renamed" and macros[1][2]=="/cast Changed\n","restore does not edit macro contents")
+-- A changed macro already at the desired action slot is a no-op.
+assert(B:Restore(legacy) and not cursor,"changed content in place does not trigger a false failure")
+-- An actually empty macro index still fails before changing any action slot.
+slots[2]=2;macros[1]=nil
 local before1,before2=slots[1],slots[2]
-local invalid=assert(B:Capture(62));invalid.slots[1]=a
-assert(not B:Restore(invalid) and slots[1]==before1 and slots[2]==before2 and not cursor,
- "unresolved identity must fail before touching any slot")
-macros[1]=nil
-assert(not B:MacroIndex(a),"deleted original index must not fall back to another macro")
-assert(B:MacroIndex(c)==121,"character macro keeps its own index")
--- A live saved profile retained a final LF that GetMacroInfo no longer returns.
-macros[1]={"same","/cast Alpha"};slots[1],slots[2]=1,2
-local newlineSnapshot=assert(B:Capture(62))
-newlineSnapshot.slots[1].body=newlineSnapshot.slots[1].body.."\n"
-assert(B:Restore(newlineSnapshot) and slots[1]==1 and slots[2]==2 and not cursor,
- "a removed final newline must not report BARS_MACRO or substitute a macro")
-newlineSnapshot.slots[1].body="/cast Alpha\r\n\r\n"
-assert(B:MacroIndex(newlineSnapshot.slots[1])==1,"terminal CRLF is also formatting")
-newlineSnapshot.slots[1].body="/cast\nAlpha"
-assert(not B:MacroIndex(newlineSnapshot.slots[1]),"internal newlines remain significant")
-newlineSnapshot.slots[1].body="/cast Alpha "
-assert(not B:MacroIndex(newlineSnapshot.slots[1]),"do not broaden normalization to arbitrary whitespace")
-print("PASS exact macro identity: identical-body swaps, changed/deleted index rejection, cursor, combat and cleanup")
--- An observed edit updates references across layouts without copying positions.
-local original=assert(B:Capture(62))
-assert(B:SeedDefault(62,original,"test"))
-assert(B:SaveIndependent(62,"one",original))
-local alternate=assert(B:Capture(62))
-alternate.slots[1],alternate.slots[2]=alternate.slots[2],alternate.slots[1]
-assert(B:SaveIndependent(62,"two",alternate))
-B:UpdateMacros()
-macros[1][2]="/cast Changed"
-B:UpdateMacros()
-local updated=assert(B:Get(62,"one",false))
-local swapped=assert(B:Get(62,"two",false))
-assert(updated.slots[1].body=="/cast Changed" and swapped.slots[2].body=="/cast Changed")
-assert(swapped.slots[1].id==2 and swapped.slots[1].body=="/cast Alpha","same-name macro remains separate")
-assert(B:Get(62,nil,true).slots[1].body=="/cast Changed","shared layout reference updates too")
-assert(B:Restore(swapped),"edited macro restores without resaving layouts")
--- Observe deletion and recreation, even when the replacement has identical text.
-macros[2]=nil
-GetNumMacros=function()return 1,1 end
-B:UpdateMacros()
-macros[2]={"same","/cast Alpha"}
-GetNumMacros=function()return 2,1 end
-B:UpdateMacros()
-local deleted=assert(B:Get(62,"two",false)).slots[1]
-assert(deleted.macroInvalid and not B:MacroIndex(deleted),"recreated macro must not revive a deleted reference")
-assert(B:MacroIndex(B:Get(62,"one",false).slots[1])==1,"unaffected macro remains usable")
-print("PASS observed macro edits update shared and independent references; deleted identities stay invalid")
+local ok,reason=B:Restore(legacy)
+assert(not ok and reason=="BARS_MACRO" and slots[1]==before1 and slots[2]==before2 and not cursor,
+ "empty recorded index does not fall back to another same-name macro or change bars")
+-- Deleting/recreating a macro at that position intentionally uses the new one.
+macros[1]={"replacement","/say New macro"}
+assert(B:Restore(legacy) and slots[2]==1,"recreated macro at the recorded index is usable without resaving")
+assert(B:MacroIndex(c)==121,"absolute index preserves character macro range")
+assert(not B:MacroIndex({id=0}) and not B:MacroIndex({id=1.5}),"invalid indices are rejected")
+print("PASS macro slots: edited/renamed/recreated macros, legacy flags, duplicate names/bodies, missing index, cursor and combat")
