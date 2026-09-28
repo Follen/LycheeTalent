@@ -166,3 +166,29 @@ assert(B:Get(testSpec,nil,true).slots[1].id==902,'leaving shared saves edits bef
 assert(B:Get(testSpec,'a',false).slots[1].id==independentBefore,'shared save does not overwrite independent layout')
 
 print('PASS shared autosave and pre-switch save preserve independent layouts')
+
+-- The reported empty cursor macros must not stop the actual Apply pipeline.
+A.L.BARS_PARTIAL='Preserved macro slots: %s'
+local copiedPickup=PickupAction
+for _,i in ipairs({77,78,113,114})do slots[i]={kind='macro',id=999,unreadable=true}end
+PickupAction=function(i,keep)
+ if slots[i].unreadable then assert(keep==true,'unreadable macro must stay in place');return end
+ return copiedPickup(i,keep)
+end
+assert(A.Apply:Start(builds.b,true));settle()
+assert(activeCode=='beta' and not A.Apply.op and char.lastAttempt.reason=='APPLY_SUCCESS','talent switch completes')
+assert(A.message=='Preserved macro slots: 77, 78, 113, 114','partial action restore is visible, not silent success')
+assert(char.recovery.actionBars.reason=='BARS_PARTIAL','partial restore is retained in diagnostics')
+for _,i in ipairs({77,78,113,114})do assert(slots[i].unreadable)end
+assert(slots[1].id==902,'readable actions still restore')
+-- A different failure remains blocking and now records the failing slot.
+local previousRecovery=char.recovery
+PickupAction=function(i,keep)
+ if slots[i].unreadable then cursor={kind='spell',id=999};return end
+ return copiedPickup(i,keep)
+end
+local started,why=A.Apply:Start(builds.a,false)
+assert(not started and why=='BARS_MACRO_READ' and not A.Apply.op)
+assert(char.lastAttempt.stage=='capture-bars' and char.lastAttempt.slot==77 and char.lastAttempt.reason==why)
+assert(char.recovery==previousRecovery and not cursor,'failed capture keeps existing recovery data and clears temporary cursor')
+print('PASS unreadable macro integration: talents switch, other actions restore, preserved slots reported, early failures recorded')

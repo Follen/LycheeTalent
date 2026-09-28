@@ -23,6 +23,7 @@ function B:Valid(snapshot,spec)
     for i=1,self.slotCount do
         local entry=snapshot.slots[i]
         if type(entry)~="table" then return false end
+        if entry.kind=="unreadableMacro" and entry.id~=i then return false end
         if entry.kind~=nil and (type(entry.kind)~="string" or
             (type(entry.id)~="number" and type(entry.id)~="string")) then return false end
     end
@@ -91,6 +92,10 @@ function B:ReadSlot(slot)
         end)
         ClearCursor()
         if not ok or secret(cursorKind) or secret(index) then return nil,"BARS_MACRO_READ" end
+        -- Some slots report a macro but a successful copied pickup returns no
+        -- cursor. Its identity is unknown: preserve that slot, never save it as
+        -- empty or reinterpret GetActionInfo's spell/item ID as a macro index.
+        if cursorKind==nil and index==nil then return {kind="unreadableMacro",id=slot} end
         if cursorKind~="macro" or type(index)~="number" or index<1 or index%1~=0 then return nil,"BARS_MACRO_READ" end
         local name=GetMacroInfo(index)
         if secret(name) then return nil,"BARS_SECRET" end
@@ -191,9 +196,11 @@ function B:Restore(snapshot)
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
     local before,why=self:Capture(spec)
     if not before then return nil,why end
-    local changes={}
+    local changes,preserve,preservedSlots={},{},{}
     for slot=1,self.slotCount do
-        if not same(before.slots[slot],snapshot.slots[slot]) then changes[#changes+1]=slot end
+        if before.slots[slot].kind=="unreadableMacro" or snapshot.slots[slot].kind=="unreadableMacro" then
+            preserve[slot]=true;preservedSlots[#preservedSlots+1]=slot
+        elseif not same(before.slots[slot],snapshot.slots[slot]) then changes[#changes+1]=slot end
     end
     -- Preflight every pickup before removing/replacing any action. Unknown
     -- action types can remain in place but are never silently discarded.
@@ -228,6 +235,7 @@ function B:Restore(snapshot)
     end
     local function put(slot,entry)
         local current=self:ReadSlot(slot)
+        if current and current.kind=="unreadableMacro" then error("BARS_MACRO_READ:"..slot) end
         if current and same(current,entry) then return end
         remember(slot)
         if entry.kind then
@@ -250,8 +258,10 @@ function B:Restore(snapshot)
     end
     local function verify(layout)
         for slot=1,self.slotCount do
-            local actual=self:ReadSlot(slot)
-            if not actual or not same(layout.slots[slot],actual) then error("BARS_LAYOUT_VERIFY:"..slot) end
+            if not preserve[slot] then
+                local actual=self:ReadSlot(slot)
+                if not actual or not same(layout.slots[slot],actual) then error("BARS_LAYOUT_VERIFY:"..slot) end
+            end
         end
     end
     local ok,reason=pcall(function()
@@ -277,6 +287,7 @@ function B:Restore(snapshot)
     end
     self.restoring=nil
     if not ok then return nil,"BARS_RESTORE",{reason=tostring(reason),rolledBack=rolledBack} end
+    if #preservedSlots>0 then return true,nil,{preservedSlots=preservedSlots} end
     return true
 end
 -- Trust only the exact saved ID and name, including our pending rename.
