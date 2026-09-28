@@ -10,7 +10,7 @@ Open talents. Pick the encounter. Double-click to apply.
 
 [简体中文](README.md) · [English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-1.0.7-d53c49?style=flat-square)](Changelog.md)
+[![Version](https://img.shields.io/badge/version-1.0.8-d53c49?style=flat-square)](Changelog.md)
 [![WoW](https://img.shields.io/badge/WoW-Retail%2012.1-6d587c?style=flat-square)](#installation)
 [![Lua](https://img.shields.io/badge/Lua-5.1-2c2d72?style=flat-square&logo=lua)](addon/LycheeTalent)
 [![Classes](https://img.shields.io/badge/classes-13-b79857?style=flat-square)](#recommendations)
