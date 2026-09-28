@@ -3,7 +3,7 @@
 local source=io.read("*a"):gsub("^\239\187\191","")
 assert(source:find("IconDataProviderMixin:Release",1,true),"provider source required on stdin")
 
-local gcCalls,refreshes=0,0
+local gcCalls,refreshes,itemRefreshes=0,0,0
 local env=setmetatable({
     EnumUtil={MakeEnum=function()return {Spell=1,Item=2}end},
     GetValuesArray=function(t)return {t.Spell,t.Item}end,
@@ -12,7 +12,7 @@ local env=setmetatable({
         table.sort(keys);return keys
     end,
     GetLooseMacroIcons=function(out)refreshes=refreshes+1;out[1]="111";out[2]="SPELL_PATH" end,
-    GetLooseMacroItemIcons=function(out)out[1]="222" end,
+    GetLooseMacroItemIcons=function(out)itemRefreshes=itemRefreshes+1;out[1]="222" end,
     GetMacroIcons=function(out)out[3]="333" end,
     GetMacroItemIcons=function(out)out[2]="ITEM_PATH" end,
     collectgarbage=function()gcCalls=gcCalls+1 end,
@@ -32,6 +32,8 @@ setfenv(adapterChunk,env);adapterChunk("LycheeTalent",A)
 local native=setmetatable({},{__index=env.IconDataProviderMixin})
 native:Init(env.IconDataProviderExtraType.Spellbook)
 local adapter=A.Icons:Create()
+assert(refreshes==1 and itemRefreshes==1,"opening common icons must not enumerate either full catalog")
+assert(adapter:GetNumIcons()==3,"common includes question mark and current character icons")
 local spell,item=env.IconDataProviderIconType.Spell,env.IconDataProviderIconType.Item
 local function compare(filter)
     native:SetIconTypes(filter)
@@ -44,11 +46,12 @@ local function compare(filter)
     end
     return count
 end
-assert(compare(nil)==8,"all count")
 assert(compare({spell})==6,"spell count includes two extras")
+assert(refreshes==2 and itemRefreshes==1,"spell tab loads only the spell catalog")
 assert(compare({item})==3,"item count excludes spell extras")
-assert(compare(nil)==8,"nil filter restores all icons")
-assert(refreshes==2,"native and adapter each built one catalog")
+adapter:SetIconTypes(nil)
+assert(adapter:GetNumIcons()==3,"nil filter restores common icons")
+assert(refreshes==2 and itemRefreshes==2,"each category is built once")
 
 native:Release()
 assert(gcCalls==1,"native final release invokes global GC")
@@ -66,5 +69,15 @@ for i=1,100 do
     provider:Release()
     assert(provider.icons==nil and gcCalls==1)
 end
-assert(refreshes==102,"100 reopen cycles rebuild independently")
-print("PASS icon adapter: pinned-source all/spell/item parity; 100 releases, zero adapter GC calls")
+assert(refreshes==2 and itemRefreshes==2,"100 reopen cycles reuse catalogs")
+local selected=A.Icons:Create("hero-atlas")
+assert(selected:GetNumIcons()==4 and selected:GetIconByIndex(2)=="hero-atlas","selected icon is available in common")
+selected:Release()
+selected=A.Icons:Create(9001)
+assert(selected:GetNumIcons()==3,"selected spell is not duplicated")
+selected:Release()
+env.IconDataProviderMixin.FillOutExtraIconsMapWithSpells=function(_,map)map[9003]=true end
+local fresh=A.Icons:Create()
+assert(fresh:GetIconByIndex(3)==9003,"common icons refresh after character changes")
+fresh:Release()
+print("PASS icon adapter: lazy categories, pinned-source parity, 100 reopens reuse cache, current icon, refreshed spells, zero adapter GC")

@@ -7,6 +7,8 @@ lua tests/run.lua
 lua tests/talent_ex.lua
 lua tests/ui_smoke.lua
 lua tests/ui_smoke.lua list-scroll
+lua tests/ui_smoke.lua reorder
+lua tests/build_order.lua
 lua tests/ui_smoke.lua same-build-refresh
 lua tests/ui_smoke.lua pending-prompt
 lua tests/single_config.lua
@@ -21,14 +23,18 @@ lua tests/native_open.lua
 lua tests/reminders.lua
 lua tests/catalog_business.lua
 lua tests/motion.lua
-lua tests/icons.lua
-lua tests/icon_provider_lifecycle.lua
+Get-Content -Raw analyze/IconDataProvider.lua | lua tests/icons.lua
+Get-Content -Raw analyze/IconDataProvider.lua | lua tests/icon_provider_lifecycle.lua
 lua tests/data_memory.lua MAGE 500
 python -m unittest discover -s tests -p 'test_*.py'
 powershell -File tools/package.ps1
 ```
 
 `test_data_publication.py` 的完整等价性比较需要本地采集数据库；没有数据库会明确 skip，其他纯逻辑测试无需凭据。离线替身测试不能证明原生 API、taint 或真实帧时间。
+
+两个图标测试的标准输入需要完整的暴雪 `Interface/AddOns/Blizzard_FrameXMLBase/IconDataProvider.lua`。本次固定源码为 `Gethe/wow-ui-source` 提交 `09b9db7948abc9b9648dedaab51eb0cf3ee67b31`；通过 LycheeDev `source inspect` 提取 `result.text` 到忽略目录 `analyze/IconDataProvider.lua`。不要把原始源码、实机记录或角色数据提交到仓库。
+
+“我的方案”支持拖动行排序，红线表示落点，靠近列表边缘会自动滚动。松手保存当前专精的顺序，拖到列表外或按 Escape 取消；编辑不改变顺序，新增方案排在已排序方案后。排序不应用天赋。图标选择默认进入“常用”，完整法术、物品目录分别在首次切到对应分类时加载。
 
 ## 更新推荐
 

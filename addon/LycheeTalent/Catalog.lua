@@ -68,6 +68,7 @@ function C:Query(specID,scene,source,query,target,difficulty,out)
             local ap,bp=an:sub(1,#q)==q,bn:sub(1,#q)==q; if ap~=bp then return ap end
         end
         if a.source~=b.source then return a.source=="builtin" end
+        if a.source=="user" then return A.Store:OrderLess(a,b) end
         if a.source=="builtin" and a.scene=="raid" and b.scene=="raid" then
             local sa,sb=self.scenarios[tostring(a.scenarioID)],self.scenarios[tostring(b.scenarioID)]
             local ar,br=sa and sa.raidOrder or 999,sb and sb.raidOrder or 999

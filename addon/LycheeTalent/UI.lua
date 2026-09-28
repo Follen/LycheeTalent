@@ -122,7 +122,7 @@ function U:HideTooltip(owner)
     tip:Hide()
 end
 function U:ShowTooltip(owner,build,title)
-    if InCombatLockdown() then return end
+    if InCombatLockdown() or self.drag then return end
     if not self.tooltip then
         local tip=CreateFrame("Frame",nil,self.frame);self.tooltip=tip
         tip:SetFrameStrata("TOOLTIP");tip:SetClampedToScreen(true);tip:SetWidth(300);tip:EnableMouse(false)
@@ -178,7 +178,7 @@ function U:ShowTooltip(owner,build,title)
         local dated=type(build.recordTime)=="number"
         tip.detail:SetShown(dated);tip.detail:ClearAllPoints();tip.detail:SetPoint("TOPLEFT",14,-70)
         if dated then tip.detail:SetText(L.WCL_RECORD:format(date("%Y-%m-%d",build.recordTime)))end
-        tip.hint:SetText(L.DOUBLE_CLICK_HINT);tip.hint:SetPoint("TOPLEFT",14,dated and -100 or -68);tip:SetHeight(dated and 132 or 100)
+        tip.hint:SetText(build.source=="user" and L.PERSONAL_BUILD_HINT or L.DOUBLE_CLICK_HINT);tip.hint:SetPoint("TOPLEFT",14,dated and -100 or -68);tip:SetHeight(dated and 132 or 100)
     else tip.hint:SetText("");tip:SetHeight(50) end
     tip:ClearAllPoints()
     local scale=tip:GetEffectiveScale();local x,y=GetCursorPosition();x=x/scale+18;y=y/scale-18
@@ -244,6 +244,7 @@ function U:Refresh()
     if self.options then self.options:Hide() end
     if not self.frame or not self.frame:IsShown() then return end
     local spec=A:GetSpec()
+    if self.drag and (self.scene~="mine" or spec~=self.drag.spec or A.Apply.op) then self:CancelDrag() end
     A.Catalog:Load()
     self.difficulty=self.difficulty or A.Store.character.raidDifficulty or 5
     A.Catalog:Query(spec,self.scene,self.scene=="mine" and "user" or "builtin","",nil,self.difficulty,self.results)
@@ -277,6 +278,7 @@ function U:Refresh()
             row.boundID=id; row.boundRevision=revision; row.boundContext=context
         end
         row.build=b
+        row:SetAlpha(self.drag and b and b.id==self.drag.id and .4 or 1)
         if b then
             row.title:SetText(A.Catalog:Title(b))
             if applying then self:ClearApplyFeedback(row) end
@@ -466,6 +468,7 @@ function U:LayoutRows()
     local room=math.max(56,self.frame:GetHeight()-top-(personal and 68 or 20))
     -- A full-height sidebar gets breathing room; short windows remain scrollable.
     local step=math.max(56,math.min(68,math.floor(room/9/2)*2))
+    self.rowStep=step
     self.visibleRows=math.max(1,math.min(18,math.floor(room/step)))
     for i,row in ipairs(self.rows) do
         row:ClearAllPoints(); row:SetPoint("TOPLEFT",0,-(i-1)*step); row:SetHeight(step-6); row.more:SetHeight(step-6)
@@ -479,6 +482,78 @@ function U:LayoutRows()
     for _,b in ipairs(self.difficultyChoices) do
         local active=b.difficulty==self.difficulty
         b.selected:SetShown(active); color(b.label,active and C.red or C.muted)
+    end
+end
+function U:CancelDrag()
+    self.drag=nil
+    if self.dragPreview then self.dragPreview:SetScript("OnUpdate",nil);self.dragPreview:Hide() end
+    if self.dropLine then self.dropLine:Hide() end
+    for _,row in ipairs(self.rows) do
+        row:SetAlpha(1);row.pressed=nil;row.lastClickID=nil;row.lastClickGeneration=nil
+    end
+end
+function U:StartDrag(row)
+    local build=row.build
+    if self.drag or self.scene~="mine" or not build or build.source~="user" or A.Store.readonly
+        or self.closing or A.Apply.op or InCombatLockdown() or row.pressed~=row.generation then return end
+    self:HideTooltip();if self.options then self.options:Hide() end
+    if not self.dragPreview then
+        local preview=CreateFrame("Frame",nil,self.frame);self.dragPreview=preview
+        preview:SetSize(220,46);preview:SetFrameStrata("TOOLTIP");preview:EnableMouse(false)
+        rounded(preview,C.field,8)
+        preview.icon=preview:CreateTexture(nil,"ARTWORK");preview.icon:SetSize(28,28);preview.icon:SetPoint("LEFT",10,0)
+        preview.title=text(preview,12,C.text,"",0,0);preview.title:ClearAllPoints()
+        preview.title:SetPoint("LEFT",48,0);preview.title:SetWidth(158);preview.title:SetMaxLines(1)
+        local line=self.buildList:CreateTexture(nil,"OVERLAY");self.dropLine=line
+        line:SetSize(250,2);line:SetColorTexture(unpack(C.red));line:Hide()
+    end
+    self.drag={id=build.id,spec=build.specID,elapsed=0}
+    buildIcon(self.dragPreview.icon,build.icon,true);self.dragPreview.title:SetText(build.name)
+    self.dragPreview:Show()
+    self.dragPreview:SetScript("OnUpdate",function(_,elapsed)
+        if not IsMouseButtonDown("LeftButton") then U:FinishDrag();return end
+        U:UpdateDrag(elapsed)
+    end)
+    for _,r in ipairs(self.rows) do r.pressed=nil;r.lastClickID=nil;r.lastClickGeneration=nil end
+    row:SetAlpha(.4);self:UpdateDrag(0)
+end
+function U:UpdateDrag(elapsed)
+    local drag=self.drag
+    if not drag then return end
+    if self.scene~="mine" or A:GetSpec()~=drag.spec or not self.buildList:IsShown()
+        or self.closing or A.Apply.op or InCombatLockdown() or not A.Store:Find(drag.id) then self:CancelDrag();return end
+    local x,y=GetCursorPosition()
+    local scale=self.buildList:GetEffectiveScale();x=x/scale;y=y/scale
+    self.dragPreview:ClearAllPoints();self.dragPreview:SetPoint("TOPLEFT",UIParent,"BOTTOMLEFT",x+14,y-14)
+    local left,top=self.buildList:GetLeft(),self.buildList:GetTop()
+    local height=self.visibleRows*self.rowStep
+    local dy=top-y
+    drag.target=nil;self.dropLine:Hide()
+    if x<left-16 or x>left+self.buildList:GetWidth()+16 or dy< -24 or dy>height+24 then drag.elapsed=0;return end
+    local direction=dy<24 and -1 or dy>height-24 and 1 or 0
+    drag.elapsed=direction~=0 and drag.elapsed+elapsed or 0
+    if drag.elapsed>=.12 then
+        drag.elapsed=0
+        local offset=math.max(0,math.min(#self.results-self.visibleRows,self.offset+direction))
+        if offset~=self.offset then self.offset=offset;self:Refresh() end
+    end
+    -- Boundary is between rows, not a recycled row's identity. Resolve to a
+    -- stable target ID now, and validate that ID again on release.
+    local boundary=math.max(0,math.min(#self.results,self.offset+math.floor(dy/self.rowStep+.5)))
+    local target=self.results[boundary+1] or self.results[boundary]
+    if not target then return end
+    drag.target=target.id;drag.after=boundary==#self.results
+    local lineY=-math.max(0,math.min(height,(boundary-self.offset)*self.rowStep))+3
+    self.dropLine:ClearAllPoints();self.dropLine:SetPoint("TOPLEFT",self.buildList,"TOPLEFT",0,lineY);self.dropLine:Show()
+end
+function U:FinishDrag()
+    if not self.drag then return end
+    self:UpdateDrag(0)
+    local drag=self.drag
+    self:CancelDrag()
+    if drag and drag.target then
+        local ok=A.Store:Move(drag.id,drag.target,drag.after)
+        if ok then self:Refresh() end
     end
 end
 function U:ScrollDialog(delta)
@@ -598,7 +673,7 @@ function U:ChooseIcon()
     if not d or not d:IsShown() or d.exportOnly then return end
     d.code:ClearFocus(); d.name:ClearFocus()
     if not self.iconPicker then
-        -- Keep the grid; discard catalog references when the picker closes.
+        -- Reuse the grid; the provider owns only this opening's common icons.
         local clip=CreateFrame("ScrollFrame",nil,d)
         clip:SetSize(280,1);clip:SetPoint("TOPLEFT",0,-64);clip:Hide()
         local p=CreateFrame("Frame",nil,clip); self.iconPicker=p;p.clip=clip
@@ -622,7 +697,9 @@ function U:ChooseIcon()
             for i,b in ipairs(self.cells) do
                 local index=firstRow*5+i
                 local value=index<=count and self.provider:GetIconByIndex(index) or nil
-                if b.value~=value then b.icon:SetTexture(value) end
+                if b.value~=value then
+                    if value then buildIcon(b.icon,value,true) else b.icon:SetTexture(nil) end
+                end
                 b.value=value;b.index=index
                 b.pressed=nil; b:SetShown(b.value~=nil)
                 if b.value then b.mark:SetShown(b.value==d.iconValue) end
@@ -634,8 +711,9 @@ function U:ChooseIcon()
         function p:ScrollTo(offset)self.offset=offset;self:Refresh()end
         local function wheel(_,delta)U:ScrollDialog(delta)end
         grid:EnableMouseWheel(true);grid:SetScript("OnMouseWheel",wheel)
-        for i,v in ipairs({{L.ICON_ALL,false},{L.ICON_SPELL,IconDataProviderIconType.Spell},{L.ICON_ITEM,IconDataProviderIconType.Item}}) do
+        for i,v in ipairs({{L.ICON_COMMON,false},{L.ICON_SPELL,IconDataProviderIconType.Spell},{L.ICON_ITEM,IconDataProviderIconType.Item}}) do
             local b=button(p,v[1],15+(i-1)*82,0,78,function(btn)
+                if InCombatLockdown() or not p.provider then return end
                 p.filter=btn.filter; p.provider:SetIconTypes(btn.filter and {btn.filter} or nil)
                 p.offset=0;p:Refresh()
             end)
@@ -674,8 +752,8 @@ function U:ChooseIcon()
     local p=self.iconPicker
     if p:IsShown() and p.expanded then self:ExpandIcons(false);return end
     if not p.provider then
-        p.provider=A.Icons:Create()
-        if p.filter then p.provider:SetIconTypes({p.filter}) end
+        p.filter=false;p.offset=0
+        p.provider=A.Icons:Create(d.iconValue)
     end
     A.Motion:Finish(d)
     self.dialogScroll:SetVerticalScroll(0)
@@ -782,7 +860,8 @@ function U:Create()
     table.insert(UISpecialFrames,"LycheeTalentEscape")
     escape:SetScript("OnHide",function()
         if not f:IsShown() or U.closing then return end
-        if U.tooltip and U.tooltip:IsShown() then U:HideTooltip(); escape:Show()
+        if U.drag then U:CancelDrag();escape:Show()
+        elseif U.tooltip and U.tooltip:IsShown() then U:HideTooltip(); escape:Show()
         elseif U.options and U.options:IsShown() then U.options:Hide(); escape:Show()
         elseif U:ContentPage()~=U.buildList then U:Back();escape:Show()
         else U:Close() end
@@ -857,6 +936,7 @@ function U:Create()
         if offset~=U.offset then U.offset=offset;U:Refresh() end
     end
     list:SetScript("OnMouseWheel",scrollList)
+    list:SetScript("OnHide",function()if U.drag then U:CancelDrag() end end)
     self.listScroll=scrollbar(f);self.listScroll:EnableMouseWheel(true)
     self.listScroll:SetScript("OnMouseWheel",scrollList)
     self.listScroll:SetScript("OnValueChanged",function(bar,value)
@@ -876,9 +956,12 @@ function U:Create()
         end)
         row:SetScript("OnLeave",function(r) r.bg:SetShown(r.build and (r.build.id==U.currentID or r.build.id==U.selected)); U:HideTooltip(r) end)
         row:SetScript("OnMouseDown",function(r,mouse) r.pressed=(not mouse or mouse=="LeftButton") and r.generation or nil end)
+        row:RegisterForDrag("LeftButton")
+        row:SetScript("OnDragStart",function(r)U:StartDrag(r)end)
+        row:SetScript("OnDragStop",function()U:FinishDrag()end)
         row:SetScript("OnClick",function(r,mouse)
             if mouse and mouse~="LeftButton" then return end
-            if U.closing or A.Apply.op or not r.build or r.pressed~=r.generation then return end
+            if U.drag or U.closing or A.Apply.op or not r.build or r.pressed~=r.generation then return end
             U.selected=r.build.id; r.lastClickID=r.build.id; r.lastClickGeneration=r.generation
             U:HideTooltip()
             if U.options then U.options:Hide() end
@@ -888,7 +971,7 @@ function U:Create()
         end)
         row:SetScript("OnDoubleClick",function(r,mouse)
             if mouse and mouse~="LeftButton" then return end
-            if U.closing or A.Apply.op or not r.build or r.pressed~=r.generation
+            if U.drag or U.closing or A.Apply.op or not r.build or r.pressed~=r.generation
                 or r.lastClickID~=r.build.id or r.lastClickGeneration~=r.generation then return end
             local build=r.build; r.lastClickID=nil; r.lastClickGeneration=nil
             U.selected=build.id
@@ -935,13 +1018,14 @@ function U:Create()
     end)
     f:SetScript("OnEvent",function(_,event,unit)
         if event=="PLAYER_SPECIALIZATION_CHANGED" and unit and unit~="player" then return end
-        if event=="PLAYER_REGEN_DISABLED" then A.Motion:Finish(f);A.Motion:StopBrand();U:CloseSocial(); if U.dialog then U.dialog:Hide() end; if U.contextSettings then U.contextSettings:Hide() end; if U.settings then U.settings:Hide() end
+        if event=="PLAYER_REGEN_DISABLED" then U:CancelDrag();A.Motion:Finish(f);A.Motion:StopBrand();U:CloseSocial(); if U.dialog then U.dialog:Hide() end; if U.contextSettings then U.contextSettings:Hide() end; if U.settings then U.settings:Hide() end
         elseif event=="UI_SCALE_CHANGED" then U:Scale(); U:Refresh()
         elseif not U.stateTimer then
             U.stateTimer=C_Timer.NewTimer(0,function() U.stateTimer=nil; if f:IsShown() then U:Refresh() end end)
         end
     end)
     f:SetScript("OnHide",function()
+        U:CancelDrag()
         if U.pendingPrompt then
             A.Apply:CancelPending(U.pendingPrompt);U.pendingPrompt=nil
             StaticPopup_Hide("LYCHEETALENT_PENDING")

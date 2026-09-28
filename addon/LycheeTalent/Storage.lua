@@ -37,6 +37,31 @@ end
 function S:Find(id)
     for i, b in ipairs(self.builds) do if type(b)=="table" and b.id==id then return b,i end end
 end
+function S:OrderLess(a,b)
+    local ao,bo=tonumber(a.sortOrder) or math.huge,tonumber(b.sortOrder) or math.huge
+    if ao~=bo then return ao<bo end
+    -- Preserve the catalog's existing order until the first manual move.
+    return tostring(a.id)<tostring(b.id)
+end
+function S:Move(id,targetID,after)
+    if self.readonly then return nil,"SCHEMA" end
+    local build,target=self:Find(id),self:Find(targetID)
+    if not build or not target or build.specID~=target.specID then return nil,"BAD_CODE" end
+    if id==targetID then return true end
+    local ordered={}
+    for _,b in ipairs(self.builds) do
+        if type(b)=="table" and b.specID==build.specID and type(b.name)=="string" and type(b.code)=="string" then
+            ordered[#ordered+1]=b
+        end
+    end
+    table.sort(ordered,function(a,b)return self:OrderLess(a,b)end)
+    for i,b in ipairs(ordered) do if b.id==id then table.remove(ordered,i);break end end
+    for i,b in ipairs(ordered) do
+        if b.id==targetID then table.insert(ordered,i+(after and 1 or 0),build);break end
+    end
+    for i,b in ipairs(ordered) do b.sortOrder=i end
+    return true
+end
 function S:Delete(id)
     if self.readonly then return end
     local b,i = self:Find(id)
@@ -96,6 +121,7 @@ function S:Query(specID, scene, source, query, out)
         if ae~=be then return ae end
         local ap,bp=query~="" and an:sub(1,#query)==query,query~="" and bn:sub(1,#query)==query
         if ap~=bp then return ap end
+        if a.sortOrder or b.sortOrder then return self:OrderLess(a,b) end
         if (a.updated or 0)~=(b.updated or 0) then return (a.updated or 0)>(b.updated or 0) end
         return tostring(a.id)>tostring(b.id)
     end)
