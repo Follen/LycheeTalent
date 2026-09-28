@@ -243,8 +243,12 @@ function X:CompleteWorking()
     end
     state.active={id=op.buildID,shared=op.shared,config=op.target,code=op.code}
     A.Store.character.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
-
+    local preserved=detail and detail.preservedSlots
+    if preserved then
+        A.Store.character.recovery.actionBars={reason="BARS_PARTIAL",detail=detail}
+    end
     self:Finish(true)
+    if preserved then A:Message(string.format(A.L.BARS_PARTIAL,table.concat(preserved,", "))) end
 end
 function X:Advance()
     local op=self.op
@@ -316,7 +320,12 @@ function X:Start(build,shared,consent)
         if not ok then return nil,reason end
     end
     self.pendingTicket=nil
-    local before,reason=A.ActionBars:Capture(spec);if not before then return nil,reason end
+    local before,reason,slot=A.ActionBars:Capture(spec)
+    if not before then
+        A.Store.character.lastAttempt={revision=self.revision,time=time(),buildID=build.id,spec=spec,
+            shared=shared,stage="capture-bars",reason=reason,slot=slot}
+        return nil,reason
+    end
     local state=A.ActionBars:Spec(spec);if not state then return nil,"SCHEMA" end
     if not state.default then
         local ok,err=A.ActionBars:SeedDefault(spec,before,"first-use");if not ok then return nil,err end
