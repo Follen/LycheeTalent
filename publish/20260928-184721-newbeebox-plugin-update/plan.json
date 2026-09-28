@@ -1,0 +1,21 @@
+{
+  "platform": "newbeebox",
+  "tool": "ncc",
+  "action": "wow addons push",
+  "mod_id": 27799,
+  "name": "荔枝天赋",
+  "directory": "D:\\Code\\wow\\addons\\Lychee Talent\\addon",
+  "version": "1.0.9",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "changelog_file": "publish/20260928-184721-newbeebox-plugin-update/changelog.txt",
+  "tag": "v1.0.9",
+  "commit": "bcd81dfbc1a6fc3ab8ed7fd55e4475fc7522cda2",
+  "release_zip_sha256": "7b8fc0f9427734d6b0036c5b9cbfdab8b87d3908a41f03cac40b803a4eb2da1a",
+  "ncc_pack_sha256": "387458983cf92ee582170fd932eb9d878b1794482186511b3f51cf25c3d80ade",
+  "verified_files": 58,
+  "verified_packages": 14,
+  "content_hashes_match": true,
+  "preserve_existing_listing": true
+}

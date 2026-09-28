@@ -1,0 +1,33 @@
+{
+  "version": "1.0.9",
+  "tag": "v1.0.9",
+  "commit": "bcd81dfbc1a6fc3ab8ed7fd55e4475fc7522cda2",
+  "release_zip_sha256": "7b8fc0f9427734d6b0036c5b9cbfdab8b87d3908a41f03cac40b803a4eb2da1a",
+  "verified_packages": 14,
+  "verified_files": 58,
+  "platform": "newbeebox",
+  "tool": "ncc 0.1.29",
+  "mod_id": 27799,
+  "name": "荔枝天赋",
+  "preflight": {
+    "passed": true,
+    "packages": 14,
+    "files": 58
+  },
+  "submitted": true,
+  "ncc_pack_sha256": "387458983cf92ee582170fd932eb9d878b1794482186511b3f51cf25c3d80ade",
+  "pack_content_matches_release": true,
+  "latest_file": {
+    "file_id": 617615,
+    "version_name": "1.0.9",
+    "game_versions": [
+      "12.1.0"
+    ]
+  },
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "is_paid": false,
+  "status": "approved-public"
+}
