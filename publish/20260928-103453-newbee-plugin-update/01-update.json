@@ -1,0 +1,23 @@
+{
+  "channel": "official-ncc",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent",
+  "argv": [
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.7",
+    "--game-versions",
+    "12.1.0",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\publish\\20260928-103453-newbee-plugin-update/changelog.txt",
+    "-o",
+    "json"
+  ],
+  "preserve": "metadata, media, public visibility and free settings",
+  "expected_readback": "1.0.7 / 12.1.0",
+  "tag": "v1.0.7"
+}

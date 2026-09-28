@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.7.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.7",
+  "release_type": 1,
+  "update_desc": "<p>修改宏内容后自动同步各套动作条布局的宏引用，保留各自槽位与同名宏身份。</p><p>修复宏正文末尾换行差异导致动作条恢复失败的问题。</p><p>修正切换提示计时，应用中至少显示 1.5 秒，再显示荔枝红已应用。</p>"
+}
