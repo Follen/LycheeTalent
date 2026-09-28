@@ -323,7 +323,7 @@ function X:Start(build,shared,consent)
     end
     local current=self:CurrentBuildID()
     local previous=A.Store.character.applied
-    if current and previous and not previous.shared then A.ActionBars:SaveIndependent(spec,current,before) end
+    if current and previous then A.ActionBars:SaveLayout(spec,current,previous.shared,before) end
     local originalCode=A.Talents:Export();if not originalCode then return nil,"NOT_READY" end
     local selected=C_ClassTalents.GetLastSelectedSavedConfigID(spec)
     local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="preparing",originalSaved=selected,startedAt=GetTime()}

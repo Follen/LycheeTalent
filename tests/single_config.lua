@@ -154,5 +154,15 @@ assert(A.Apply:Start(builds.a,false));settle()
 assert(A.message=='APPLY_SUCCESS' and creates==1,'recovery reuses the same config after failures')
 print('PASS failures: rejected/event-failed commits, combat, timeout, safe retry without another config')
 
+-- Shared bars save both on normal slot changes and before switching away.
+B:Init()
+assert(A.Apply:Start(builds.b,true));settle()
+local independentBefore=B:Get(testSpec,'a',false).slots[1].id
+slots[1].id=901;emit('ACTIONBAR_SLOT_CHANGED',1);settle()
+assert(B:Get(testSpec,nil,true).slots[1].id==901,'shared edits autosave through the real event handler')
+slots[1].id=902
+assert(A.Apply:Start(builds.a,false));settle()
+assert(B:Get(testSpec,nil,true).slots[1].id==902,'leaving shared saves edits before a deferred event can run')
+assert(B:Get(testSpec,'a',false).slots[1].id==independentBefore,'shared save does not overwrite independent layout')
 
-
+print('PASS shared autosave and pre-switch save preserve independent layouts')
