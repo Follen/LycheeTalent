@@ -1,0 +1,34 @@
+{
+  "version": "1.0.10",
+  "tag": "v1.0.10",
+  "commit": "5c09a5b111efd25b2aa8739b7dab2a6c0c9c16c5",
+  "release_zip_sha256": "641ce8c93a5ff8b34d017e33dd4ff4f30e66982d009f9589dd09891c30d8611a",
+  "verified_packages": 14,
+  "verified_files": 58,
+  "platform": "dd",
+  "name": "荔枝天赋",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "preflight": {
+    "schema_valid": true
+  },
+  "submitted": true,
+  "response_code": 0,
+  "version_sn": "e3b6d1bf2da44a8f8b65d485dd1f1ca0",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "readback": {
+    "game_type": null,
+    "kind": "plugin",
+    "name": "荔枝天赋",
+    "reference": "40ce264bd1714ceb89132f5157f22869",
+    "scope": "public",
+    "status": 1,
+    "updated_at": 1790604958,
+    "version": "1.0.10"
+  },
+  "status": "submitted-public-approval-unconfirmed",
+  "cleanup_complete": true,
+  "broker_stopped": true
+}

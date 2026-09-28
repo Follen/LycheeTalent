@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.10.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.10",
+  "release_type": 1,
+  "update_desc": "<p>修复部分宏槽位无法读取时，所有天赋方案都无法切换的问题。</p><p>无法读取的宏槽位保留原状，其余槽位正常恢复；切换后提示保留的槽位编号。</p><p>补齐切换前动作条读取失败的阶段和槽位记录，修正误导性的报错文案。</p>"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "荔枝天赋",
+  "prior_version": "1.0.9",
+  "tag": "v1.0.10",
+  "commit": "5c09a5b111efd25b2aa8739b7dab2a6c0c9c16c5",
+  "sha256": "641ce8c93a5ff8b34d017e33dd4ff4f30e66982d009f9589dd09891c30d8611a",
+  "verified_files": 58,
+  "verified_packages": 14,
+  "game_type": 10001,
+  "preserve_existing_listing": true
+}

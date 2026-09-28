@@ -19,13 +19,13 @@
       "status": "submitted-public-approval-unconfirmed",
       "share_code": "766554",
       "sn": "40ce264bd1714ceb89132f5157f22869",
-      "version": "1.0.9"
+      "version": "1.0.10"
     },
     "newbeebox": {
       "id": 27799,
       "status": "approved-public",
-      "version": "1.0.9",
-      "file_id": 617615
+      "version": "1.0.10",
+      "file_id": 617884
     }
   },
   "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word"
