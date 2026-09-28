@@ -1,0 +1,26 @@
+{
+  "version": "1.0.8",
+  "tag": "v1.0.8",
+  "commit": "b223ed5ebc1c67fb6833ee7bcdf8561c5bfd7f7b",
+  "zip_sha256": "fdf62bb66c85eefaf75a4272f5bf41dc626dbeb4a1f3b73525f81207639c95b1",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "accepted": true,
+  "readback": {
+    "game_type": null,
+    "kind": "plugin",
+    "name": "荔枝天赋",
+    "reference": "40ce264bd1714ceb89132f5157f22869",
+    "scope": "public",
+    "status": 1,
+    "updated_at": 1790585519,
+    "version": "1.0.8"
+  },
+  "cleanup": {
+    "cleanup_complete": true,
+    "logout_requested": true,
+    "running": false
+  },
+  "status": "submitted-public-approval-unconfirmed",
+  "version_sn": "eddd2699b2e74c2ea575ea8b3cf81cb6",
+  "verification_note": "Immediate author-list read was stale (1.0.7). Read-only verification later confirmed 1.0.8 in author list, detail and version history; no upload retry."
+}

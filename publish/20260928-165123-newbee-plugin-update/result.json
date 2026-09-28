@@ -1,0 +1,43 @@
+{
+  "version": "1.0.8",
+  "tag": "v1.0.8",
+  "commit": "b223ed5ebc1c67fb6833ee7bcdf8561c5bfd7f7b",
+  "verified_package_sha256": "fdf62bb66c85eefaf75a4272f5bf41dc626dbeb4a1f3b73525f81207639c95b1",
+  "packaging": "Official ncc repacks the same clean tagged addon directory: 14 packages, 58 files.",
+  "upload": {
+    "uploaded": true,
+    "mod_id": 27799,
+    "mod_name": "",
+    "version": "1.0.8",
+    "game_versions": [
+      "12.1.0"
+    ],
+    "changelog_chars": 92,
+    "zip_root": "addon",
+    "layout": "collection",
+    "addon_count": 14,
+    "skipped_top_files": [],
+    "file_count": 58,
+    "zip_bytes": 751839,
+    "server_result": {}
+  },
+  "readback": {
+    "mod_id": 27799,
+    "name": "荔枝天赋",
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "visibility": 1,
+    "latest_file": {
+      "file_id": 617520,
+      "version_name": "1.0.8",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 754181,
+      "upload_time": 1790585577034,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.8"
+    }
+  }
+}

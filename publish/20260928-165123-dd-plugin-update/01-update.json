@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.8.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.8",
+  "release_type": 1,
+  "update_desc": "<p>宏按原编号恢复，修改名称、正文或在原位置重建后无需重新保存布局。</p><p>旧布局的宏失效标记不再拦截切换，移除宏内容比对与同步。</p><p>补齐共用动作条自动保存和切换前保存，独立布局互不影响。</p>"
+}
