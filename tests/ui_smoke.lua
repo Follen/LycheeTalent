@@ -125,6 +125,56 @@ if arg[1]=="list-scroll" then
     assert(bar.point[5]==-196,"raid scrollbar clears the difficulty controls")
     print("PASS list scrolling: drag, wheel, row identity, resize, page return, short lists, raid layout");return
 end
+if arg[1]=="reorder" then
+    for i=1,27 do A.Store:Save("Drag "..i,"drag-"..i,"mythic","",71) end
+    local u=A.UI;u.scene="mine";u:Refresh()
+    local original={};for i,b in ipairs(u.results)do original[i]=b.id end
+    local selected=u.selected
+    local x,y=1000,790
+    GetCursorPosition=function()return x,y end
+    local held=true;IsMouseButtonDown=function()return held end
+    local applications=0;A.Apply.Start=function()applications=applications+1 end
+    local function start(index)
+        local row=u.rows[index]
+        row.scripts.OnMouseDown(row,"LeftButton");row.scripts.OnDragStart(row)
+        return row
+    end
+    local row=start(1)
+    assert(u.drag and u.drag.id==original[1] and row:GetAlpha()==.4 and u.dropLine:IsShown(),"drag has preview and insertion marker")
+    y=800-u.rowStep*4;u.dragPreview.scripts.OnUpdate(nil,.02)
+    row.scripts.OnDragStop(row)
+    assert(u.results[4].id==original[1] and u.selected==selected,"drop reorders without changing selection")
+    row.scripts.OnClick(row,"LeftButton");row.scripts.OnDoubleClick(row,"LeftButton")
+    assert(applications==0 and not u.drag and not u.dragPreview.scripts.OnUpdate,"drop cannot apply talents and leaves no idle update")
+    y=790;row=start(4);row.scripts.OnDragStop(row)
+    for i,b in ipairs(u.results)do assert(b.id==original[i],"upward drop restores order")end
+    start(1);x=500;u:FinishDrag();x=1000
+    assert(u.results[1].id==original[1],"outside drop cancels")
+    start(1);u.escape:Hide()
+    assert(not u.drag and u.frame:IsShown(),"Escape cancels drag before closing panel")
+    start(1);u:Settings();assert(not u.drag,"secondary page cancels drag")
+    u.settings:Hide()
+    row=start(1);local sourceID=u.drag.id
+    y=800-u.visibleRows*u.rowStep+4
+    for i=1,3 do u.dragPreview.scripts.OnUpdate(nil,.13) end
+    assert(u.offset==3 and row.build.id~=sourceID and u.drag.id==sourceID,"edge scrolling preserves source despite recycled rows")
+    held=false;u.dragPreview.scripts.OnUpdate(nil,.01);held=true
+    assert(not u.drag and u.results[u.offset+u.visibleRows].id==sourceID,"mouse release fallback commits at scrolled target")
+    u.offset=0;u:Refresh();y=790
+    start(1);u.frame.scripts.OnEvent(nil,"PLAYER_REGEN_DISABLED")
+    assert(not u.drag and not u.dragPreview.scripts.OnUpdate,"combat cancels drag")
+    InCombatLockdown=function()return true end;start(1);assert(not u.drag,"combat cannot start sorting")
+    InCombatLockdown=function()return false end
+    A.Store.readonly=true;start(1);assert(not u.drag,"read-only cannot start sorting");A.Store.readonly=false
+    start(1);u.scene="mythic";u:Refresh();assert(not u.drag,"tab change cancels drag")
+    start(1);assert(not u.drag,"builtins cannot be reordered")
+    u.scene="mine";u:Refresh()
+    local count=#objects
+    for i=1,100 do start(1);u:CancelDrag() end
+    assert(#objects==count and not u.dragPreview.scripts.OnUpdate,"100 drags reuse controls and remove callbacks")
+    start(1);u.frame:Hide();assert(not u.drag and not u.dragPreview.scripts.OnUpdate,"closing cleans up drag")
+    print("PASS drag sorting: marker, drop, no apply, cancellation, edge scrolling, recycled identity, 100 drags, cleanup");return
+end
 local first=A.UI.rows[1]
 assert(first.build,"selected scenario has a build")
 assert(not A.UI.search and not A.UI.status,"no search controls or footer explanation")
@@ -372,7 +422,11 @@ A.UI:ChooseIcon();picker.tabs[3].scripts.OnClick(picker.tabs[3]);assert(picker.o
 cell.scripts.OnMouseDown(cell,"LeftButton");cell.scripts.OnClick(cell,"LeftButton")
 A.UI.dialog:Hide();assert(imported.icon==130006,"cancelling edit preserves saved icon")
 local iconObjects=#objects
-for i=1,100 do A.UI:Dialog(false);A.UI:ChooseIcon();A.UI.dialog:Hide() end
+for i=1,100 do
+    A.UI:Dialog(false);A.UI:ChooseIcon()
+    assert(picker.filter==false and not picker.provider.filter,"reopen always starts with common icons")
+    A.UI.dialog:Hide()
+end
 assert(#objects==iconObjects and providerCount==providerReleased and providerActive==0 and not picker.provider and not picker:IsShown(),"picker reuses UI but releases its catalog on every close")
 A.UI:Dialog(false);A.Store.db.reducedMotion=false;A.UI:ChooseIcon()
 assert(picker.clip.scripts.OnUpdate and A.UI.dialog.expansion==0,'expansion starts at the existing layout')

@@ -18,7 +18,7 @@ local en = {
 
     COPY_WCL="Copy WCL link", WCL_LEVEL="WCL · +%d", WCL_RECORD="Recorded · %s",
     WCL_SHIFT_HINT="Hold Shift for source", WCL_RELEASE_HINT="Release Shift to close · Esc to dismiss", WCL_COPY_HINT="Ctrl+C to copy · Esc to close",
-    ICON="Icon", CHOOSE_ICON="Choose icon", ICON_ALL="All", ICON_SPELL="Spells", ICON_ITEM="Items",
+    ICON="Icon", CHOOSE_ICON="Choose icon", ICON_COMMON="Common", ICON_SPELL="Spells", ICON_ITEM="Items",
     TITLE="Lychee Talent", SUBTITLE="Choose talents for your next encounter.",
     MYTHIC="Mythic+", RAID="Raid", MINE="My builds", ALL="All", BUILTIN="Recommended", USER="Personal",
     SEARCH="Search builds, dungeons or bosses", SEARCH_SCOPE="Current specialization · all scenarios",
@@ -84,7 +84,7 @@ local zh = {
     BARS_RESTORE="动作条恢复未完成，已保留布局记录。",
     COPY_WCL="复制 WCL 链接", WCL_LEVEL="WCL · %d 层", WCL_RECORD="记录时间 · %s",
     WCL_SHIFT_HINT="按住 Shift 查看来源", WCL_RELEASE_HINT="松开 Shift 收起 · Esc 关闭", WCL_COPY_HINT="Ctrl+C 复制 · Esc 关闭",
-    ICON="图标", CHOOSE_ICON="选择图标", ICON_ALL="全部", ICON_SPELL="法术", ICON_ITEM="物品",
+    ICON="图标", CHOOSE_ICON="选择图标", ICON_COMMON="常用", ICON_SPELL="法术", ICON_ITEM="物品",
     TITLE="荔枝天赋", SUBTITLE="为下一场挑战，选好天赋。", MYTHIC="大秘境", RAID="团本", MINE="我的方案",
     ALL="全部", BUILTIN="内置推荐", USER="我的方案", SEARCH="搜索方案、副本或首领", SEARCH_SCOPE="当前专精 · 全部场景",
     IMPORT="导入方案", SAVE_CURRENT="保存当前", NAME="方案名称", CODE="天赋字符串", SCENE="适用场景", TARGET="副本 / 首领（选填）",
@@ -141,6 +141,7 @@ A.L.APPLY_SUCCESS=GetLocale()=="zhCN" and "天赋已应用" or "Talents applied"
 
 A.L.ACTION_MENU=GetLocale()=="zhCN" and "操作菜单" or "Actions"
 A.L.DOUBLE_CLICK_HINT=GetLocale()=="zhCN" and "双击应用天赋" or "Double-click to apply"
+A.L.PERSONAL_BUILD_HINT=GetLocale()=="zhCN" and "双击应用 · 拖动排序" or "Double-click: apply · Drag: reorder"
 
 A.L.APPLY_COMBAT=GetLocale()=="zhCN" and "已进入战斗，天赋切换停止。" or "Entered combat. Talent switching stopped."
 A.L.APPLY_SPEC_CHANGED=GetLocale()=="zhCN" and "专精已改变，天赋切换停止。" or "Specialization changed. Talent switching stopped."
