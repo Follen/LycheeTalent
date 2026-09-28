@@ -216,7 +216,11 @@ function U:ShowApplySuccess(buildID,startedAt)
             row.title:SetWidth(122)
             row.link:Hide()
             row.more:Hide()
-            row:SetScript("OnUpdate",function(r,elapsed)
+            local lastTime=GetTime()
+            row:SetScript("OnUpdate",function(r)
+                local now=GetTime()
+                local elapsed=math.max(0,now-lastTime)
+                lastTime=now
                 if not r.build or r.build.id~=buildID or A.Apply.op then
                     U:ClearApplyFeedback(r);return
                 end
