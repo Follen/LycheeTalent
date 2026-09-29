@@ -561,6 +561,33 @@ for i=1,100 do A.UI:ContextSettings(imported.id);contexts:Hide();A.UI:ShowRemind
 assert(#objects==overlayObjects,'association and reminder controls reused across 100 openings')
 A.UI:Settings()
 local settings=A.UI.settings
+do
+    local card=settings.volume;local slider=card.slider
+    assert(not slider:IsEnabled() and card.value:GetText()==A.L.DIALOG_VOLUME_UNAVAILABLE,"missing audio API disables the slider")
+    local amount,writes="0.426",0
+    C_CVar={GetCVar=function(name)assert(name=="Sound_DialogVolume");return amount end,
+        SetCVar=function(name,value)assert(name=="Sound_DialogVolume");writes=writes+1;amount=value;return true end}
+    function slider:SetValue(v)
+        self.sliderValue=v
+        if self.scripts.OnValueChanged then self.scripts.OnValueChanged(self,v) end
+    end
+    card.scripts.OnShow(card)
+    assert(card.events.CVAR_UPDATE and card.percent==43 and writes==0 and amount=="0.426","opening reads system volume without rounding or overwriting it")
+    assert(card.thumb.color[1]==.835,"normal thumb uses Lychee red")
+    slider.scripts.OnEnter(slider);assert(card.thumb.color[1]==.95,"hover lightens thumb")
+    slider.scripts.OnMouseDown(slider,"LeftButton");assert(card.thumb.color[1]==.70,"press darkens thumb")
+    slider.scripts.OnMouseUp(slider);slider.scripts.OnLeave(slider)
+    slider:SetValue(64);assert(amount=="0.64" and card.value:GetText()=="64%" and writes==1,"drag writes only dialogue volume and reads it back")
+    slider.scripts.OnMouseWheel(slider,1);assert(amount=="0.65","wheel adjusts by one percent")
+    slider:SetValue(101);assert(amount=="1" and card.percent==100,"maximum clamps")
+    slider:SetValue(-1);assert(amount=="0" and not card.progress:IsShown(),"zero is valid and hides fill")
+    amount="0.8";local before=writes;card.scripts.OnEvent(card,"CVAR_UPDATE","Sound_DialogVolume")
+    assert(card.percent==80 and writes==before,"system settings changes sync without write-back")
+    C_CVar.SetCVar=function()return false end
+    slider:SetValue(20);assert(card.percent==80 and slider.sliderValue==80,"rejected writes return to actual volume")
+    card.scripts.OnHide(card);assert(not next(card.events) and not card.pressed,"hidden volume has no event listener or pressed state")
+    card.scripts.OnShow(card);assert(card.events.CVAR_UPDATE,"reopening restores synchronization")
+end
 assert(settings.importCard:IsShown() and not settings.importEX:IsEnabled(),"missing source disables one-click import")
 settings.importEX.scripts.OnClick(settings.importEX)
 assert(settings.importSummary:GetText()==A.L.TEX_NOT_FOUND and not settings.viewImports,"missing Talent EX is explained without a navigation link")

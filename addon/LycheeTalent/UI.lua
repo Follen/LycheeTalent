@@ -1086,6 +1086,56 @@ function U:ClosePage(p)
     self:HideTooltip()
     if self.frame:IsShown() and not self.closing then self:Refresh() end
 end
+local function dialogVolume(parent)
+    local card=CreateFrame("Frame",nil,parent)
+    card:SetPoint("TOPLEFT",18,-124);card:SetSize(244,100);rounded(card,C.field,6)
+    local title=text(card,12,C.text,L.DIALOG_VOLUME,0,0)
+    title:SetPoint("TOPLEFT",14,-12);title:SetWidth(132)
+    local value=text(card,12,C.muted,"",0,0);card.value=value
+    value:ClearAllPoints();value:SetPoint("TOPRIGHT",-14,-12);value:SetJustifyH("RIGHT");value:SetFont(STANDARD_TEXT_FONT,14,"")
+    local help=text(card,10,C.muted,L.DIALOG_VOLUME_HELP,0,0)
+    help:SetFont(STANDARD_TEXT_FONT,12,"");help:SetPoint("TOPLEFT",14,-36);help:SetWidth(216);help:SetHeight(30)
+    local slider=CreateFrame("Slider",nil,card);card.slider=slider
+    slider:SetPoint("BOTTOMLEFT",14,8);slider:SetSize(216,28);slider:SetOrientation("HORIZONTAL")
+    slider:SetMinMaxValues(0,100);slider:SetValueStep(1);slider:SetObeyStepOnDrag(true)
+    local rail=slider:CreateTexture(nil,"BACKGROUND");rail:SetPoint("LEFT",5,0);rail:SetPoint("RIGHT",-5,0);rail:SetHeight(4);rail:SetColorTexture(unpack(C.border))
+    local progress=slider:CreateTexture(nil,"ARTWORK");card.progress=progress
+    progress:SetPoint("LEFT",rail,"LEFT");progress:SetHeight(4)
+    local thumb=slider:CreateTexture(nil,"OVERLAY");card.thumb=thumb
+    slider:SetThumbTexture(thumb);thumb:SetSize(10,16)
+    function card:Style()
+        local tint=not slider:IsEnabled() and C.dim or self.pressed and {.70,.17,.22} or self.hovered and C.hot or C.red
+        thumb:SetColorTexture(unpack(tint));progress:SetColorTexture(unpack(tint))
+    end
+    function card:Refresh()
+        local amount=C_CVar and C_CVar.GetCVar and tonumber(C_CVar.GetCVar("Sound_DialogVolume"))
+        local enabled=amount~=nil and C_CVar.SetCVar~=nil
+        local percent=math.floor(math.max(0,math.min(1,amount or 0))*100+.5)
+        self.refreshing=true;slider:SetEnabled(enabled);slider:SetValue(percent);self.refreshing=false
+        self.percent=percent;value:SetText(enabled and (percent.."%") or L.DIALOG_VOLUME_UNAVAILABLE)
+        progress:SetWidth(math.max(.01,206*percent/100));progress:SetShown(enabled and percent>0);self:Style()
+    end
+    slider:SetScript("OnValueChanged",function(_,amount)
+        if card.refreshing or not slider:IsEnabled() then return end
+        local percent=math.max(0,math.min(100,math.floor(amount+.5)))
+        if percent~=card.percent then C_CVar.SetCVar("Sound_DialogVolume",tostring(percent/100)) end
+        card:Refresh() -- Read back the actual system value, including rejected writes.
+    end)
+    slider:EnableMouseWheel(true)
+    slider:SetScript("OnMouseWheel",function(_,delta)
+        if slider:IsEnabled() then slider:SetValue(math.max(0,math.min(100,(card.percent or 0)+delta))) end
+    end)
+    slider:SetScript("OnEnter",function()card.hovered=true;card:Style()end)
+    slider:SetScript("OnLeave",function()card.hovered=false;card:Style()end)
+    slider:SetScript("OnMouseDown",function(_,key)if key=="LeftButton" then card.pressed=true;card:Style()end end)
+    slider:SetScript("OnMouseUp",function()card.pressed=false;card:Style()end)
+    card:SetScript("OnShow",function()card:RegisterEvent("CVAR_UPDATE");card:Refresh()end)
+    card:SetScript("OnEvent",function(_,_,name)
+        if type(name)=="string" and name:lower()=="sound_dialogvolume" then card:Refresh() end
+    end)
+    card:SetScript("OnHide",function()card:UnregisterAllEvents();card.pressed=false;card.hovered=false;card:Style()end)
+    return card
+end
 function U:Settings()
     if InCombatLockdown() then return end
     if not self.settings then
@@ -1098,8 +1148,9 @@ function U:Settings()
         p.toggle:ClearAllPoints();p.toggle:SetPoint("TOPLEFT",18,-64);p.toggle:SetSize(244,52);rounded(p.toggle,C.field,6)
         p.toggle.label:ClearAllPoints();p.toggle.label:SetPoint("LEFT",14,0);p.toggle.label:SetFont(STANDARD_TEXT_FONT,16,"")
         p.mark=p.toggle:CreateTexture(nil,"ARTWORK");p.mark:SetSize(22,22);p.mark:SetPoint("RIGHT",-12,0);p.mark:SetTexture(media.."choice-checkbox.tga")
+        p.volume=dialogVolume(p)
         local card=CreateFrame("Frame",nil,p);p.importCard=card
-        card:SetPoint("TOPLEFT",18,-124);card:SetSize(244,64);rounded(card,C.field,6)
+        card:SetPoint("TOPLEFT",18,-232);card:SetSize(244,64);rounded(card,C.field,6)
         card:EnableMouse(true)
         local function importHelp()
             p:Render()
@@ -1130,9 +1181,10 @@ function U:Settings()
         primaryButton(p.importEX,5)
         p.importEX:HookScript("OnEnter",importHelp)
         p.importEX:HookScript("OnLeave",function()GameTooltip:Hide()end)
-        p.importResult=text(p,12,C.muted,"",39,-200,278);p.importResult:SetFont(STANDARD_TEXT_FONT,14,"");p.importResult:SetSpacing(5)
+        p.importResult=text(p,12,C.muted,"",39,-308,278);p.importResult:SetFont(STANDARD_TEXT_FONT,14,"");p.importResult:SetSpacing(5)
         self:CreateAbout(p)
         function p:Render(issue)
+            self.volume:Refresh()
             local state=A.Store.db.remindersEnabled~=false and 2 or 0
             self.mark:SetTexCoord(state/4,(state+1)/4,0,1)
             local scan,why=A.TalentEx:Inspect()
