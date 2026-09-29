@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:/Code/wow/addons/Lychee Talent/dist/LycheeTalent-1.0.11.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.11",
+  "release_type": 1,
+  "update_desc": "<p>当前使用入门天赋时，自动创建或复用“荔枝天赋”方案并切换，无需手动关闭入门方案。</p><p>等待原生方案加载完成后再退出入门模式，避免重置待应用的天赋改动。</p><p>修复入门模式下仍记着上次荔枝方案时，误判为已经切换的问题。</p>"
+}

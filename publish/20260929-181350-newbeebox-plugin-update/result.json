@@ -1,0 +1,40 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "version": "1.0.11",
+  "tag": "v1.0.11",
+  "commit": "ad4ccb7728aa6a7650fe8aaaa8bf6ff36606ba10",
+  "merged_pr": "https://github.com/Follen/LycheeTalent/pull/18",
+  "packages": 14,
+  "verified_files": 58,
+  "dry_run_passed": true,
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "id": 27799,
+  "file_id": 619511,
+  "archive": "dist/LycheeTalent-1.0.11-ncc.zip",
+  "sha256": "12eff69d8aa98040711a6d9808e482dc6b0ece342b69289225e471ced70e41d3",
+  "upload_accepted": true,
+  "readback_version": "1.0.11",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "is_paid": false,
+  "status": "approved-public",
+  "preserved_fields": [
+    "name",
+    "intro",
+    "description",
+    "content_format",
+    "categories",
+    "logo",
+    "screenshots",
+    "visibility",
+    "is_paid",
+    "subscribe_plan_level"
+  ],
+  "archive_content_matches_dd": true
+}

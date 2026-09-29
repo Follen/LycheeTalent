@@ -1,0 +1,34 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.11",
+  "tag": "v1.0.11",
+  "commit": "ad4ccb7728aa6a7650fe8aaaa8bf6ff36606ba10",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "packages": 14,
+  "verified_files": 58,
+  "preserve": [
+    "name",
+    "summary",
+    "description",
+    "cover",
+    "screenshots",
+    "public_visibility",
+    "free_pricing",
+    "commercial_settings"
+  ],
+  "authorization": "User merge/tag/fupload request and repository AGENTS.md",
+  "channel": "fupload-dd",
+  "resource_sn": "40ce264bd1714ceb89132f5157f22869",
+  "archive": "D:/Code/wow/addons/Lychee Talent/dist/LycheeTalent-1.0.11.zip",
+  "sha256": "7ff86650859941a8e58bea0f40073a2d5e0258b0011fc8a380ba4532f0ad9c50",
+  "steps": [
+    "dry-run 01-update.json",
+    "push verified Git commit and tag",
+    "update 01-update.json",
+    "read author list and version history",
+    "stop task session and verify cleanup"
+  ]
+}

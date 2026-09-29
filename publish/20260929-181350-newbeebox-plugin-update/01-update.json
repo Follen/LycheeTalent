@@ -1,0 +1,50 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.11",
+  "tag": "v1.0.11",
+  "commit": "ad4ccb7728aa6a7650fe8aaaa8bf6ff36606ba10",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "packages": 14,
+  "verified_files": 58,
+  "preserve": [
+    "name",
+    "summary",
+    "description",
+    "cover",
+    "screenshots",
+    "public_visibility",
+    "free_pricing",
+    "commercial_settings"
+  ],
+  "authorization": "User merge/tag/fupload request and repository AGENTS.md",
+  "channel": "official-ncc",
+  "resource_id": 27799,
+  "working_directory": "D:/Code/wow/addons/Lychee Talent",
+  "archive": "dist/LycheeTalent-1.0.11-ncc.zip",
+  "sha256": "12eff69d8aa98040711a6d9808e482dc6b0ece342b69289225e471ced70e41d3",
+  "arguments": [
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.11",
+    "--changelog",
+    "@D:/Code/wow/addons/Lychee Talent/publish/20260929-181350-newbeebox-plugin-update/changelog.txt",
+    "--game-versions",
+    "12.1.0",
+    "-o",
+    "json"
+  ],
+  "expected_readback": {
+    "name": "荔枝天赋",
+    "version": "1.0.11",
+    "visibility": 1,
+    "is_paid": false
+  }
+}

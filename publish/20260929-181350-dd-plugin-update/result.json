@@ -1,0 +1,56 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "version": "1.0.11",
+  "tag": "v1.0.11",
+  "commit": "ad4ccb7728aa6a7650fe8aaaa8bf6ff36606ba10",
+  "merged_pr": "https://github.com/Follen/LycheeTalent/pull/18",
+  "packages": 14,
+  "verified_files": 58,
+  "dry_run_passed": true,
+  "platform": "dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "archive": "dist/LycheeTalent-1.0.11.zip",
+  "sha256": "7ff86650859941a8e58bea0f40073a2d5e0258b0011fc8a380ba4532f0ad9c50",
+  "upload_accepted": true,
+  "version_sn": "b4dce489eb5b4714b23e236b0740892b",
+  "author_list": {
+    "game_type": null,
+    "kind": "plugin",
+    "name": "荔枝天赋",
+    "reference": "40ce264bd1714ceb89132f5157f22869",
+    "scope": "public",
+    "status": 1,
+    "updated_at": 1790676988,
+    "version": "1.0.11"
+  },
+  "detail_version": "1.0.10",
+  "status": "submitted-public-approval-unconfirmed",
+  "preserved_fields": [
+    "name",
+    "description_summary",
+    "html_desc",
+    "logo",
+    "detail_imgs",
+    "scope",
+    "need_buy",
+    "price_fen",
+    "need_anchor_vip",
+    "associated_acts",
+    "room_id",
+    "channel_id",
+    "channel_type",
+    "creation_statement"
+  ],
+  "cleanup": {
+    "cleanup_complete": true,
+    "logout_requested": true,
+    "running": false
+  },
+  "final_doctor": {
+    "broker_running": false,
+    "authenticated": false,
+    "gui_running": false
+  },
+  "recovery": "Initial session was no longer running before publication. Readback after a new session confirmed no 1.0.11 version before the single successful upload. Author list initially lagged; subsequent read-only verification confirmed 1.0.11."
+}
