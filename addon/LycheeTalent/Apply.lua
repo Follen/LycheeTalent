@@ -79,6 +79,7 @@ end
 function X:CurrentBuildID()
     local saved=A.Store.character.applied
     if not saved or self.op or saved.spec~=A:GetSpec() then return end
+    if C_ClassTalents.GetStarterBuildActive() then return end
     local binding,info=A.ActionBars:Working(saved.spec)
     if not binding or binding.id~=saved.config or info.usesSharedActionBars then return end
     local build=A.Catalog:Find(saved.id)
@@ -188,7 +189,9 @@ function X:ConfigureWorking()
 end
 function X:ActivateWorking()
     local op=self.op
-    if C_ClassTalents.GetLastSelectedSavedConfigID(op.spec)==op.target then
+    -- The remembered config may still point at our loadout while Starter is
+    -- active. Always complete a native load before leaving Starter in that case.
+    if not C_ClassTalents.GetStarterBuildActive() and C_ClassTalents.GetLastSelectedSavedConfigID(op.spec)==op.target then
         self:StageWorking()
     else self:LoadNative(op.target,function()self:StageWorking()end) end
 end
@@ -205,6 +208,18 @@ function X:StageWorking()
     if not self:CheckContext() then return end
     local active=C_ClassTalents.GetActiveConfigID()
     if C_Traits.ConfigHasStagedChanges(active) then self:Finish(false,"PENDING");return end
+    if C_ClassTalents.GetStarterBuildActive() then
+        -- Blizzard's LoadConfigInternal unflags only after loading completes:
+        -- SetStarterBuildActive(false) resets pending changes. Verify the saved
+        -- loadout first, then wait for the flag to clear before staging ours.
+        local entries=A.Talents:ReadEntries(active)
+        if not entries or not A.Talents:Matches(op.target,entries) then self:Finish(false,"STAGED_MISMATCH");return end
+        op.stage="leaving-starter";op.inNativeCall=true
+        local result=C_ClassTalents.SetStarterBuildActive(false)
+        op.inNativeCall=nil
+        if result==Enum.LoadConfigResult.Error then self:Finish(false,"STARTER_FAILED");return end
+        self:Advance();return
+    end
     if self:MatchesWorking(op,active) then
         op.stage="applied"
         self:Defer(function()self:CompleteWorking()end);return
@@ -274,6 +289,10 @@ function X:Advance()
             self.nativeReadyAt=GetTime()+1
             self:Defer(op.afterLoad,1)
         end
+    elseif op.stage=="leaving-starter" and not C_ClassTalents.GetStarterBuildActive()
+        and not C_Traits.ConfigHasStagedChanges(active) then
+        op.stage="starter-left"
+        self:Defer(function()self:StageWorking()end)
     elseif op.stage=="applying" and not C_Traits.ConfigHasStagedChanges(active)
         and self:MatchesWorking(op,active) then
         op.stage="applied"
@@ -286,6 +305,7 @@ function X:OnEvent(event,value)
     local op=self.op
     if not op then return end
     if event=="CONFIG_COMMIT_FAILED" then self:Finish(false,"COMMIT_FAILED");return end
+    if event=="STARTER_BUILD_ACTIVATION_FAILED" and op.stage=="leaving-starter" then self:Finish(false,"STARTER_FAILED");return end
     if not self:CheckContext() then return end
     if event=="TRAIT_CONFIG_CREATED" and type(value)=="table" and op.stage=="creating"
         and value.name==op.name and not op.before[value.ID] and value.type==Enum.TraitConfigType.Combat then
@@ -301,7 +321,6 @@ function X:Start(build,shared,consent)
     local valid,spec=A.Talents:Validate(code);if not valid then return nil,spec end
     local active=C_ClassTalents.GetActiveConfigID()
     if not active or not C_ClassTalents.CanEditTalents() then return nil,"APPLY_UNAVAILABLE" end
-    if C_ClassTalents.GetStarterBuildActive() then return nil,"STARTER_ACTIVE" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
     local entries=A.Talents:Entries(code);if not entries then return nil,"BAD_CODE" end
     shared=shared==true
@@ -346,7 +365,7 @@ function X:Start(build,shared,consent)
             if not ok and X.op then A.Store.character.recovery.luaError=tostring(err):sub(1,240);X:Finish(false,"APPLY_FAILED") end
         end)
     end
-    for _,event in ipairs({"TRAIT_CONFIG_CREATED","TRAIT_CONFIG_UPDATED","CONFIG_COMMIT_FAILED","PLAYER_REGEN_DISABLED","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","PLAYER_TALENT_UPDATE","SELECTED_LOADOUT_CHANGED"}) do self.events:RegisterEvent(event) end
+    for _,event in ipairs({"TRAIT_CONFIG_CREATED","TRAIT_CONFIG_UPDATED","CONFIG_COMMIT_FAILED","STARTER_BUILD_ACTIVATION_FAILED","PLAYER_REGEN_DISABLED","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","PLAYER_TALENT_UPDATE","SELECTED_LOADOUT_CHANGED"}) do self.events:RegisterEvent(event) end
     self.timer=C_Timer.NewTimer(25,function()if X.op==op then X:Finish(false,"APPLY_TIMEOUT")end end)
     A:Message("APPLYING")
     if A.UI.frame and A.UI.frame:IsShown() then A.UI:Refresh() end
