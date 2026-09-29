@@ -12,6 +12,7 @@ lua tests/build_order.lua
 lua tests/ui_smoke.lua same-build-refresh
 lua tests/ui_smoke.lua pending-prompt
 lua tests/single_config.lua
+lua tests/starter_build.lua
 lua tests/actionbar_profiles.lua
 lua tests/actionbar_restore.lua
 lua tests/actionbar_edgecases.lua
