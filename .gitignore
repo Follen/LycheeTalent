@@ -15,3 +15,6 @@ docs/single-config-actionbars.md
 # Local agent/product working notes
 PRODUCT.md
 design.md
+
+# Task worktrees
+.worktrees/
