@@ -98,12 +98,16 @@ function X:Finish(ok,key)
     self.op=nil;self:ReleaseCreationGuard()
     local char=A.Store.character
     char.lastAttempt={revision=self.revision,time=time(),buildID=op.buildID,spec=op.spec,
-        shared=op.shared,stage=op.stage,reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED")}
-    char.recovery.status=ok and "complete" or "interrupted"
-    char.recovery.reason=char.lastAttempt.reason
-    char.recovery.targetConfig=op.target
-    char.recovery.targetName=op.targetName
-    char.recovery.stage=op.stage
+        shared=op.shared,stage=op.stage,slot=op.failedSlot,luaError=op.luaError,
+        reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED")}
+    -- A failed initial capture must not destroy an earlier recovery backup.
+    if op.recovery and char.recovery==op.recovery then
+        char.recovery.status=ok and "complete" or "interrupted"
+        char.recovery.reason=char.lastAttempt.reason
+        char.recovery.targetConfig=op.target
+        char.recovery.targetName=op.targetName
+        char.recovery.stage=op.stage
+    end
     A:Message(char.lastAttempt.reason)
     if ok and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
     if A.UI.frame and A.UI.frame:IsShown() then
@@ -126,7 +130,8 @@ function X:Defer(fn,delay)
         if self.op~=op or not self:CheckContext() then return end
         local ok,err=pcall(fn)
         if not ok and self.op==op then
-            A.Store.character.recovery.luaError=tostring(err):sub(1,240)
+            op.luaError=tostring(err):sub(1,240)
+            if op.recovery then op.recovery.luaError=op.luaError end
             self:Finish(false,"APPLY_FAILED")
         end
     end)
@@ -256,12 +261,17 @@ function X:CompleteWorking()
         A.Store.character.recovery.actionBars={reason=reason,detail=detail,backup=A.ActionBars.recovery}
         self:Finish(false,reason);return
     end
+    local saved,saveReason=A.ActionBars:SaveLayout(op.spec,op.buildID,op.shared,A.ActionBars.verified)
+    if not saved then self:Finish(false,saveReason);return end
     state.active={id=op.buildID,shared=op.shared,config=op.target,code=op.code}
     A.Store.character.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
+    A.ActionBars:Track(A.ActionBars.verified)
     local preserved=detail and detail.preservedSlots
     if preserved then
         A.Store.character.recovery.actionBars={reason="BARS_PARTIAL",detail=detail}
     end
+    -- Capture, restore, verify and persist have all finished under this op.
+    -- Later display notifications are passive and cannot restart cursor work.
     self:Finish(true)
     if preserved then A:Message(string.format(A.L.BARS_PARTIAL,table.concat(preserved,", "))) end
 end
@@ -339,38 +349,51 @@ function X:Start(build,shared,consent)
         if not ok then return nil,reason end
     end
     self.pendingTicket=nil
-    local before,reason,slot=A.ActionBars:Capture(spec)
-    if not before then
-        A.Store.character.lastAttempt={revision=self.revision,time=time(),buildID=build.id,spec=spec,
-            shared=shared,stage="capture-bars",reason=reason,slot=slot}
-        return nil,reason
-    end
-    local state=A.ActionBars:Spec(spec);if not state then return nil,"SCHEMA" end
-    if not state.default then
-        local ok,err=A.ActionBars:SeedDefault(spec,before,"first-use");if not ok then return nil,err end
-    end
-    local current=self:CurrentBuildID()
-    local previous=A.Store.character.applied
-    if current and previous then A.ActionBars:SaveLayout(spec,current,previous.shared,before) end
     local originalCode=A.Talents:Export();if not originalCode then return nil,"NOT_READY" end
     local selected=C_ClassTalents.GetLastSelectedSavedConfigID(spec)
-    local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="preparing",originalSaved=selected,startedAt=GetTime()}
+    local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="capture-bars",
+        originalSaved=selected,originalCode=originalCode,previousBuildID=self:CurrentBuildID(),
+        previousApplied=A.Store.character.applied,startedAt=GetTime()}
     self.op=op
-    A.Store.character.recovery={revision=self.revision,status="active",spec=spec,code=originalCode,bars=before,
-        originalSaved=selected,targetCode=code,buildID=build.id,shared=shared,time=time()}
     if not self.events then
         self.events=CreateFrame("Frame")
         self.events:SetScript("OnEvent",function(_,event,...)
             local ok,err=pcall(X.OnEvent,X,event,...)
-            if not ok and X.op then A.Store.character.recovery.luaError=tostring(err):sub(1,240);X:Finish(false,"APPLY_FAILED") end
+            if not ok and X.op then
+                local current=X.op;current.luaError=tostring(err):sub(1,240)
+                if current.recovery then current.recovery.luaError=current.luaError end
+                X:Finish(false,"APPLY_FAILED")
+            end
         end)
     end
     for _,event in ipairs({"TRAIT_CONFIG_CREATED","TRAIT_CONFIG_UPDATED","CONFIG_COMMIT_FAILED","STARTER_BUILD_ACTIVATION_FAILED","PLAYER_REGEN_DISABLED","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","PLAYER_TALENT_UPDATE","SELECTED_LOADOUT_CHANGED"}) do self.events:RegisterEvent(event) end
     self.timer=C_Timer.NewTimer(25,function()if X.op==op then X:Finish(false,"APPLY_TIMEOUT")end end)
     A:Message("APPLYING")
     if A.UI.frame and A.UI.frame:IsShown() then A.UI:Refresh() end
-    self:Defer(function()self:PrepareWorking()end)
+    -- Yield once so Applying can paint before the first cursor-assisted read.
+    self:Defer(function()self:CaptureBeforeApply()end)
     return true
+end
+function X:CaptureBeforeApply()
+    local op=self.op
+    local spec=op.spec
+    local before,reason,slot=A.ActionBars:Capture(spec)
+    if not before then
+        op.failedSlot=slot;self:Finish(false,reason);return
+    end
+    local state=A.ActionBars:Spec(spec);if not state then self:Finish(false,"SCHEMA");return end
+    if not state.default then
+        local ok,err=A.ActionBars:SeedDefault(spec,before,"first-use");if not ok then self:Finish(false,err);return end
+    end
+    if op.previousBuildID and op.previousApplied then
+        local saved,why=A.ActionBars:SaveLayout(spec,op.previousBuildID,op.previousApplied.shared,before)
+        if not saved then self:Finish(false,why);return end
+    end
+    op.stage="preparing"
+    op.recovery={revision=self.revision,status="active",spec=spec,code=op.originalCode,bars=before,
+        originalSaved=op.originalSaved,targetCode=op.code,buildID=op.buildID,shared=op.shared,time=time()}
+    A.Store.character.recovery=op.recovery
+    self:Defer(function()self:PrepareWorking()end)
 end
 function X:Restore()
     local saved=A.Store.character.recovery

@@ -107,6 +107,7 @@ end
 function B:Capture(spec)
     if InCombatLockdown() then return nil,"COMBAT" end
     if A:GetSpec()~=spec then return nil,"APPLY_SPEC_CHANGED" end
+    if GetCursorInfo() then return nil,"BARS_CURSOR" end
     if C_ActionBar then
         for _,name in ipairs({"HasVehicleActionBar","HasOverrideActionBar","IsPossessBarVisible"}) do
             if C_ActionBar[name] and C_ActionBar[name]() then return nil,"BARS_CONTEXT" end
@@ -256,13 +257,18 @@ function B:Restore(snapshot)
         local actual=self:ReadSlot(slot)
         if not actual or not same(entry,actual) then error("BARS_VERIFY:"..slot..":"..tostring(actual and actual.kind)..":"..tostring(actual and actual.id)..":"..tostring(actual and actual.sub)) end
     end
+    local verified
     local function verify(layout)
+        local slots={}
         for slot=1,self.slotCount do
-            if not preserve[slot] then
+            if preserve[slot] then slots[slot]=clone(before.slots[slot])
+            else
                 local actual=self:ReadSlot(slot)
                 if not actual or not same(layout.slots[slot],actual) then error("BARS_LAYOUT_VERIFY:"..slot) end
+                slots[slot]=actual
             end
         end
+        verified={version=1,spec=spec,slots=slots}
     end
     local ok,reason=pcall(function()
         for _,slot in ipairs(changes) do
@@ -287,6 +293,7 @@ function B:Restore(snapshot)
     end
     self.restoring=nil
     if not ok then return nil,"BARS_RESTORE",{reason=tostring(reason),rolledBack=rolledBack} end
+    self.verified=verified
     if #preservedSlots>0 then return true,nil,{preservedSlots=preservedSlots} end
     return true
 end
@@ -306,33 +313,159 @@ function B:Working(spec)
         end
     end
 end
-function B:SaveActive()
-    if not A.Apply or A.Apply.op or self.restoring then return end
+-- Full, cursor-assisted reads belong to Apply. Once it completes, ordinary
+-- slot notifications only update this verified snapshot through passive APIs.
+function B:Track(snapshot)
+    local applied=A.Store.character.applied
+    if not applied or not self:Valid(snapshot,applied.spec) then self.observed=nil;return end
+    self.observed={spec=applied.spec,id=applied.id,shared=applied.shared,snapshot=clone(snapshot),macros={}}
+    for slot,entry in ipairs(snapshot.slots) do
+        if entry.kind=="macro" then self.observed.macros[slot]=entry.id end
+    end
+    if A.Apply and A.Apply.op then self:RememberMacroCounts() end
+end
+function B:PassiveSlot(slot,observed)
+    local kind,id,sub=GetActionInfo(slot)
+    if secret(kind) or secret(id) or secret(sub) then return nil,"BARS_SECRET" end
+    if not kind then return {} end
+    if kind=="macro" then
+        local index=observed.macros[slot]
+        local name=index and GetMacroInfo(index)
+        if secret(name) then return nil,"BARS_SECRET" end
+        if type(name)=="string" then
+            -- A renamed/edited macro keeps its exact index. A different label
+            -- without a known placement is unknown, never a name-based guess.
+            local text=C_ActionBar and C_ActionBar.GetActionText and C_ActionBar.GetActionText(slot)
+            if secret(text) then return nil,"BARS_SECRET" end
+            if text==nil or text==name then return {kind="macro",id=index} end
+        end
+        return {kind="unreadableMacro",id=slot}
+    end
+    if kind=="companion" and sub=="MOUNT" then
+        local mount=C_MountJournal.GetMountFromSpell(id)
+        if not mount then return nil,"BARS_UNAVAILABLE" end
+        kind,id,sub="summonmount",mount,nil
+    end
+    return {kind=kind,id=id,sub=sub}
+end
+function B:SaveActive(slot)
+    if not A.Apply or A.Apply.op or self.restoring or InCombatLockdown() then return end
     local applied=A.Store.character.applied
     if not applied or applied.spec~=A:GetSpec() then return end
+    if C_ActionBar then
+        for _,name in ipairs({"HasVehicleActionBar","HasOverrideActionBar","IsPossessBarVisible"}) do
+            if C_ActionBar[name] and C_ActionBar[name]() then return end
+        end
+    end
+    local observed=self.observed
+    if not observed or observed.spec~=applied.spec or observed.id~=applied.id or observed.shared~=applied.shared then
+        self:Track(self:Get(applied.spec,applied.id,applied.shared))
+        observed=self.observed
+        if not observed then return end
+    end
+    if secret(slot) then return end
+    if slot~=nil and slot~=0 and (type(slot)~="number" or slot<1 or slot>self.slotCount or slot%1~=0) then return end
+    local first,last=1,self.slotCount
+    if slot and slot~=0 then first,last=slot,slot end
+    local changes={}
+    for i=first,last do
+        local entry=self:PassiveSlot(i,observed)
+        if not entry then return end -- atomic: don't save a partial scan
+        if not same(entry,observed.snapshot.slots[i]) then changes[i]=entry end
+    end
+    if not next(changes) then return end
     if A.Apply:CurrentBuildID()~=applied.id then return end
-    local snapshot=self:Capture(applied.spec)
-    if snapshot then self:SaveLayout(applied.spec,applied.id,applied.shared,snapshot) end
+    local snapshot=clone(observed.snapshot)
+    for i,entry in pairs(changes) do snapshot.slots[i]=entry end
+    if self:SaveLayout(applied.spec,applied.id,applied.shared,snapshot) then
+        observed.snapshot=snapshot
+        for i,entry in pairs(changes) do
+            if entry.kind~="macro" and entry.kind~="unreadableMacro" then observed.macros[i]=nil end
+        end
+    end
 end
-function B:InitializeSpec()
-    local spec=A:GetSpec()
-    if not spec or InCombatLockdown() then return end
-    local state=self:Spec(spec)
-    if state and not state.default then
-        local snapshot=self:Capture(spec)
-        if snapshot then self:SeedDefault(spec,snapshot,"first-use") end
+function B:CursorChanged()
+    if A.Apply and A.Apply.op then self.cursorMacro=nil;self.cursorDrop=nil;return end
+    -- Read the player's existing cursor; never put anything on it. Retain the
+    -- outgoing macro for PlaceAction's post-hook, even when the displaced action
+    -- has already replaced it (CURSOR_CHANGED is a synchronous native event).
+    local outgoing=self.cursorMacro
+    self:RememberCursor()
+    -- Observe GetCursorInfo's real index, not a virtual cursor ID or a macro
+    -- label. Repainting the same held macro is not a placement transition.
+    if outgoing~=self.cursorMacro then self.cursorDrop=outgoing end
+end
+function B:RememberCursor()
+    local kind,index=GetCursorInfo()
+    self.cursorMacro=not secret(kind) and not secret(index) and kind=="macro" and index or nil
+end
+function B:Placed(slot)
+    local index=self.cursorDrop;self.cursorDrop=nil
+    self:RememberCursor()
+    if not A.Apply or A.Apply.op or self.restoring then return end
+    local applied=A.Store.character.applied
+    if not applied or applied.spec~=A:GetSpec() or A.Apply:CurrentBuildID()~=applied.id then return end
+    if not self.observed or self.observed.spec~=applied.spec or self.observed.id~=applied.id or self.observed.shared~=applied.shared then
+        self:Track(self:Get(applied.spec,applied.id,applied.shared))
+    end
+    if not self.observed then return end
+    if secret(slot) or type(slot)~="number" or slot<1 or slot>self.slotCount or slot%1~=0 then return end
+    if type(index)=="number" and index>0 and index%1==0 then
+        local kind=GetActionInfo(slot)
+        local name=GetMacroInfo(index)
+        if not secret(kind) and not secret(name) and kind=="macro" and type(name)=="string" then
+            self.observed.macros[slot]=index
+        end
+    end
+    self:SaveActive(slot)
+end
+function B:MacroDeleted(index)
+    local counts=self.macroCounts
+    self:RememberMacroCounts()
+    if not counts or not self.macroCounts or not self.observed or (A.Apply and A.Apply.op) or self.restoring or InCombatLockdown() then return end
+    local applied=A.Store.character.applied
+    if not applied or applied.spec~=A:GetSpec() or A.Apply:CurrentBuildID()~=applied.id then return end
+    if secret(index) or type(index)~="number" or index<1 or index%1~=0 then return end
+    -- Native deletion compacts indices within the account/character range.
+    -- Only the active layout follows that edit; saved layouts keep their IDs.
+    local account=MAX_ACCOUNT_MACROS or 120
+    local scope=index>account and 2 or 1
+    -- A rejected/protected native deletion must not shift our cached IDs.
+    if self.macroCounts[scope]~=counts[scope]-1 then return end
+    for slot,id in pairs(self.observed.macros) do
+        if id==index then self.observed.macros[slot]=nil
+        elseif id>index and (id>account)==(index>account) then self.observed.macros[slot]=id-1 end
+    end
+    self:SaveActive()
+end
+function B:RememberMacroCounts()
+    if not GetNumMacros then return end
+    local account,character=GetNumMacros()
+    if not secret(account) and not secret(character) and type(account)=="number" and type(character)=="number" then
+        self.macroCounts={account,character}
     end
 end
 function B:Init()
     if self.events then return end
     local frame=CreateFrame("Frame");self.events=frame
-    for _,event in ipairs({"PLAYER_ENTERING_WORLD","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT"}) do frame:RegisterEvent(event) end
-    frame:SetScript("OnEvent",function(_,event)
-        if event=="PLAYER_LOGOUT" then self:SaveActive();return end
-        if event=="ACTIONBAR_SLOT_CHANGED" then
-            if self.restoring or (A.Apply and A.Apply.op) or self.saveTimer then return end
-            self.saveTimer=C_Timer.NewTimer(0,function()self.saveTimer=nil;self:SaveActive()end)
-        else self:InitializeSpec() end
+    for _,event in ipairs({"PLAYER_ENTERING_WORLD","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","CURSOR_CHANGED","UPDATE_MACROS"}) do frame:RegisterEvent(event) end
+    frame:SetScript("OnEvent",function(_,event,...)
+        if event=="CURSOR_CHANGED" then self:CursorChanged(...)
+        elseif event=="ACTIONBAR_SLOT_CHANGED" then self:SaveActive(...)
+        elseif event=="ACTIVE_PLAYER_SPECIALIZATION_CHANGED" or event=="PLAYER_ENTERING_WORLD" then
+            self.observed=nil;self.cursorDrop=nil;self.cursorMacro=nil
+        else self:SaveActive() end
     end)
-    self:InitializeSpec()
+    if hooksecurefunc then
+        hooksecurefunc("PlaceAction",function(slot)B:Placed(slot)end)
+        for _,name in ipairs({"ClearCursor","PickupAction","PickupMacro"}) do
+            hooksecurefunc(name,function()B.cursorDrop=nil;B:RememberCursor()end)
+        end
+        hooksecurefunc("DeleteMacro",function(index)B:MacroDeleted(index)end)
+        for _,name in ipairs({"CreateMacro","EditMacro"}) do
+            if type(_G[name])=="function" then hooksecurefunc(name,function()B:RememberMacroCounts()end) end
+        end
+    end
+    self:RememberMacroCounts()
+    self:CursorChanged()
 end
