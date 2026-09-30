@@ -1,0 +1,11 @@
+{
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "schema": "fupload.v1.dd.plugin.update",
+  "file": "D:/Code/wow/addons/Lychee Talent/.worktrees/release-1-0-13/dist/LycheeTalent-1.0.13.zip",
+  "version": "1.0.13",
+  "update_desc": "<p>修复应用完成后仍反复拿宏、鼠标出现宏图标的问题。</p><p>读取、保存、恢复和检查都在“应用中”完成，关闭天赋面板后继续处理，结束后停止主动读取。</p><p>保留动作条自动保存及共享/独立布局，同名宏按准确编号记录；读取失败保留恢复备份和鼠标上的物品。</p>",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "release_type": 1
+}

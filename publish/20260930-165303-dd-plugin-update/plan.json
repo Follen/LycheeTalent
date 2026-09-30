@@ -1,0 +1,39 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.13",
+  "tag": "v1.0.13",
+  "commit": "bf90c32d15b24b03ae02aef83b8016473558847e",
+  "merged_pr": "https://github.com/Follen/LycheeTalent/pull/21",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "packages": 14,
+  "verified_files": 58,
+  "preserve": [
+    "name",
+    "summary",
+    "description",
+    "cover",
+    "screenshots",
+    "public_visibility",
+    "free_pricing",
+    "commercial_settings"
+  ],
+  "clear": [],
+  "authorization": "User tag/fupload request and repository AGENTS.md",
+  "archive_content_matches_dd": true,
+  "archive": "dist/LycheeTalent-1.0.13.zip",
+  "sha256": "d4071cc3808560970b26aa5b5c1588ea3cf2651d72462b7ec563a2396c2b8382",
+  "channel": "fupload-dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "dry_run_passed": true,
+  "expected_readback": {
+    "name": "荔枝天赋",
+    "version": "1.0.13",
+    "scope": "public",
+    "need_buy": false,
+    "need_anchor_vip": false
+  }
+}
