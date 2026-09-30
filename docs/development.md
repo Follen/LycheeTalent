@@ -21,6 +21,7 @@ lua tests/actionbar_edgecases.lua pickup-fallback
 lua tests/macro_identity.lua
 lua tests/unreadable_macros.lua
 lua tests/actionbar_capture_events.lua
+lua tests/actionbar_capture_events.lua deferred
 lua tests/inactive_hero.lua
 lua tests/native_open.lua
 lua tests/reminders.lua

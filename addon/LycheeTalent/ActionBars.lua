@@ -332,10 +332,10 @@ function B:Init()
         if event=="ACTIONBAR_SLOT_CHANGED" then
             if self.restoring or (A.Apply and A.Apply.op) or self.saveTimer then return end
             self.saveTimer=C_Timer.NewTimer(0,function()
-                -- Keep the guard while copied macro pickups may notify other
-                -- action-bar listeners; those notifications must not save again.
+                -- Copied macro pickups can notify action-bar listeners now or
+                -- on the next frame. Keep the guard through that event batch.
                 local ok,reason=pcall(self.SaveActive,self)
-                self.saveTimer=nil
+                self.saveTimer=C_Timer.NewTimer(0,function()self.saveTimer=nil end)
                 if not ok then error(reason) end
             end)
         else self:InitializeSpec() end

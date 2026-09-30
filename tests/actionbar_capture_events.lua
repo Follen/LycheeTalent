@@ -1,8 +1,15 @@
 local cursor,frames,timers,pickups,macroID,readError=nil,{},{},0,1,false
+local deferred=arg[1]=='deferred'
 local A={Store={character={applied={spec=62,id='active',shared=false}}},GetSpec=function()return 62 end,
  Apply={CurrentBuildID=function()return 'active' end}}
 local function emit(event,slot)
  for _,frame in ipairs(frames)do if frame[event]then frame.handler(frame,event,slot)end end
+end
+local function settle()
+ for frame=1,20 do
+  local pending=timers;timers={}
+  for _,timer in ipairs(pending)do timer.fn()end
+ end
 end
 function InCombatLockdown()return false end
 function GetActionInfo(slot)
@@ -16,7 +23,9 @@ function PickupAction(slot,keep)
  assert(slot==1 and keep==true,'capture must copy the macro')
  pickups=pickups+1;cursor={kind='macro',id=macroID}
  -- A native or addon-triggered notification during copied macro pickup.
- emit('ACTIONBAR_SLOT_CHANGED',slot)
+ if deferred then
+  C_Timer.NewTimer(0,function()emit('ACTIONBAR_SLOT_CHANGED',slot)end)
+ else emit('ACTIONBAR_SLOT_CHANGED',slot)end
 end
 function CreateFrame()
  local frame={};frames[#frames+1]=frame
@@ -30,10 +39,7 @@ local B=A.ActionBars
 B:Spec(62).default={}
 B:Init()
 emit('ACTIONBAR_SLOT_CHANGED',1)
-for frame=1,20 do
- local pending=timers;timers={}
- for _,timer in ipairs(pending)do timer.fn()end
-end
+settle()
 print('idle frame captures='..pickups..', pending timers='..#timers)
 assert(pickups==1 and #timers==0,'copied macro pickup must not keep mounting cursor icons every idle frame')
 assert(not cursor,'capture must leave the cursor clear')
@@ -41,16 +47,16 @@ assert(B:Get(62,'active',false).slots[1].id==1,'save must preserve the exact mac
 macroID=2
 emit('ACTIONBAR_SLOT_CHANGED',1)
 emit('ACTIONBAR_SLOT_CHANGED',1)
-local pending=timers;timers={}
-for _,timer in ipairs(pending)do timer.fn()end
+settle()
 assert(pickups==2 and #timers==0,'later user changes must still save once')
 assert(B:Get(62,'active',false).slots[1].id==2,'same-name macro replacement must save its new exact index')
 readError=true;emit('ACTIONBAR_SLOT_CHANGED',1)
-pending=timers;timers={}
+local pending=timers;timers={}
 local ok,why=pcall(pending[1].fn)
 assert(not ok and tostring(why):find('injected action read failure',1,true),'save errors must remain visible')
-assert(not B.saveTimer,'a failed save must release its event guard')
+settle()
+assert(not B.saveTimer,'a failed save must release its event guard on the next frame')
 readError=false;emit('ACTIONBAR_SLOT_CHANGED',1)
-pending=timers;timers={};pending[1].fn()
+settle()
 assert(pickups==3 and #timers==0 and not B.saveTimer,'saving must resume after an API error')
-print('PASS capture notifications: one save, exact macro identity, clear cursor, no event feedback')
+print('PASS '..(deferred and 'deferred' or 'synchronous')..' capture notifications: one save, exact macro identity, clear cursor, no event feedback')
