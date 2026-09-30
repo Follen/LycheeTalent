@@ -5,15 +5,18 @@ local nodes={[10]={ID=10,name='User config',type=1,usesSharedActionBars=false,co
 local selected,activeCode,staged=20,'old',nil
 local slots={};for i=1,180 do slots[i]={} end;slots[1]={kind='spell',id=100,sub='spell'}
 local cursor,frames,timers,callbacks=nil,{},{},{}
-local commits,loads,creates=0,0,0
+local commits,loads,creates,barReads=0,0,0,0
 function InCombatLockdown()return false end
 local now=0
 function GetTime()return now end
 function time()return 1 end
 function GetCursorInfo()return cursor and cursor.kind end
 function ClearCursor()cursor=nil end
-function GetActionInfo(i)local s=slots[i];return s.kind,s.id,s.sub end
-function PickupAction(i,keep)cursor=slots[i];if not keep then slots[i]={}end end
+function GetActionInfo(i)barReads=barReads+1;local s=slots[i];return s.kind,s.id,s.sub end
+function PickupAction(i,keep)
+ if A.Apply then assert(A.Apply.op,'plugin cursor calls must finish within Applying')end
+ cursor=slots[i];if not keep then slots[i]={}end
+end
 function PlaceAction(i)local old=slots[i];slots[i]=cursor;cursor=old.kind and old or nil end
 C_Spell={PickupSpell=function(id)cursor={kind='spell',id=id,sub='spell'}end}
 function CreateFrame()
@@ -72,10 +75,19 @@ local independent=assert(B:Capture(testSpec));independent.slots[1].id=200
 assert(B:SaveIndependent(testSpec,'a',independent))
 B:Spec(testSpec).working={id=20,name=nodes[20].name,spec=testSpec}
 assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
-assert(A.Apply:Start(builds.a,false));assert(A.Apply.op,'commit must remain pending until event');settle()
+local panelShown,painted=false,false
+A.UI.frame={IsShown=function()return panelShown end}
+A.UI.Refresh=function()if A.Apply.op then painted=true end end
+panelShown=true
+local readsBefore=barReads
+assert(A.Apply:Start(builds.a,false));assert(A.Apply.op and A.Apply.op.stage=='capture-bars','Applying covers the initial capture')
+assert(painted and barReads==readsBefore,'Applying paints before cursor work starts')
+panelShown=false -- closing the panel must leave the independent transaction alive
+settle()
 assert(not A.Apply.op and A.message=='APPLY_SUCCESS',tostring(A.message))
 assert(activeCode=='alpha' and nodes[20].code=='alpha' and nodes[20].name=='荔枝天赋','one localized working config')
 assert(slots[1].id==200 and A.Apply:CurrentBuildID()=='a','independent layout restored')
+assert(not A.Apply.nextStep and not A.Apply.timer,'successful hidden-panel apply leaves no operation timers')
 slots[1].id=201
 assert(A.Apply:Start(builds.b,true));settle()
 assert(not A.Apply.op and A.message=='APPLY_SUCCESS')
@@ -114,9 +126,9 @@ C_ClassTalents.ImportLoadout=function(_,entries,name)
  callbacks[#callbacks+1]=function()emit('TRAIT_CONFIG_CREATED',nodes[50])end
  return true
 end
-B:InitializeSpec()
-assert(B:Get(testSpec,nil,true).slots[1].id==900,'first enabled spec captures current native layout')
+assert(not B:Get(testSpec,nil,true),'first use waits for Applying before capturing the native layout')
 assert(A.Apply:Start(builds.a,false));settle()
+assert(B:Get(testSpec,nil,true).slots[1].id==900,'first application captures the current native default')
 assert(not A.Apply.op and A.message=='APPLY_SUCCESS',tostring(A.message))
 assert(creates==1 and B:Working(testSpec).id==50 and not nodes[50].usesSharedActionBars,'create one isolated localized config')
 assert(A.Apply:Start(builds.b,true));settle()
@@ -172,6 +184,7 @@ A.L.BARS_PARTIAL='Preserved macro slots: %s'
 local copiedPickup=PickupAction
 for _,i in ipairs({77,78,113,114})do slots[i]={kind='macro',id=999,unreadable=true}end
 PickupAction=function(i,keep)
+ assert(A.Apply.op,'all addon cursor work belongs to Applying')
  if slots[i].unreadable then assert(keep==true,'unreadable macro must stay in place');return end
  return copiedPickup(i,keep)
 end
@@ -188,7 +201,19 @@ PickupAction=function(i,keep)
  return copiedPickup(i,keep)
 end
 local started,why=A.Apply:Start(builds.a,false)
-assert(not started and why=='BARS_MACRO_READ' and not A.Apply.op)
-assert(char.lastAttempt.stage=='capture-bars' and char.lastAttempt.slot==77 and char.lastAttempt.reason==why)
+assert(started and A.Apply.op and A.Apply.op.stage=='capture-bars','initial capture runs within Applying')
+assert(char.recovery==previousRecovery,'starting does not discard an earlier recovery backup')
+settle()
+assert(not A.Apply.op and char.lastAttempt.reason=='BARS_MACRO_READ')
+assert(char.lastAttempt.stage=='capture-bars' and char.lastAttempt.slot==77)
 assert(char.recovery==previousRecovery and not cursor,'failed capture keeps existing recovery data and clears temporary cursor')
+PickupAction=copiedPickup
+local previousLayout=B:Get(testSpec,'b',true).slots[1].id
+assert(A.Apply:Start(builds.a,false))
+cursor={kind='item',id=123} -- user picks something up before the deferred capture
+settle()
+assert(not A.Apply.op and char.lastAttempt.reason=='BARS_CURSOR' and cursor.id==123,
+ 'deferred capture must preserve a newly occupied player cursor')
+assert(char.recovery==previousRecovery and B:Get(testSpec,'b',true).slots[1].id==previousLayout,
+ 'cursor interruption preserves the prior backup and layout')
 print('PASS unreadable macro integration: talents switch, other actions restore, preserved slots reported, early failures recorded')
