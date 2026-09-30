@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "file": "D:/Code/wow/addons/Lychee Talent/dist/LycheeTalent-1.0.12.zip",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "version": "1.0.12",
+  "release_type": 1,
+  "update_desc": "<p>刷新 9 月 30 日的 WCL 第二赛季推荐，覆盖全部 13 职业、40 专精，共 1819 套大秘境与团本天赋。</p><p>更新 694 套原有方案的加点；81 个大秘境默认推荐的记录层数提高。</p><p>本次完成 1120 组采样，沿用最近 14 天的观察窗口及现有榜单选择规则；推荐保留对应报告与战斗来源。</p>"
+}

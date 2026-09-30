@@ -1,0 +1,30 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.12",
+  "tag": "v1.0.12",
+  "commit": "121c4c708539a041308ff9f87123b76e8803baaa",
+  "merged_pr": "https://github.com/Follen/LycheeTalent/pull/20",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "packages": 14,
+  "verified_files": 58,
+  "preserve": [
+    "name",
+    "summary",
+    "description",
+    "cover",
+    "screenshots",
+    "public_visibility",
+    "free_pricing",
+    "commercial_settings"
+  ],
+  "authorization": "User merge/tag/fupload request and repository AGENTS.md",
+  "archive": "D:/Code/wow/addons/Lychee Talent/dist/LycheeTalent-1.0.12.zip",
+  "sha256": "ad951c1de782da8b2410fd470779cae91945c4f4ed627ee4be58791f4b03c0ce",
+  "working_directory": "D:/Code/wow/addons/Lychee Talent/.worktrees/release-1-0-12",
+  "channel": "fupload-dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554"
+}

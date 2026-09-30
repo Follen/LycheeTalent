@@ -1,0 +1,61 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "version": "1.0.12",
+  "tag": "v1.0.12",
+  "commit": "121c4c708539a041308ff9f87123b76e8803baaa",
+  "merged_pr": "https://github.com/Follen/LycheeTalent/pull/20",
+  "packages": 14,
+  "verified_files": 58,
+  "dry_run_passed": true,
+  "upload_accepted": true,
+  "platform": "dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "archive": "dist/LycheeTalent-1.0.12.zip",
+  "sha256": "ad951c1de782da8b2410fd470779cae91945c4f4ed627ee4be58791f4b03c0ce",
+  "version_sn": "00408e038b09479386c651473508f09a",
+  "author_list": {
+    "game_type": null,
+    "kind": "plugin",
+    "name": "荔枝天赋",
+    "reference": "40ce264bd1714ceb89132f5157f22869",
+    "scope": "public",
+    "status": 1,
+    "updated_at": 1790744515,
+    "version": "1.0.12"
+  },
+  "detail_version": "1.0.12",
+  "detail_update_desc": "<p>刷新 9 月 30 日的 WCL 第二赛季推荐，覆盖全部 13 职业、40 专精，共 1819 套大秘境与团本天赋。</p><p>更新 694 套原有方案的加点；81 个大秘境默认推荐的记录层数提高。</p><p>本次完成 1120 组采样，沿用最近 14 天的观察窗口及现有榜单选择规则；推荐保留对应报告与战斗来源。</p>",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "status": "submitted-public-approval-unconfirmed",
+  "preserved_fields": [
+    "name",
+    "description_summary",
+    "html_desc",
+    "logo",
+    "detail_imgs",
+    "scope",
+    "need_buy",
+    "price_fen",
+    "need_anchor_vip",
+    "associated_acts",
+    "room_id",
+    "channel_id",
+    "channel_type",
+    "creation_statement"
+  ],
+  "preserved_fields_verified": true,
+  "cleanup": {
+    "cleanup_complete": true,
+    "logout_requested": true,
+    "running": false
+  },
+  "final_doctor": {
+    "broker_running": false,
+    "authenticated": false,
+    "gui_running": false
+  },
+  "recovery": "Single upload returned verification_required because official projections had not yet updated. A separate read-only session confirmed 1.0.12 in author list, detail and version history, including version SN and HTML changelog. No upload was repeated. Both sessions were stopped with cleanup_complete=true."
+}

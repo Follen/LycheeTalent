@@ -1,0 +1,52 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.12",
+  "tag": "v1.0.12",
+  "commit": "121c4c708539a041308ff9f87123b76e8803baaa",
+  "merged_pr": "https://github.com/Follen/LycheeTalent/pull/20",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "packages": 14,
+  "verified_files": 58,
+  "preserve": [
+    "name",
+    "summary",
+    "description",
+    "cover",
+    "screenshots",
+    "public_visibility",
+    "free_pricing",
+    "commercial_settings"
+  ],
+  "authorization": "User merge/tag/fupload request and repository AGENTS.md",
+  "archive": "D:/Code/wow/addons/Lychee Talent/dist/LycheeTalent-1.0.12-ncc.zip",
+  "sha256": "55a8838e1f3818dacd9125074894c8b111cffbe67b032641ac601539e21178c8",
+  "working_directory": "D:/Code/wow/addons/Lychee Talent/.worktrees/release-1-0-12",
+  "channel": "official-ncc",
+  "resource_id": 27799,
+  "arguments": [
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.12",
+    "--changelog",
+    "@D:/Code/wow/addons/Lychee Talent/.worktrees/release-1-0-12/publish/20260930-130028-newbeebox-plugin-update/changelog.txt",
+    "--game-versions",
+    "12.1.0",
+    "-o",
+    "json"
+  ],
+  "expected_readback": {
+    "name": "荔枝天赋",
+    "version": "1.0.12",
+    "visibility": 1,
+    "is_paid": false
+  },
+  "archive_content_matches_dd": true
+}
