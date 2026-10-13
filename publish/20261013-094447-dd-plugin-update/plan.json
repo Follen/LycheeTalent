@@ -1,0 +1,34 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "version": "1.0.14",
+  "tag": "v1.0.14",
+  "commit": "841f7677e936d1064f56be5897f6943d09fb12db",
+  "name": "荔枝天赋",
+  "authorization": "User explicitly requested Fupload updates to DD and NewBeeBox without additional confirmation; project release authorization applies.",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "platform": "dd",
+  "channel": "fupload-dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "ordered_steps": [
+    "local dry-run",
+    "upload version once",
+    "read author list and detail",
+    "stop session and confirm cleanup"
+  ],
+  "possible_retained_objects": "Uploaded version/archive may remain if later readback fails",
+  "expected_readback": {
+    "version": "1.0.14"
+  },
+  "archive": "dist/LycheeTalent-1.0.14.zip",
+  "sha256": "8a9861a395c8bf40e7582963d802d53d150c6ad695d047feaaad731d4ded8f0b",
+  "bytes": 755785,
+  "preflight": "passed",
+  "packages": 14,
+  "verified_files": 58
+}

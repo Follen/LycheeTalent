@@ -1,0 +1,55 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "version": "1.0.14",
+  "tag": "v1.0.14",
+  "commit": "841f7677e936d1064f56be5897f6943d09fb12db",
+  "name": "荔枝天赋",
+  "authorization": "User explicitly requested Fupload updates to DD and NewBeeBox without additional confirmation; project release authorization applies.",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "ordered_steps": [
+    "push --dry-run",
+    "pack and verify contents",
+    "push once",
+    "info and versions readback"
+  ],
+  "possible_retained_objects": "Uploaded version/archive may remain if later readback fails",
+  "expected_readback": {
+    "version": "1.0.14",
+    "game_versions": [
+      "12.1.0"
+    ]
+  },
+  "id": 27799,
+  "working_directory": "D:/Code/wow/addons/Lychee Talent/.worktrees/talent-refresh-20261013",
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.14",
+    "--changelog",
+    "@D:/Code/wow/addons/Lychee Talent/.worktrees/talent-refresh-20261013/publish/20261013-094447-newbeebox-plugin-update/changelog.txt",
+    "--game-versions",
+    "12.1.0",
+    "-o",
+    "json"
+  ],
+  "archive": "dist/LycheeTalent-1.0.14-ncc.zip",
+  "sha256": "5cd3b4b73ddd4453521db9a75d8d0661d2bd500094670e7a229cd30c560b2cca",
+  "bytes": 758283,
+  "preflight": "passed",
+  "packages": 14,
+  "verified_files": 58
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "file": "D:/Code/wow/addons/Lychee Talent/.worktrees/talent-refresh-20261013/dist/LycheeTalent-1.0.14.zip",
+  "release_type": 1,
+  "version": "1.0.14",
+  "update_desc": "<p>全量刷新 13 职业、40 专精的 WCL 第二赛季推荐，共 1861 套大秘境与团本天赋。</p><p>使用最近 14 天记录，完成 1120 组采集；保留现有榜单选择规则与报告来源。</p><p>夺目谷奥法默认推荐更新为带群体隐形的 23 层方案。</p>"
+}
