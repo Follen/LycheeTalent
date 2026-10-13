@@ -27,14 +27,24 @@ foreach ($notice in @('LICENSE','THIRD_PARTY_NOTICES.md')) {
 }
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 $zipPath=Join-Path $outputRoot "LycheeTalent-$version.zip"
-Compress-Archive -LiteralPath @($packages.FullName) -DestinationPath $zipPath -Force
-Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression,System.IO.Compression.FileSystem
+$zipStream=[IO.File]::Open($zipPath,[IO.FileMode]::Create)
+try {
+    $writer=[IO.Compression.ZipArchive]::new($zipStream,[IO.Compression.ZipArchiveMode]::Create,$true)
+    try {
+        # Use ZIP path separators consistently; Windows PowerShell Compress-Archive writes backslashes.
+        foreach ($name in @($expected.Keys | Sort-Object)) {
+            [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($writer,(Join-Path $sourceRoot $name),$name,[IO.Compression.CompressionLevel]::Optimal) | Out-Null
+        }
+    } finally { $writer.Dispose() }
+} finally { $zipStream.Dispose() }
 $archive=[IO.Compression.ZipFile]::OpenRead($zipPath)
 try {
     $seen=@{}
     foreach ($entry in $archive.Entries) {
         if (-not $entry.Name) { continue }
-        $name=$entry.FullName.Replace('\','/')
+        $name=$entry.FullName
+        if ($name.Contains('\')) { throw "Archive path must use forward slashes: $name" }
         if (-not $expected.ContainsKey($name) -or $seen.ContainsKey($name)) { throw "Unexpected archive entry: $name" }
         $stream=$entry.Open();$sha=[Security.Cryptography.SHA256]::Create()
         try { $hash=[BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','') }
