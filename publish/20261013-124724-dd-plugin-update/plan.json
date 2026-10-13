@@ -1,0 +1,34 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.15",
+  "tag": "v1.0.15",
+  "commit": "8172dd2aee194246df40f9b0238d5b49c79bd544",
+  "authorization": "User explicitly authorized fix, merge and publication without further confirmation.",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "expected_readback": {
+    "version": "1.0.15",
+    "game_versions": [
+      "12.1.0"
+    ]
+  },
+  "platform": "dd",
+  "channel": "fupload-dd",
+  "ordered_steps": [
+    "update --dry-run",
+    "update once",
+    "get/list/versions readback"
+  ],
+  "archive": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.15.zip",
+  "sha256": "846e32cd8b0a29f8109a91cc02e18de6387b6166eccebd5a88c759c8044d00c3",
+  "bytes": 749847,
+  "preflight": "passed",
+  "packages": 14,
+  "verified_files": 58
+}

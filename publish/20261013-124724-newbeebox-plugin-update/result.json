@@ -1,0 +1,36 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "version": "1.0.15",
+  "tag": "v1.0.15",
+  "commit": "8172dd2aee194246df40f9b0238d5b49c79bd544",
+  "id": 27799,
+  "uploaded": true,
+  "file": {
+    "file_id": 646491,
+    "version_name": "1.0.15",
+    "release_type": 1,
+    "release_type_text": "正式版",
+    "file_size": 760493,
+    "upload_time": 1791866906995,
+    "game_versions": [
+      "12.1.0"
+    ],
+    "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.15"
+  },
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "is_paid": false,
+  "metadata_preserved": true,
+  "archive": {
+    "path": "dist/LycheeTalent-1.0.15-ncc.zip",
+    "bytes": 758151,
+    "sha256": "6cec9cb18702cdfc64d5b2bf74a5874b4f83aaf821fd18252b89af93101d5bbe",
+    "packages": 14,
+    "files": 58
+  },
+  "changelog": "修正发布压缩包的目录路径格式，解决网易 DD 无法识别 TOC 的兼容问题。\r\n打包时统一使用正斜杠，并检查文件路径，避免不同 PowerShell 环境生成不兼容的包。\r\n"
+}

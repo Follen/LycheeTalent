@@ -13,19 +13,20 @@
   "package": "dist/LycheeTalent-1.0.15.zip",
   "cover": "docs/media/release-cover.png",
   "logo": "docs/media/logo.png",
-  "status": "prepared",
+  "status": "submitted",
   "platforms": {
     "dd": {
-      "status": "submitted-public-approval-unconfirmed",
+      "status": "version-listed-download-verified-approval-unconfirmed",
       "share_code": "766554",
       "sn": "40ce264bd1714ceb89132f5157f22869",
-      "version": "1.0.14"
+      "version": "1.0.15",
+      "version_sn": "5de58ebee2c24c769234f8d3be0115ee"
     },
     "newbeebox": {
       "id": 27799,
       "status": "approved-public",
-      "version": "1.0.14",
-      "file_id": 646274
+      "version": "1.0.15",
+      "file_id": 646491
     }
   },
   "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word"

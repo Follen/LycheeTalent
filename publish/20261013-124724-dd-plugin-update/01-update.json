@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.0.15.zip",
+  "release_type": 1,
+  "version": "1.0.15",
+  "update_desc": "<p>修正发布压缩包的目录路径格式，解决网易 DD 无法识别 TOC 的兼容问题。</p><p>打包时统一使用正斜杠，并检查文件路径，避免不同 PowerShell 环境生成不兼容的包。</p>"
+}

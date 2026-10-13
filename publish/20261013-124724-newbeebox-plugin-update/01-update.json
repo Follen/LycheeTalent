@@ -1,0 +1,54 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.15",
+  "tag": "v1.0.15",
+  "commit": "8172dd2aee194246df40f9b0238d5b49c79bd544",
+  "authorization": "User explicitly authorized fix, merge and publication without further confirmation.",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "expected_readback": {
+    "version": "1.0.15",
+    "game_versions": [
+      "12.1.0"
+    ]
+  },
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\dd-zip-paths",
+  "id": 27799,
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.15",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\dd-zip-paths\\publish\\20261013-124724-newbeebox-plugin-update\\changelog.txt",
+    "--game-versions",
+    "12.1.0",
+    "-o",
+    "json"
+  ],
+  "ordered_steps": [
+    "push --dry-run",
+    "pack and verify contents",
+    "push once",
+    "info and versions readback"
+  ],
+  "preflight": "passed",
+  "packages": 14,
+  "verified_files": 58,
+  "archive": "dist/LycheeTalent-1.0.15-ncc.zip",
+  "sha256": "6cec9cb18702cdfc64d5b2bf74a5874b4f83aaf821fd18252b89af93101d5bbe",
+  "bytes": 758151
+}

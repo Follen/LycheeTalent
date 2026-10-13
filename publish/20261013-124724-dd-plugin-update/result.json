@@ -1,0 +1,38 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "dd",
+  "version": "1.0.15",
+  "tag": "v1.0.15",
+  "commit": "8172dd2aee194246df40f9b0238d5b49c79bd544",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "upload_accepted": true,
+  "mutation_code": 0,
+  "version_record": {
+    "ctime": "2026-10-13 12:48:08",
+    "display_game_version": "12.1.0",
+    "file_path": "https://uires.w.163.com/file/addon/DJZ9lsEwydGODxavHhgvuyGumbNIr9b4/addon.zip",
+    "release_type": 1,
+    "sn": "5de58ebee2c24c769234f8d3be0115ee",
+    "version": "1.0.15"
+  },
+  "archive": {
+    "path": "dist/LycheeTalent-1.0.15.zip",
+    "bytes": 749847,
+    "sha256": "846e32cd8b0a29f8109a91cc02e18de6387b6166eccebd5a88c759c8044d00c3",
+    "download_matches_local": true,
+    "packages": 14,
+    "files": 58,
+    "original_zip_paths": "forward-slash",
+    "local_headers_match_central_directory": true
+  },
+  "readback": {
+    "version_history_contains": "1.0.15",
+    "author_list_version": "1.0.12",
+    "detail_version": "1.0.12",
+    "public_approval_confirmed": false,
+    "note": "The 1.0.15 version is listed and downloadable; immediate author/detail projections still showed 1.0.12. DD client installation not exercised."
+  },
+  "metadata_preserved": true,
+  "cleanup_complete": true
+}
