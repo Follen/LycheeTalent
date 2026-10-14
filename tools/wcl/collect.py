@@ -87,11 +87,38 @@ def normalize(rank):
         points[tid]=amount
     return sorted(([tid,n] for tid,n in points.items()))
 
+
+def holy_mythic_record(client,enc,cutoff):
+    # User-selected source: 快乐阳阳, CN Frostmourne. Use timed logs only.
+    query='{characterData{character(id:112885599){name server{name} encounterRankings(encounterID:'+str(enc['id'])+',specName:"Holy",metric:playerscore,includeCombatantInfo:false)}}}'
+    character=client.query(query)['characterData']['character']
+    ranks=character['encounterRankings']['ranks']
+    eligible=[r for r in ranks if r.get('medal') in ('gold','silver','bronze')
+              and r.get('startTime',0)>=cutoff and r.get('report',{}).get('code') and r['report'].get('fightID')]
+    if not eligible:return [],len(ranks)
+    rank=min(eligible,key=lambda r:(-r['bracketData'],r['duration']))
+    report=rank['report'];prefix='{reportData{report(code:'+json.dumps(report['code'])+'){'
+    data=client.query(prefix+'playerDetails(fightIDs:['+str(report['fightID'])+'])}}}')['reportData']['report']
+    healers=data['playerDetails']['data']['playerDetails']['healers']
+    actor=next((p for p in healers if p['name']==character['name'] and p['server']==character['server']['name']
+                and p['type']=='Paladin' and any(s['spec']=='Holy' for s in p['specs'])),None)
+    if actor is None:raise RuntimeError('Selected Holy Paladin is absent from the source fight')
+    data=client.query(prefix+'table(fightIDs:['+str(report['fightID'])+'],sourceID:'+str(actor['id'])+',dataType:Summary)}}}')['reportData']['report']['table']['data']
+    rank=dict(rank,hardModeLevel=rank['bracketData'],talents=[{'talentID':t['id'],'points':t['rank']} for t in data['combatantInfo']['talentTree']])
+    nodes=normalize(rank)
+    if nodes is None:raise RuntimeError('Selected Holy Paladin log has incomplete talent data')
+    return [(rank,nodes)],len(ranks)
+
+
 def collect_one(client,job,max_pages,cutoff):
     cls,spec,index,scene,zone,enc,difficulty=job
     metric="playerscore" if scene=="mythic" else ("hps" if spec in ("Holy","Discipline","Restoration","Mistweaver","Preservation") else "dps")
     records=[]; seen=set(); scanned=0; has_more=False
-    for page in range(1,max_pages+1):
+    preferred=cls=='Paladin' and spec=='Holy' and scene=='mythic'
+    if preferred:
+        records,scanned=holy_mythic_record(client,enc,cutoff)
+        page=1
+    for page in ([] if preferred else range(1,max_pages+1)):
         args={"className":cls.replace(' ',''),"specName":spec.replace(' ',''),"includeCombatantInfo":True,"page":page}
         pieces=[f'{k}:{json.dumps(v).lower() if isinstance(v,bool) else json.dumps(v)}' for k,v in args.items()]
         pieces.append('metric:'+metric)

@@ -26,7 +26,8 @@ class DataPublicationTests(unittest.TestCase):
             with self.subTest(class_name=class_name), tempfile.TemporaryDirectory() as directory:
                 expected = Path(directory) / 'expected.lua'
                 expected.write_text('return ' + lua({
-                    'version': publication['collected'], 'patch': '12.1', 'builds': builds,
+                    'version': publication.get('class_collected', {}).get(class_name, publication['collected']),
+                    'patch': '12.1', 'builds': builds,
                 }), encoding='utf-8')
                 proc = subprocess.run(
                     ['lua', 'tests/data_equivalence.lua', class_name, str(expected)],

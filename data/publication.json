@@ -1,10 +1,23 @@
 {
   "completed": 1120,
   "failed": 0,
-  "builds": 1861,
+  "builds": 1856,
   "collected": 1791854825,
   "zones": [
     55,
     53
-  ]
+  ],
+  "class_collected": {
+    "PALADIN": 1791966150
+  },
+  "targeted_refresh": {
+    "collected": 1791966150,
+    "scope": "PALADIN:Holy:mythic",
+    "source_character_id": 112885599,
+    "source_character": "快乐阳阳-霜之哀伤",
+    "timed_only": true,
+    "completed": 8,
+    "failed": 0,
+    "builds": 8
+  }
 }
