@@ -166,23 +166,27 @@ assert(A.Apply:Start(builds.a,false));settle()
 assert(A.message=='APPLY_SUCCESS' and creates==1,'recovery reuses the same config after failures')
 print('PASS failures: rejected/event-failed commits, combat, timeout, safe retry without another config')
 
--- Shared bars save both on normal slot changes and before switching away.
-B:Init()
+-- Shared bars are captured at the next switch, including after a reload.
 assert(A.Apply:Start(builds.b,true));settle()
 local independentBefore=B:Get(testSpec,'a',false).slots[1].id
+local sharedBefore=B:Get(testSpec,nil,true).slots[1].id
 slots[1].id=901;emit('ACTIONBAR_SLOT_CHANGED',1);settle()
-assert(B:Get(testSpec,nil,true).slots[1].id==901,'shared edits autosave through the real event handler')
+assert(B:Get(testSpec,nil,true).slots[1].id==sharedBefore,'slot events do not rewrite stored layouts')
+-- Native action bars and SavedVariables survive reload; Lua service state does not.
+assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A);B=A.ActionBars
+assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
+assert(A.Apply:CurrentBuildID()=='b','saved ownership is recognized without a background tracker')
 slots[1].id=902
 assert(A.Apply:Start(builds.a,false));settle()
 assert(B:Get(testSpec,nil,true).slots[1].id==902,'leaving shared saves edits before a deferred event can run')
 assert(B:Get(testSpec,'a',false).slots[1].id==independentBefore,'shared save does not overwrite independent layout')
 
-print('PASS shared autosave and pre-switch save preserve independent layouts')
+print('PASS shared pre-switch save after reload preserves independent layouts')
 
 -- The reported empty cursor macros must not stop the actual Apply pipeline.
 A.L.BARS_PARTIAL='Preserved macro slots: %s'
 local copiedPickup=PickupAction
-for _,i in ipairs({77,78,113,114})do slots[i]={kind='macro',id=999,unreadable=true}end
+for _,i in ipairs({77,78,113,114})do slots[i]={kind='macro',id=999,sub='spell',unreadable=true}end
 PickupAction=function(i,keep)
  assert(A.Apply.op,'all addon cursor work belongs to Applying')
  if slots[i].unreadable then assert(keep==true,'unreadable macro must stay in place');return end

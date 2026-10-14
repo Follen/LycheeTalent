@@ -33,7 +33,9 @@ PlaceAction=function(slot)
  slots[slot]=cursor and cursor.id
  cursor=previous and {kind="macro",id=previous} or nil
 end
+local restoreReads=reads
 assert(B:Restore(snapshot) and slots[1]==2 and slots[2]==1 and slots[3]==121 and not cursor,"restore swaps same-name macros without changing scope")
+assert(reads-restoreReads==6,"macro identity is read once before writes and once for final verification, never during source lookup")
 slots[1],slots[2]=1,2
 local oldReads=reads
 cursor={kind="item",id=123}
@@ -71,3 +73,31 @@ assert(B:Restore(legacy) and slots[2]==1,"recreated macro at the recorded index 
 assert(B:MacroIndex(c)==121,"absolute index preserves character macro range")
 assert(not B:MacroIndex({id=0}) and not B:MacroIndex({id=1.5}),"invalid indices are rejected")
 print("PASS macro slots: edited/renamed/recreated macros, legacy flags, duplicate names/bodies, missing index, cursor and combat")
+
+-- Plain macros expose their index directly. Copying such an action may return
+-- no cursor; reading or restoring it must not depend on that unnecessary copy.
+local presentedInfo=GetActionInfo
+GetActionInfo=function(slot)
+ if slot==61 and slots[slot] then return "macro",slots[slot] end
+ return presentedInfo(slot)
+end
+local copiedPickup=PickupAction
+PickupAction=function(slot,copy)
+ if slot==61 and copy then error("plain macro must not be copied to read or restore identity") end
+ return copiedPickup(slot,copy)
+end
+slots[61]=121
+local direct=assert(B:Capture(62))
+assert(direct.slots[61].id==121 and direct.slots[61].sub==nil and not cursor,"slot 61 retains exact character macro index")
+direct.slots[61]={kind="unreadableMacro",id=61}
+local restored,_,detail=B:Restore(direct)
+assert(restored and not detail and B.verified.slots[61].kind=="macro" and B.verified.slots[61].id==121,"legacy placeholder resolves from current readable macro")
+assert(B:SaveLayout(62,"direct",false,B.verified))
+direct=B:Get(62,"direct",false)
+direct.slots[61]={kind="macro",id=2}
+direct.slots[62]={kind="macro",id=121}
+assert(B:Restore(direct) and slots[61]==2 and slots[62]==121,"plain macro restores and duplicates via exact macro index")
+slots[61]=119 -- no macro exists at that index
+local missing,why,slot=B:Capture(62)
+assert(not missing and why=="BARS_MACRO_READ" and slot==61,"invalid direct index is not guessed or saved as empty")
+print("PASS direct macro slot 61: no copied pickup, exact account/character IDs, legacy placeholder recovery and missing-index error")

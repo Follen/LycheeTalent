@@ -1,5 +1,5 @@
 local _,A=...
-local X={revision="20260927-clean2"}
+local X={revision="20261014-switch-bars"}
 A.Apply=X
 function X:GuardCreation(frame)
     if not frame or not frame.IsEventRegistered then return end
@@ -265,13 +265,12 @@ function X:CompleteWorking()
     if not saved then self:Finish(false,saveReason);return end
     state.active={id=op.buildID,shared=op.shared,config=op.target,code=op.code}
     A.Store.character.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
-    A.ActionBars:Track(A.ActionBars.verified)
     local preserved=detail and detail.preservedSlots
     if preserved then
         A.Store.character.recovery.actionBars={reason="BARS_PARTIAL",detail=detail}
     end
     -- Capture, restore, verify and persist have all finished under this op.
-    -- Later display notifications are passive and cannot restart cursor work.
+    -- Ordinary action-bar and cursor events do not read or save layouts.
     self:Finish(true)
     if preserved then A:Message(string.format(A.L.BARS_PARTIAL,table.concat(preserved,", "))) end
 end

@@ -5,14 +5,14 @@ assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
 local B=A.ActionBars
 local slots={};for i=1,180 do slots[i]={} end
 local blocked={77,78,113,114}
-for _,i in ipairs(blocked)do slots[i]={kind='macro',id=999,unreadable=true}end
+for _,i in ipairs(blocked)do slots[i]={kind='macro',id=999,sub='spell',unreadable=true}end
 slots[1]={kind='macro',id=129};slots[5]={kind='macro',id=127}
 local cursor,combat,throwPickup,wrongType,placements=nil,false,false,false,0
 local function copy(t)local out={};for k,v in pairs(t)do out[k]=v end;return out end
 function InCombatLockdown()return combat end
 function GetCursorInfo()if cursor then return cursor.kind,cursor.id end end
 function ClearCursor()cursor=nil end
-function GetActionInfo(i)local s=slots[i];return s.kind,s.id end
+function GetActionInfo(i)local s=slots[i];return s.kind,s.id,s.sub end
 function GetMacroInfo(i)if i==129 or i==127 then return 'same name',1,'same body' end end
 function PickupAction(i,keep)
  if throwPickup then error('pickup exception')end
