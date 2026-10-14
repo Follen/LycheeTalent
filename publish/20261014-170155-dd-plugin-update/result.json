@@ -1,0 +1,134 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "dd",
+  "name": "荔枝天赋",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "version": "1.0.16",
+  "tag": "v1.0.16",
+  "commit": "179944cc11063af5fde931a888482d856d3b1d33",
+  "status": "version-listed-download-verified-approval-unconfirmed",
+  "version_sn": "d2da6481cbaa4f2ca087b64878adffa5",
+  "sha256": "0f10ffb6da751fa3c6e19ce0a303b4e5d6d731cc20ff9757c6806e94e2c80533",
+  "bytes": 749523,
+  "download_matches_local": true,
+  "raw_zip_paths": "forward-slashes-local-and-central",
+  "verified_files": 58,
+  "upload_cli": {
+    "error": {
+      "details": {
+        "fields": [
+          "detail_url",
+          "version"
+        ],
+        "projections": {
+          "author_list": "mismatch",
+          "detail_v2": "mismatch"
+        }
+      },
+      "endpoint": "/addon/detail_v2",
+      "kind": "verification_required",
+      "message": "submitted plugin version is not visible in official readback projections",
+      "stage": "readback",
+      "verification_required": true
+    },
+    "operation": "plugin.update",
+    "platform": "dd",
+    "schema": "fupload.output.v1",
+    "success": false
+  },
+  "history": {
+    "data": {
+      "code": 0,
+      "msg": "ok",
+      "result": [
+        {
+          "ctime": "2026-10-14 17:04:04",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/VEDSUhLoXqJRVreJdV4ICCSw3pqcve2A/addon.zip",
+          "release_type": 1,
+          "sn": "d2da6481cbaa4f2ca087b64878adffa5",
+          "version": "1.0.16"
+        },
+        {
+          "ctime": "2026-10-13 12:48:08",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/DJZ9lsEwydGODxavHhgvuyGumbNIr9b4/addon.zip",
+          "release_type": 1,
+          "sn": "5de58ebee2c24c769234f8d3be0115ee",
+          "version": "1.0.15"
+        },
+        {
+          "ctime": "2026-09-30 13:01:54",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/vaVVIwnU20YNr2nZMCsdknTVCoJX4iZQ/addon.zip",
+          "release_type": 1,
+          "sn": "00408e038b09479386c651473508f09a",
+          "version": "1.0.12"
+        },
+        {
+          "ctime": "2026-09-29 18:16:28",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/DpqcjMGofTXYJwsgGLPKXcOY5RFUxHku/addon.zip",
+          "release_type": 1,
+          "sn": "b4dce489eb5b4714b23e236b0740892b",
+          "version": "1.0.11"
+        },
+        {
+          "ctime": "2026-09-28 22:15:58",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/T7NDyyF0SSTcHkfIxw6HyC3TiqH2Vg8G/addon.zip",
+          "release_type": 1,
+          "sn": "e3b6d1bf2da44a8f8b65d485dd1f1ca0",
+          "version": "1.0.10"
+        },
+        {
+          "ctime": "2026-09-28 18:47:53",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/jeLQsKhOGl0enJgINA32NG0xHfi0iTeq/addon.zip",
+          "release_type": 1,
+          "sn": "7047e65ea0d849fc8b677702dd8b0143",
+          "version": "1.0.9"
+        },
+        {
+          "ctime": "2026-09-28 16:51:59",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/VNCREwYwjoa084nrQZHQPGLumlWRFwa5/addon.zip",
+          "release_type": 1,
+          "sn": "eddd2699b2e74c2ea575ea8b3cf81cb6",
+          "version": "1.0.8"
+        },
+        {
+          "ctime": "2026-09-28 10:48:52",
+          "display_game_version": "12.1.0",
+          "file_path": "https://uires.w.163.com/file/addon/jyYo9QDeBsDehALHm5N4INSuhV8IYf3A/addon.zip",
+          "release_type": 1,
+          "sn": "98d0171748694d50888d0f90620a82b0",
+          "version": "1.0.7"
+        }
+      ]
+    },
+    "dry_run": false,
+    "operation": "plugin.versions",
+    "platform": "dd",
+    "schema": "fupload.output.v1",
+    "success": true
+  },
+  "detail_readback": {
+    "latest_version": {
+      "file_path_summary": {
+        "host": "uires.w.163.com"
+      },
+      "folders": [],
+      "game_versions": [
+        "12.1.0"
+      ],
+      "release_type": 1,
+      "size": 749847,
+      "sn": "5de58ebee2c24c769234f8d3be0115ee",
+      "version": "1.0.15"
+    },
+    "update_desc": "<p>奶骑八个大秘境统一使用国服霜之哀伤快乐阳阳的最高限时天赋，本次均为 23 层记录。</p><p>同层优先选择用时最短的公开日志，排除超时记录，并移除奶骑大秘境中其他玩家的热门方案。</p>",
+    "status": 1
+  },
+  "cleanup_complete": true
+}

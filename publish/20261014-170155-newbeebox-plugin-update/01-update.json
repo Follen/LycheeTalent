@@ -1,0 +1,54 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.16",
+  "tag": "v1.0.16",
+  "commit": "179944cc11063af5fde931a888482d856d3b1d33",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "authorization": "User authorized merge and both platform updates without further confirmation.",
+  "expected_readback": {
+    "version": "1.0.16",
+    "game_versions": [
+      "12.1.0"
+    ]
+  },
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\holy-yangyang",
+  "id": 27799,
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.16",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\holy-yangyang\\publish\\20261014-170155-newbeebox-plugin-update\\changelog.txt",
+    "--game-versions",
+    "12.1.0",
+    "-o",
+    "json"
+  ],
+  "ordered_steps": [
+    "push --dry-run",
+    "pack and verify contents",
+    "push once",
+    "info and versions readback"
+  ],
+  "preflight": "passed",
+  "packages": 14,
+  "verified_files": 58,
+  "archive": "dist/LycheeTalent-1.0.16-ncc.zip",
+  "sha256": "70711b3ae3500e908d8b6ad4f66286bb97e31c8d0ef423bcb03214803e2fe681",
+  "bytes": 757787
+}

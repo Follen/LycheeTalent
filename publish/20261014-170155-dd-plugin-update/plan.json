@@ -1,0 +1,36 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.16",
+  "tag": "v1.0.16",
+  "commit": "179944cc11063af5fde931a888482d856d3b1d33",
+  "game_versions": [
+    "12.1.0"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "authorization": "User authorized merge and both platform updates without further confirmation.",
+  "expected_readback": {
+    "version": "1.0.16",
+    "game_versions": [
+      "12.1.0"
+    ]
+  },
+  "platform": "dd",
+  "channel": "fupload",
+  "archive": "dist/LycheeTalent-1.0.16.zip",
+  "sha256": "0f10ffb6da751fa3c6e19ce0a303b4e5d6d731cc20ff9757c6806e94e2c80533",
+  "bytes": 749523,
+  "packages": 14,
+  "verified_files": 58,
+  "raw_zip_paths": "forward-slashes-local-and-central",
+  "ordered_steps": [
+    "dry-run",
+    "update once",
+    "get and versions readback",
+    "download and verify archive",
+    "session stop in finally"
+  ]
+}
