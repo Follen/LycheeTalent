@@ -162,9 +162,13 @@ function B:Pickup(entry)
         if not index then return nil,"BARS_MACRO" end
         PickupMacro(index)
     elseif entry.kind=="summonmount" then
-        local _,spell=C_MountJournal.GetMountInfoByID(entry.id)
-        if not spell then return nil,"BARS_UNAVAILABLE" end
-        C_Spell.PickupSpell(spell)
+        -- Random favorite is an action-bar sentinel, not a mount journal ID.
+        if entry.id==0x0FFFFFFF then C_MountJournal.Pickup(0)
+        else
+            local _,spell=C_MountJournal.GetMountInfoByID(entry.id)
+            if not spell then return nil,"BARS_UNAVAILABLE" end
+            C_Spell.PickupSpell(spell)
+        end
     elseif entry.kind=="equipmentset" and C_EquipmentSet and C_EquipmentSet.PickupEquipmentSet then
         C_EquipmentSet.PickupEquipmentSet(entry.id)
     elseif entry.kind=="summonpet" and C_PetJournal and C_PetJournal.PickupPet then

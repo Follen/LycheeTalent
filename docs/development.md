@@ -18,6 +18,7 @@ lua tests/actionbar_restore.lua
 lua tests/actionbar_edgecases.lua
 lua tests/actionbar_edgecases.lua override
 lua tests/actionbar_edgecases.lua pickup-fallback
+lua tests/actionbar_edgecases.lua random-mount
 lua tests/macro_identity.lua
 lua tests/unreadable_macros.lua
 lua tests/actionbar_capture_events.lua
