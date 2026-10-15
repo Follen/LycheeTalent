@@ -5,7 +5,7 @@
   "author": "Follen",
   "game": "World of Warcraft",
   "branch": "retail",
-  "interface": 120100,
+  "interface": 120105,
   "summary_zh": "全自动推荐基于WCL顶尖玩家的天赋，进本智能提醒。更聪明的天赋-动作条管理。",
   "summary_en": "Encounter-based WCL builds, personal loadouts, independent action bars and timely switch reminders.",
   "repository": "https://github.com/Follen/LycheeTalent",

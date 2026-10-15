@@ -207,7 +207,7 @@ def main():
         folder=ROOT/'addon'/('LycheeTalent_Data_'+token);folder.mkdir(parents=True,exist_ok=True)
         package={'version':now,'patch':'12.1','builds':builds}
         (folder/'Data.lua').write_text(render_package(token,package),encoding='utf-8')
-        (folder/(folder.name+'.toc')).write_text('## Interface: 120100\n## Title: |cffd53c49Lychee|r Talent Data - '+token+'\n## IconTexture: Interface\\AddOns\\LycheeTalent\\Media\\logo.tga\n## LoadOnDemand: 1\n## Dependencies: LycheeTalent\n## Version: 1.0.0\nData.lua\n',encoding='utf-8')
+        (folder/(folder.name+'.toc')).write_text('## Interface: 120105\n## Title: |cffd53c49Lychee|r Talent Data - '+token+'\n## IconTexture: Interface\\AddOns\\LycheeTalent\\Media\\logo.tga\n## LoadOnDemand: 1\n## Dependencies: LycheeTalent\n## Version: 1.0.0\nData.lua\n',encoding='utf-8')
     (ROOT/'addon/LycheeTalent/Scenarios.lua').write_text('local _, A = ...\nA.Scenarios = '+lua(localize(scenes))+'\n',encoding='utf-8')
     summary={'completed':completed,'failed':failed,'builds':db.execute('SELECT COUNT(*) FROM builds').fetchone()[0],'collected':now,'zones':[55,53]}
     (ROOT/'data/publication.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
