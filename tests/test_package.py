@@ -23,7 +23,7 @@ class PackageTests(unittest.TestCase):
             with self.subTest(shell=shell), tempfile.TemporaryDirectory() as output:
                 result = subprocess.run(
                     [shell, "-NoProfile", "-File", str(ROOT / "tools/package.ps1"),
-                     "-OutputDirectory", output], capture_output=True, text=True, env=env,
+                     "-OutputDirectory", output], capture_output=True, env=env,
                 )
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 archives = list(Path(output).glob("*.zip"))

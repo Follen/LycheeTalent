@@ -25,7 +25,7 @@ class RepositoryTests(unittest.TestCase):
     def test_toc_loads_existing_files_and_covers_lua_sources(self):
         for toc in (ROOT / 'addon').glob('*/*.toc'):
             with self.subTest(toc=toc.name):
-                loaded = {line.strip().replace('\\', '/') for line in toc.read_text().splitlines()
+                loaded = {line.strip().replace('\\', '/') for line in toc.read_text(encoding='utf-8').splitlines()
                           if line.strip() and not line.startswith('#')}
                 for path in loaded:
                     self.assertTrue((toc.parent / path).is_file(), f'{toc.name}: {path}')
