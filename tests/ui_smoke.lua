@@ -57,6 +57,7 @@ function methods:SetColorTexture(r,g,b,a)self.color={r,g,b,a}end
 function methods:SetValue(value)self.sliderValue=value end
 function methods:SetMinMaxValues(minimum,maximum)self.minimum=minimum;self.maximum=maximum end
 function methods:SetTexture(value)self.texture=value;self.atlas=nil end
+function methods:SetTexCoord(...)self.texCoord={...}end
 function methods:SetAtlas(value)self.atlas=value end
 CreateFrame=function(kind,name,parent)local f=new(kind,parent);if name then _G[name]=f end;return f end
 UIParent=new("Frame");UIParent:SetSize(1920,1080);GameTooltip=new("Frame");UISpecialFrames={};SlashCmdList={}
@@ -69,7 +70,7 @@ C_AddOns={DoesAddOnExist=function()return true end,LoadAddOn=function()dofile("a
 local timers={}
 C_Timer={NewTimer=function(_,fn)local t={fn=fn,Cancel=function(self)self.cancelled=true end};timers[#timers+1]=t;return t end}
 local A={}
-for _,name in ipairs({"Locales","Storage","Scenarios","Catalog","Talents","TalentEx","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
+for _,name in ipairs({"Locales","Storage","Scenarios","Catalog","Talents","TalentEx","Macros","ActionBars","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
 A.Store:Init();A.Store.db.reducedMotion=true
 PlayerSpellsFrame=new("Frame",UIParent);PlayerSpellsFrame:SetSize(1100,820);PlayerSpellsFrame:Hide()
 PlayerSpellsFrame.TalentsFrame=new("Frame",PlayerSpellsFrame)
@@ -299,17 +300,28 @@ A.UI:BuildOptions(id,A.UI.rows[1].more)
 for _,action in ipairs(A.UI.options.actions) do
     assert(action.key~="favorite" and action.key~="diff" and action.key~="restore","removed actions must not appear in menus")
 end
-assert(A.UI.options.option.checked,"build defaults to independent bars")
+assert(not A.UI.options.option.checked,"build defaults to shared bars")
+local option=A.UI.options.option;local mark=A.UI.options.mark
+assert(mark.texCoord[1]==0 and not option.bg:IsShown(),'normal unchecked state')
+option.scripts.OnEnter(option)
+assert(mark.texCoord[1]==.25 and option.bg:IsShown(),'hover state')
+option.scripts.OnMouseDown(option,'LeftButton')
+assert(option.down and option.bg.color[1]==.175,'pressed state')
+option.scripts.OnMouseUp(option);option.scripts.OnLeave(option)
+option:SetEnabled(false);option:Paint()
+assert(mark.alpha==.45,'disabled unchecked state')
+option:SetChecked(true);assert(mark.texCoord[1]==.75,'disabled checked state')
+option:SetChecked(false);option:SetEnabled(true);option:Paint()
 A.UI.options.option.scripts.OnMouseDown(A.UI.options.option,"LeftButton");A.UI.options.option.scripts.OnClick(A.UI.options.option)
-assert(A.Store.character.modes[tostring(id)]==true,"menu saves this build as shared")
+assert(not A.ActionBars:IsShared(71,id),"explicit check saves this build as independent")
 local other=A.Store:Save("独立方案","example-code","mythic","副本",71)
 A.UI:BuildOptions(other.id,A.UI.rows[1].more)
-assert(A.UI.options.option.checked,"another build retains independent bars")
+assert(not A.UI.options.option.checked,"another build retains shared bars")
 A.Store:Delete(other.id)
 A.UI:BuildOptions(id,A.UI.rows[1].more)
-assert(not A.UI.options.option.checked,"menu restores this build preference")
+assert(A.UI.options.option.checked,"menu restores this build preference")
 A.UI.options.option.scripts.OnMouseDown(A.UI.options.option,"LeftButton");A.UI.options.option.scripts.OnClick(A.UI.options.option)
-assert(A.Store.character.modes[tostring(id)]==false,"independent preference is per build")
+assert(A.ActionBars:IsShared(71,id),"unchecking returns to spec shared bars")
 assert(A.UI.options.option.label.point[1]=="RIGHT","menu option reserves a right-aligned check")
 assert(A.UI.options.title:GetText()==A.L.ACTION_MENU,"Lychee-style action menu heading")
 A.UI.options.mouseOver=false;A.UI.rows[1].more.mouseOver=false

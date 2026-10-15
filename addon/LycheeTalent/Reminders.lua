@@ -108,7 +108,7 @@ function R:Apply(buildID)
         for _,candidate in ipairs(self:Candidates(context,A:GetSpec())) do if candidate.id==buildID then build=candidate;break end end
     end
     if not build then self:Hide();return nil,"REMINDER_CHANGED" end
-    local shared=(A.Store.character.modes or {})[tostring(buildID)]==true
+    local shared=A.ActionBars:IsShared(A:GetSpec(),buildID)
     local ok,reason,ticket=A.Apply:Start(build,shared)
     if ok then self:Hide()
     elseif reason=="PENDING" and ticket then self:Hide();A.UI:ConfirmPending(ticket,A.Catalog:Title(build)) end

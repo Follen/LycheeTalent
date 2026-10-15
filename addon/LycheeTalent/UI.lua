@@ -1,6 +1,6 @@
 local _, A = ...
 local L=A.L
-local U={scene="mythic",results={},offset=0,rows={},shared=false}
+local U={scene="mythic",results={},offset=0,rows={},shared=true}
 A.UI=U
 local C={bg={.055,.055,.063},hover={.09,.09,.09},selected={.085,.085,.085},
     red={.835,.235,.285},hot={.95,.35,.4},text={.94,.932,.91},muted={.71,.705,.69},
@@ -300,8 +300,7 @@ function U:Refresh()
         self.emptyTitle:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED or L.EMPTY)
         self.emptyHelp:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED_HELP or L.EMPTY_HELP)
     end
-    local modes=A.Store.character.modes or {}
-    self.shared=self.selected and modes[tostring(self.selected)]==true or false
+    self.shared=A.ActionBars:IsShared(A:GetSpec(),self.selected)
     local secondary=(self.dialog and self.dialog:IsShown()) or (self.contextSettings and self.contextSettings:IsShown()) or (self.settings and self.settings:IsShown())
     self.back:SetShown(secondary)
     if self.settingsButton then self.settingsButton:SetShown(not secondary) end
@@ -313,9 +312,7 @@ end
 function U:SetShared(shared,id)
     id=id or self.selected
     if not id then return end
-    local character=A.Store.character
-    character.modes=character.modes or {}
-    character.modes[tostring(id)]=shared==true
+    A.ActionBars:SetShared(A:GetSpec(),id,shared)
     if id==self.selected then self.shared=shared==true end
 end
 function U:BuildOptions(id,anchor)
@@ -345,8 +342,7 @@ function U:BuildOptions(id,anchor)
             return b
         end
         local option=item(L.INDEPENDENT,function()
-            local modes=A.Store.character.modes or {}
-            local shared=not (modes[tostring(menu.buildID)]==true)
+            local shared=not A.ActionBars:IsShared(A:GetSpec(),menu.buildID)
             U:SetShared(shared,menu.buildID); menu.option:SetChecked(not shared)
         end)
         option.label:ClearAllPoints(); option.label:SetPoint("LEFT",12,0); option.label:SetPoint("RIGHT",-36,0)
@@ -413,7 +409,7 @@ function U:BuildOptions(id,anchor)
     menu.option:SetWidth(width); for _,b in ipairs(menu.actions) do b:SetWidth(width) end
     local height=56+count*MENU_STEP; menu:SetSize(width+16,height)
     menu:SetScale(math.min(1,(UIParent:GetHeight()*UIParent:GetEffectiveScale()-32)/(height*self.frame:GetEffectiveScale())))
-    local modes=A.Store.character.modes or {}; menu.option:SetChecked(modes[tostring(id)]~=true)
+    menu.option:SetChecked(not A.ActionBars:IsShared(A:GetSpec(),id))
     local x,y=GetCursorPosition(); local scale=menu:GetEffectiveScale()
     menu:ClearAllPoints(); menu:SetPoint("TOPLEFT",UIParent,"BOTTOMLEFT",math.floor(x+.5)/scale,math.floor(y+.5)/scale); menu:Show()
 end
@@ -975,8 +971,7 @@ function U:Create()
                 or r.lastClickID~=r.build.id or r.lastClickGeneration~=r.generation then return end
             local build=r.build; r.lastClickID=nil; r.lastClickGeneration=nil
             U.selected=build.id
-            local modes=A.Store.character.modes or {}
-            local ok,err,ticket=A.Apply:Start(build,modes[tostring(build.id)]==true)
+            local ok,err,ticket=A.Apply:Start(build,A.ActionBars:IsShared(A:GetSpec(),build.id))
             if not ok then
                 if err=="PENDING" and ticket then U:ConfirmPending(ticket,A.Catalog:Title(build))
                 else A:Message(err) end

@@ -32,6 +32,7 @@ local A={Scenarios=scenes,L={},GetSpec=function()return spec end,
  Apply={CurrentBuildID=function()if type(current)=='string' and not catalogReady then return nil end;return current end,
    Start=function(_,build)assert(build==b);applied=applied+1;current=b.id;return true end},
  UI={ShowReminder=function(self,p)shown=shown+1;self.last=p;self.reminder={Hide=function()end}end}}
+assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
 assert(loadfile('addon/LycheeTalent/Reminders.lua'))('LycheeTalent',A)
 local R=A.Reminders
 local function event(name,...)
