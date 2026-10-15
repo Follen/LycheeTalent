@@ -1,4 +1,6 @@
+GetMacroInfo=GetMacroInfo or function()end
 local A={Store={character={}},GetSpec=function()return 62 end}
+assert(loadfile("addon/LycheeTalent/Macros.lua"))("LycheeTalent",A)
 assert(loadfile("addon/LycheeTalent/ActionBars.lua"))("LycheeTalent",A)
 local B=A.ActionBars
 local slots={};for i=1,180 do slots[i]={}end

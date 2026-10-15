@@ -1,5 +1,5 @@
 local _,A=...
-local X={revision="20261014-switch-bars"}
+local X={revision="20261015-schema-v1"}
 A.Apply=X
 function X:GuardCreation(frame)
     if not frame or not frame.IsEventRegistered then return end
@@ -76,8 +76,10 @@ function X:ResetPending(active,entries)
     if not ok or not result or C_Traits.ConfigHasStagedChanges(active) then return nil,"ROLLBACK_FAILED" end
     return true
 end
-function X:CurrentBuildID()
-    local saved=A.Store.character.applied
+function X:CurrentBuildID(allowPendingBars)
+    if A.ActionBars.pendingSpec and not allowPendingBars then return end
+    local state=A.ActionBars:Spec(A:GetSpec())
+    local saved=state and state.applied
     if not saved or self.op or saved.spec~=A:GetSpec() then return end
     if C_ClassTalents.GetStarterBuildActive() then return end
     local binding,info=A.ActionBars:Working(saved.spec)
@@ -249,12 +251,7 @@ end
 function X:CompleteWorking()
     local op=self.op
     local state=A.ActionBars:Spec(op.spec)
-    local snapshot,why=A.ActionBars:Get(op.spec,op.buildID,op.shared)
-    if not snapshot and not op.shared then
-        snapshot,why=A.ActionBars:Get(op.spec,nil,true)
-        if snapshot then A.ActionBars:SaveIndependent(op.spec,op.buildID,snapshot) end
-    end
-    if not snapshot then self:Finish(false,why);return end
+    local snapshot=op.targetBars
     op.stage="action-bars"
     local ok,reason,detail=A.ActionBars:Restore(snapshot)
     if not ok then
@@ -264,13 +261,14 @@ function X:CompleteWorking()
     local saved,saveReason=A.ActionBars:SaveLayout(op.spec,op.buildID,op.shared,A.ActionBars.verified)
     if not saved then self:Finish(false,saveReason);return end
     state.active={id=op.buildID,shared=op.shared,config=op.target,code=op.code}
-    A.Store.character.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
+    state.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
+    A.ActionBars.pendingSpec=nil
+    A.ActionBars.resumeFailed=nil
     local preserved=detail and detail.preservedSlots
     if preserved then
         A.Store.character.recovery.actionBars={reason="BARS_PARTIAL",detail=detail}
     end
-    -- Capture, restore, verify and persist have all finished under this op.
-    -- Ordinary action-bar and cursor events do not read or save layouts.
+    -- Native macro writes are complete before background observation resumes.
     self:Finish(true)
     if preserved then A:Message(string.format(A.L.BARS_PARTIAL,table.concat(preserved,", "))) end
 end
@@ -332,6 +330,7 @@ function X:Start(build,shared,consent)
     if not active or not C_ClassTalents.CanEditTalents() then return nil,"APPLY_UNAVAILABLE" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
     local entries=A.Talents:Entries(code);if not entries then return nil,"BAD_CODE" end
+    if shared==nil then shared=A.ActionBars:IsShared(spec,build.id) end
     shared=shared==true
     if consent and (self.pendingTicket~=nil or not consent.accepted or consent.spec~=spec or consent.active~=active
         or consent.build.id~=build.id or consent.build.code~=code or consent.shared~=shared) then return nil,"PENDING_CHANGED" end
@@ -352,7 +351,7 @@ function X:Start(build,shared,consent)
     local selected=C_ClassTalents.GetLastSelectedSavedConfigID(spec)
     local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="capture-bars",
         originalSaved=selected,originalCode=originalCode,previousBuildID=self:CurrentBuildID(),
-        previousApplied=A.Store.character.applied,startedAt=GetTime()}
+        previousApplied=A.ActionBars:Spec(spec).applied,startedAt=GetTime()}
     self.op=op
     if not self.events then
         self.events=CreateFrame("Frame")
@@ -388,6 +387,14 @@ function X:CaptureBeforeApply()
         local saved,why=A.ActionBars:SaveLayout(spec,op.previousBuildID,op.previousApplied.shared,before)
         if not saved then self:Finish(false,why);return end
     end
+    local target,why=A.ActionBars:Get(spec,op.buildID,op.shared)
+    if not target and not op.shared and why=="BARS_MISSING" then
+        target,why=A.ActionBars:Get(spec,nil,true)
+    end
+    if not target then self:Finish(false,why);return end
+    local plan;plan,why=A.ActionBars:Plan(target,before)
+    if not plan then self:Finish(false,why);return end
+    op.targetBars=target
     op.stage="preparing"
     op.recovery={revision=self.revision,status="active",spec=spec,code=op.originalCode,bars=before,
         originalSaved=op.originalSaved,targetCode=op.code,buildID=op.buildID,shared=op.shared,time=time()}

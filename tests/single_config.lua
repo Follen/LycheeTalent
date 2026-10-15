@@ -1,3 +1,4 @@
+GetMacroInfo=GetMacroInfo or function()end
 local testSpec=tonumber(arg[1]) or 62
 local A={L={TITLE='荔枝天赋'},Store={character={}},UI={},GetSpec=function()return testSpec end,Message=function(self,k)self.message=k end}
 local char=A.Store.character
@@ -68,6 +69,7 @@ A.Talents={Code=function(_,b)return b.code end,Validate=function(_,code)return c
  StageEntries=function(_,id,e)assert(id==1);staged=e.code;return true end}
 local builds={a={id='a',code='alpha'},b={id='b',code='beta'}}
 A.Catalog={Find=function(_,id)return builds[id]end}
+assert(loadfile('addon/LycheeTalent/Macros.lua'))('LycheeTalent',A)
 assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
 local B=A.ActionBars
 assert(B:SeedDefault(testSpec,B:Capture(testSpec),'first-use'))
@@ -75,6 +77,7 @@ local independent=assert(B:Capture(testSpec));independent.slots[1].id=200
 assert(B:SaveIndependent(testSpec,'a',independent))
 B:Spec(testSpec).working={id=20,name=nodes[20].name,spec=testSpec}
 assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
+B:Init()
 local panelShown,painted=false,false
 A.UI.frame={IsShown=function()return panelShown end}
 A.UI.Refresh=function()if A.Apply.op then painted=true end end
@@ -166,15 +169,18 @@ assert(A.Apply:Start(builds.a,false));settle()
 assert(A.message=='APPLY_SUCCESS' and creates==1,'recovery reuses the same config after failures')
 print('PASS failures: rejected/event-failed commits, combat, timeout, safe retry without another config')
 
--- Shared bars are captured at the next switch, including after a reload.
+-- Shared bars observe passive edits and capture again at the switch boundary.
 assert(A.Apply:Start(builds.b,true));settle()
 local independentBefore=B:Get(testSpec,'a',false).slots[1].id
 local sharedBefore=B:Get(testSpec,nil,true).slots[1].id
 slots[1].id=901;emit('ACTIONBAR_SLOT_CHANGED',1);settle()
-assert(B:Get(testSpec,nil,true).slots[1].id==sharedBefore,'slot events do not rewrite stored layouts')
+assert(B:Get(testSpec,nil,true).slots[1].id==901,'slot events save the active shared layout')
 -- Native action bars and SavedVariables survive reload; Lua service state does not.
+B.events:UnregisterAllEvents()
+assert(loadfile('addon/LycheeTalent/Macros.lua'))('LycheeTalent',A)
 assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A);B=A.ActionBars
 assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
+B:Init()
 assert(A.Apply:CurrentBuildID()=='b','saved ownership is recognized without a background tracker')
 slots[1].id=902
 assert(A.Apply:Start(builds.a,false));settle()
@@ -182,6 +188,35 @@ assert(B:Get(testSpec,nil,true).slots[1].id==902,'leaving shared saves edits bef
 assert(B:Get(testSpec,'a',false).slots[1].id==independentBefore,'shared save does not overwrite independent layout')
 
 print('PASS shared pre-switch save after reload preserves independent layouts')
+
+-- Missing character macro space must fail before committing target talents.
+local capacity=assert(B:Capture(testSpec))
+capacity.macros.full={name='Saved macro',icon=1,body='/cast Saved'}
+capacity.slots[9]={kind='macro',id='full'}
+builds.capacity={id='capacity',code='capacity'}
+assert(B:SaveIndependent(testSpec,'capacity',capacity))
+Constants={MacroConsts={MAX_ACCOUNT_MACROS=120,MAX_CHARACTER_MACROS=0}}
+local commitsBefore=commits
+assert(A.Apply:Start(builds.capacity,false));settle()
+assert(char.lastAttempt.reason=='BARS_MACRO_CAPACITY' and commits==commitsBefore and not A.Apply.op)
+Constants=nil
+print('PASS macro capacity rejects before native talent writes')
+
+-- A broken target must fail before talents change, without silently choosing
+-- the shared layout when an independent layout already exists.
+local broken=assert(B:Capture(testSpec))
+broken.slots[26]={kind='macro',id='missing-definition'}
+builds.broken={id='broken',code='broken'}
+B:Spec(testSpec).profiles.broken=broken
+commitsBefore=commits
+assert(A.Apply:Start(builds.broken,false));settle()
+assert(char.lastAttempt.reason=='BARS_INVALID' and char.lastAttempt.stage=='capture-bars' and commits==commitsBefore)
+local originalShared=B:Spec(testSpec).default
+B:Spec(testSpec).default=broken
+assert(A.Apply:Start(builds.b,true));settle()
+assert(char.lastAttempt.reason=='BARS_INVALID' and commits==commitsBefore,'shared target also rejects before talent writes')
+B:Spec(testSpec).default=originalShared
+print('PASS invalid shared/independent targets reject before native talent writes')
 
 -- The reported empty cursor macros must not stop the actual Apply pipeline.
 A.L.BARS_PARTIAL='Preserved macro slots: %s'

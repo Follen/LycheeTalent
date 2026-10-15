@@ -22,6 +22,7 @@ lua tests/actionbar_edgecases.lua override
 lua tests/actionbar_edgecases.lua pickup-fallback
 lua tests/actionbar_edgecases.lua random-mount
 lua tests/macro_identity.lua
+lua tests/legacy_macro_migration.lua
 lua tests/unreadable_macros.lua
 lua tests/actionbar_capture_events.lua
 lua tests/actionbar_capture_events.lua deferred
@@ -61,4 +62,8 @@ powershell -File tools/package.ps1
 
 动作条的读取时机、保存归属与宏身份处理见 [架构说明](../architecture.md#应用事务与动作条) 和 [天赋应用与动作条](talent-application.md)。
 
-`actionbar_capture_events.lua` 覆盖 500 次独立刷新、同步／延迟通知、同名宏交换和删除后在切换时保存、重载及退出时保留用户光标。`macro_identity.lua` 覆盖普通宏直接读取、带子类型宏的准确编号读取、61 槽旧占位符恢复及缺失宏报错。`single_config.lua` 覆盖单配置复用、共用／独立布局往返、重载后保存、读取前显示进度和首次读取失败。以上均为离线 API 替身；本次按用户要求不做实机验证，第 61 槽的实际返回值尚未取得。
+`actionbar_capture_events.lua` 覆盖宏正文／名称／图标编辑、500 次被动槽位刷新、同步／延迟通知、自身宏替换隔离、删除重编号、专精往返与重载。宏编辑和退出检查同时确认玩家光标不被改动。`macro_identity.lua` 覆盖宏原文恢复、同名宏、旧编号被替换、角色宏槽位复用、容量不足、宏与槽位回滚及 61 槽直接读取。两者使用 `macro_runtime.lua` 提供的原生 API 替身。
+
+`actionbar_profiles.lua` 验证默认共用、显式独立和专精隔离；`single_config.lua` 验证单配置复用、共用／独立往返、重载后保存、读取前显示进度、首次读取失败，以及目标布局无效或宏空位不足时不提交天赋。`unreadable_macros.lua` 保留不可读宏槽位的回归检查。UI 替身检查默认未勾选和控件状态。
+
+`legacy_macro_migration.lua` 先复现旧编号消失导致的读取错误，再验证已有原文优先、偏好与应用状态转入专精、旧字段清理、已标记数据跳过转换及未知结构保留。正式服 12.1.5.70391 的真实数据副本迁移已通过；这不等于完整插件更新后的 taint 或真实事件时序验证。诊断原始数据只保留在忽略目录。

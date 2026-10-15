@@ -12,13 +12,25 @@ function B:Spec(spec)
     if type(specs[spec])~="table" or type(specs[spec].profiles)~="table" then return nil end
     return specs[spec]
 end
+function B:IsShared(spec,buildID)
+    local state=self:Spec(spec)
+    if not state then return true end
+    state.modes=state.modes or {}
+    local key=tostring(buildID)
+    return state.modes[key]~=false
+end
+function B:SetShared(spec,buildID,shared)
+    local state=self:Spec(spec);if not state then return nil,"SCHEMA" end
+    state.modes=state.modes or {};state.modes[tostring(buildID)]=shared==true
+    return true
+end
 local function clone(value)
     local out={}
     for k,v in pairs(value) do out[k]=type(v)=="table" and clone(v) or v end
     return out
 end
 function B:Valid(snapshot,spec)
-    if type(snapshot)~="table" or snapshot.version~=1 or snapshot.spec~=spec
+    if type(snapshot)~="table" or snapshot.version~=2 or snapshot.spec~=spec
         or type(snapshot.slots)~="table" or #snapshot.slots~=self.slotCount then return false end
     for i=1,self.slotCount do
         local entry=snapshot.slots[i]
@@ -26,6 +38,10 @@ function B:Valid(snapshot,spec)
         if entry.kind=="unreadableMacro" and entry.id~=i then return false end
         if entry.kind~=nil and (type(entry.kind)~="string" or
             (type(entry.id)~="number" and type(entry.id)~="string")) then return false end
+        if entry.kind=="macro" then
+            local macro=snapshot.macros and snapshot.macros[entry.id]
+            if type(macro)~="table" or type(macro.name)~="string" or type(macro.body)~="string" then return false end
+        end
     end
     return true
 end
@@ -68,7 +84,7 @@ function B:Get(spec,buildID,shared)
     return clone(snapshot)
 end
 local function secret(value) return issecretvalue and issecretvalue(value) end
-function B:ReadSlot(slot)
+function B:ReadSlot(slot,passive,native)
     local kind,id,sub=GetActionInfo(slot)
     if secret(kind) or secret(id) or secret(sub) then return nil,"BARS_SECRET" end
     if not kind then return {} end
@@ -87,6 +103,10 @@ function B:ReadSlot(slot)
             if not self:MacroIndex(entry) then return nil,"BARS_MACRO_READ" end
             return entry
         end
+        local text=C_ActionBar and C_ActionBar.GetActionText and C_ActionBar.GetActionText(slot)
+        local index=not secret(text) and text and A.Macros:Named(native or A.Macros:Scan(),text)
+        if index then entry.id=index;entry.sub=nil;return entry end
+        if passive then return {kind="unreadableMacro",id=slot} end
         -- The native action button uses ignoreActionRemoval=true to copy an
         -- action to the cursor without removing the original slot.
         if InCombatLockdown() then return nil,"COMBAT" end
@@ -109,22 +129,33 @@ function B:ReadSlot(slot)
     end
     return entry
 end
-function B:Capture(spec)
+function B:CapturePhysical(spec,passive)
     if InCombatLockdown() then return nil,"COMBAT" end
     if A:GetSpec()~=spec then return nil,"APPLY_SPEC_CHANGED" end
-    if GetCursorInfo() then return nil,"BARS_CURSOR" end
+    if not passive and GetCursorInfo() then return nil,"BARS_CURSOR" end
     if C_ActionBar then
         for _,name in ipairs({"HasVehicleActionBar","HasOverrideActionBar","IsPossessBarVisible"}) do
             if C_ActionBar[name] and C_ActionBar[name]() then return nil,"BARS_CONTEXT" end
         end
     end
-    local slots={}
+    local slots={};local native=A.Macros:Scan()
     for i=1,self.slotCount do
-        local entry,why=self:ReadSlot(i)
+        local entry,why=self:ReadSlot(i,passive,native)
         if not entry then return nil,why,i end
         slots[i]=entry
     end
     return {version=1,spec=spec,slots=slots}
+end
+function B:Capture(spec,passive)
+    self.reading=true
+    local ok,snapshot,why,slot=pcall(self.CapturePhysical,self,spec,passive)
+    self.reading=nil
+    if not ok then return nil,"BARS_MACRO_READ" end
+    if not snapshot then return nil,why,slot end
+    local packed,reason=A.Macros:Pack(snapshot);if not packed then return nil,reason end
+    local state=self:Spec(spec);local applied=state and state.applied
+    local previous=applied and self:Get(spec,applied.id,applied.shared)
+    return A.Macros:PreserveNames(packed,previous)
 end
 local function baseSpell(id)
     if C_Spell and C_Spell.GetBaseSpell then
@@ -144,8 +175,7 @@ local function same(a,b)
     return a.id==b.id and a.sub==b.sub
 end
 function B:MacroIndex(entry)
-    -- The saved absolute index is the reference, not the macro's name or text.
-    -- Legacy metadata (including macroInvalid) must not block user edits.
+    -- Only physical execution entries reach this helper.
     local index=entry.id
     if type(index)~="number" or index<1 or index%1~=0 then return nil end
     local name=GetMacroInfo(index)
@@ -197,12 +227,11 @@ local function findSlot(slots,entry,except)
         if slot~=except and actual and same(actual,entry) then return slot end
     end
 end
-function B:Restore(snapshot)
+function B:RestorePhysical(snapshot)
     local spec=A:GetSpec()
     if InCombatLockdown() then return nil,"COMBAT" end
-    if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
-    local before,why=self:Capture(spec)
+    local before,why=self:CapturePhysical(spec)
     if not before then return nil,why end
     local current=clone(before.slots)
     local target=clone(snapshot)
@@ -304,6 +333,133 @@ function B:Restore(snapshot)
     self.verified=verified
     if #preservedSlots>0 then return true,nil,{preservedSlots=preservedSlots} end
     return true
+end
+function B:Plan(snapshot,before)
+    local target=clone(snapshot);local protected={};local unknown=false
+    for slot,entry in ipairs(before.slots) do
+        if entry.kind=="unreadableMacro" then target.slots[slot]=clone(entry);unknown=true end
+    end
+    if unknown then
+        for index in pairs(A.Macros:Owned(A.Macros:Scan())) do protected[index]=true end
+    end
+    local plan,why=A.Macros:Plan(target,protected)
+    return plan,why,target
+end
+function B:Restore(snapshot)
+    local spec=A:GetSpec()
+    if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
+    if InCombatLockdown() then return nil,"COMBAT" end
+    if GetCursorInfo() then return nil,"BARS_CURSOR" end
+    local target=clone(snapshot)
+    local before,why=self:Capture(spec);if not before then return nil,why end
+    local plan;plan,why,target=self:Plan(target,before);if not plan then return nil,why end
+    self.writing=true
+    local ok,result,reason,detail=pcall(function()
+        local written,err=A.Macros:Execute(plan)
+        if not written then return nil,err end
+        local restored,restoreWhy,restoreDetail=self:RestorePhysical(A.Macros:Physical(target,plan.bindings))
+        if not restored then return nil,restoreWhy,restoreDetail end
+        local verified=A.Macros:Pack(self.verified)
+        -- Preserve each saved display name while its execution slot uses a
+        -- registered pool name. The binding records the actual native name.
+        for slot,entry in ipairs(target.slots) do
+            local actual=verified.slots[slot]
+            if entry.kind=="macro" and actual.kind=="macro"
+                and A.Macros:Same(target.macros[entry.id],verified.macros[actual.id],true) then
+                verified.macros[actual.id]=clone(target.macros[entry.id])
+            end
+        end
+        self.verified=verified
+        return true,nil,restoreDetail
+    end)
+    if not ok or not result then
+        local rolledBack=A.Macros:Rollback(plan)
+        detail=type(detail)=="table" and detail or {}
+        detail.rolledBack=rolledBack and detail.rolledBack~=false
+        self.recovery={before=before,requested=target,rolledBack=detail.rolledBack}
+        reason=ok and reason or "BARS_RESTORE"
+    end
+    self.writing=nil;self.macroBaseline=A.Macros:Scan()
+    if not ok or not result then return nil,reason,detail end
+    return true,nil,detail
+end
+function B:Owner()
+    local spec=A:GetSpec();local state=self:Spec(spec)
+    if self.observedSpec and self.observedSpec~=spec then return end
+    local applied=state and state.applied
+    if self.pendingSpec or not applied or not A.Apply:CurrentBuildID() then return end
+    return spec,applied
+end
+function B:ObserveMacros()
+    local current=A.Macros:Scan();local previous=self.macroBaseline or current
+    self.macroBaseline=current
+    if self.writing or self.reading or A.Apply.op then return end
+    local mapping=A.Macros:Changes(previous,current)
+    local spec,applied=self:Owner()
+    if applied then
+        local snapshot=self:Get(spec,applied.id,applied.shared)
+        if snapshot then
+            A.Macros:Refresh(snapshot,previous,current)
+            self:SaveLayout(spec,applied.id,applied.shared,snapshot)
+        end
+    end
+    A.Macros:RefreshPool(previous,current,mapping)
+end
+function B:ObserveSlots()
+    if self.reading or self.writing or A.Apply.op then return end
+    local spec,applied=self:Owner();if not applied then return end
+    local previous=self:Get(spec,applied.id,applied.shared)
+    local snapshot=self:Capture(spec,true);if not snapshot then return end
+    -- A passive read cannot resolve duplicate display names. Retain their
+    -- last known content until the next explicit, cursor-assisted capture.
+    if previous then
+        for slot,entry in ipairs(snapshot.slots) do
+            local old=previous.slots[slot]
+            if entry.kind=="unreadableMacro" and old.kind=="macro" then
+                local binding=previous.bindings and previous.bindings[old.id]
+                local ref="kept:"..tostring(binding and binding.index or slot)
+                snapshot.slots[slot]={kind="macro",id=ref}
+                snapshot.macros[ref]=clone(previous.macros[old.id])
+                if previous.bindings and previous.bindings[old.id] then snapshot.bindings[ref]=clone(previous.bindings[old.id]) end
+            end
+        end
+    end
+    self:SaveLayout(spec,applied.id,applied.shared,snapshot)
+end
+function B:ResumeSpec()
+    if not self.pendingSpec or self.resumeFailed or A.Apply.op or InCombatLockdown() or GetCursorInfo() then return end
+    local spec=A:GetSpec();local state=self:Spec(spec);local applied=state and state.applied
+    if not applied or not A.Apply:CurrentBuildID(true) then return end
+    local snapshot=self:Get(spec,applied.id,applied.shared);if not snapshot then return end
+    local ok,why=self:Restore(snapshot)
+    if not ok then self.resumeFailed=true;if A.Message then A:Message(why) end;return end
+    self.pendingSpec=nil
+    self:SaveLayout(spec,applied.id,applied.shared,self.verified)
+end
+function B:QueueObservation()
+    if self.queued then return end
+    self.queued=C_Timer.NewTimer(0,function()
+        self.queued=nil
+        if self.pendingSpec then self:ResumeSpec() else self:ObserveSlots() end
+    end)
+end
+function B:Init()
+    if self.events or A.Store.readonly then return end
+    self.macroBaseline=A.Macros:Scan()
+    local events=CreateFrame("Frame");self.events=events
+    for _,event in ipairs({"UPDATE_MACROS","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD",
+        "ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","CURSOR_CHANGED","PLAYER_TALENT_UPDATE",
+        "SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","TRAIT_CONFIG_UPDATED"}) do events:RegisterEvent(event) end
+    events:SetScript("OnEvent",function(_,event)
+        if (event=="PLAYER_ENTERING_WORLD" or event=="ACTIVE_PLAYER_SPECIALIZATION_CHANGED") and self.observedSpec~=A:GetSpec() then
+            self.observedSpec=A:GetSpec();self.pendingSpec=self.observedSpec;self.resumeFailed=nil
+            self:QueueObservation()
+        end
+        if self.reading or self.writing or A.Apply.op then return end
+        if event=="UPDATE_MACROS" then self:ObserveMacros();return end
+        if event=="PLAYER_LOGOUT" then self:ObserveMacros();self:ObserveSlots();return end
+        self:QueueObservation()
+    end)
 end
 -- Trust only the exact saved ID and name, including our pending rename.
 function B:Working(spec)

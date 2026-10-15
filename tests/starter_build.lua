@@ -1,3 +1,4 @@
+GetMacroInfo=GetMacroInfo or function()end
 -- Exercise the production Apply state machine. Unflagging a starter build
 -- resets pending changes, so the native load must finish before unflagging.
 local function run(mode)
@@ -87,12 +88,13 @@ local function run(mode)
   Export=function(_,draft)return draft and (staged or active)or active end,
   Matches=function(_,id,entries)return (id==1 and (staged or active)or nodes[id].code)==entries.code end,
   StageEntries=function(_,_,entries)assert(not starter,'do not stage while the starter flag is active');staged=entries.code;return true end}
- assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
+ assert(loadfile('addon/LycheeTalent/Macros.lua'))('LycheeTalent',A)
+assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
  assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
  -- A remembered native config cannot identify a plugin build while Starter is active.
  if mode=='remembered' then
   active='desired';nodes[20].code=active
-  char.applied={id=build.id,code=build.code,spec=62,config=20,entries={code=active}}
+  A.ActionBars:Spec(62).applied={id=build.id,code=build.code,spec=62,config=20,entries={code=active}}
   assert(not A.Apply:CurrentBuildID(),'starter mode must not overwrite a previous managed profile')
  end
  local ok,why=A.Apply:Start(build,false)

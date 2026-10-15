@@ -3,21 +3,16 @@ local S = {}
 A.Store = S
 local function trim(s) return (s or ""):match("^%s*(.-)%s*$") end
 function S:Init()
-    if type(LycheeTalentDB) ~= "table" then LycheeTalentDB = {} end
-    self.db = LycheeTalentDB
-    if type(LycheeTalentCharacterDB) ~= "table" then LycheeTalentCharacterDB = {} end
-    self.character=LycheeTalentCharacterDB
-    self.readonly = type(self.db.version) == "number" and self.db.version > 1
-    if self.readonly then self.builds = {}; return end
-    self.db.version = 1
-    self.db.builds = type(self.db.builds) == "table" and self.db.builds or {}
-    self.db.nextID = tonumber(self.db.nextID) or 0
-    self.builds = self.db.builds
-    for _,b in ipairs(self.builds) do
-        if type(b)=="table" and type(b.id)=="number" then self.db.nextID=math.max(self.db.nextID,b.id) end
+    local db,char=A.Migration:Run(LycheeTalentDB,LycheeTalentCharacterDB)
+    self.readonly=not db
+    if self.readonly then
+        self.db=LycheeTalentDB or {};self.character=LycheeTalentCharacterDB or {};self.builds={};return
     end
-    if type(LycheeTalentCharacterDB) ~= "table" then LycheeTalentCharacterDB = {} end
-    self.character = LycheeTalentCharacterDB
+    -- Publish both migrated roots together. Old tables and legacy fields are
+    -- no longer referenced by SavedVariables after a successful migration.
+    LycheeTalentDB,LycheeTalentCharacterDB=db,char
+    self.db,self.character=db,char
+    self.builds = self.db.builds
 end
 function S:Save(name, code, scene, target, specID)
     if self.readonly then return nil, "SCHEMA" end

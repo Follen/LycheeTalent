@@ -1,6 +1,8 @@
+GetMacroInfo=GetMacroInfo or function()end
 -- Replay the reported API result: GetActionInfo says macro, copied pickup
 -- succeeds, but GetCursorInfo returns nothing at 77, 78, 113 and 114.
 local A={Store={character={}},GetSpec=function()return 62 end}
+assert(loadfile('addon/LycheeTalent/Macros.lua'))('LycheeTalent',A)
 assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
 local B=A.ActionBars
 local slots={};for i=1,180 do slots[i]={} end
@@ -31,7 +33,7 @@ function PlaceAction(i)
 end
 local before,reason,failedSlot=B:Capture(62)
 assert(before,'capture must survive the observed empty cursor response: '..tostring(reason)..' at '..tostring(failedSlot))
-assert(before.slots[1].id==129 and before.slots[5].id==127,'readable macros keep exact indices')
+assert(before.bindings[before.slots[1].id].index==129 and before.bindings[before.slots[5].id].index==127,'readable macros keep native bindings alongside content')
 for _,i in ipairs(blocked)do
  assert(before.slots[i].kind=='unreadableMacro' and before.slots[i].id==i,'unresolved slot is not an empty slot or a guessed macro index')
 end
@@ -40,7 +42,7 @@ assert(B:SeedDefault(62,before,'test'))
 assert(B:SaveIndependent(62,'a',before))
 local desired=assert(B:Get(62,'a',false))
 desired.slots[1],desired.slots[5]=desired.slots[5],desired.slots[1]
-desired.slots[77]={kind='macro',id=129};desired.slots[78]={}
+desired.slots[77]={kind='macro',id='129'};desired.slots[78]={}
 local ok,why,detail=B:Restore(desired)
 assert(ok and detail and table.concat(detail.preservedSlots,',')=='77,78,113,114','report every preserved slot')
 assert(slots[1].id==127 and slots[5].id==129,'other macro slots restore normally')
@@ -57,8 +59,8 @@ slots[77]={kind='macro',id=127}
 ok,why,detail=B:Restore(before)
 assert(ok and slots[77].id==127,'saved placeholder preserves a now-readable action')
 local fresh=assert(B:Capture(62))
-assert(fresh.slots[77].kind=='macro' and fresh.slots[77].id==127,'new capture resumes normal management')
-fresh.slots[77]={kind='macro',id=129}
+assert(fresh.slots[77].kind=='macro' and fresh.bindings[fresh.slots[77].id].index==127,'new capture resumes normal management')
+fresh.slots[77]={kind='macro',id='129'}
 assert(B:Restore(fresh) and slots[77].id==129,'refreshed slot restores normally')
 before.slots[77].id=78
 assert(not B:Valid(before,62),'placeholder is bound to its original action slot')

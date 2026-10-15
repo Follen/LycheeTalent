@@ -3,7 +3,7 @@ local count=0
 local function check(v,msg) count=count+1; assert(v,msg or ("check "..count)) end
 local function load(name,A) assert(loadfile(root..name))("LycheeTalent",A) end
 time=function() return 1790400000 end; date=os.date; GetLocale=function() return "enUS" end
-local A={}; load("Locales.lua",A); load("Storage.lua",A)
+local A={}; load("Locales.lua",A); load("Migration.lua",A); load("Storage.lua",A)
 A.Store:Init()
 local s=A.Store
 local first=s:Save("Alpha","encoded","mythic","Dungeon",71)
