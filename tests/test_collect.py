@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/wcl'))
-from collect import collect_one,normalize,lua,encode_nodes,render_package
+from collect import collect_one,normalize,lua,encode_nodes,render_package,render_toc,CLASSES
 
 def rank(level, report='abc', points=True, duration=100):
     return {'report':{'code':report,'fightID':1},'talents':[{'talentID':i,'points':1} for i in range(20)] if points else [],
@@ -83,5 +83,29 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(rendered.count('101:1;102:2;'),1)
         self.assertEqual(rendered.count('["nodes"]=n[1]'),2)
         self.assertIn('["score"]=200',rendered)
+
+
+class TocGenerationTests(unittest.TestCase):
+    def test_generated_metadata_follows_main_addon(self):
+        text=render_toc('MAGE','## Interface: 120205\r\n## Version: 1.0.99\r\n')
+        self.assertIn('## Interface: 120205\n',text)
+        self.assertIn('## Version: 1.0.99\n',text)
+        self.assertIn('## LoadOnDemand: 1\n## Dependencies: LycheeTalent\n',text)
+        self.assertTrue(text.endswith('Data.lua\n'))
+
+    def test_current_class_tocs_are_reproduced(self):
+        root=Path(__file__).resolve().parents[1]/'addon'
+        main=(root/'LycheeTalent/LycheeTalent.toc').read_text(encoding='utf-8')
+        for token,_ in CLASSES.values():
+            with self.subTest(token=token):
+                folder=root/('LycheeTalent_Data_'+token)
+                self.assertEqual(render_toc(token,main),(folder/(folder.name+'.toc')).read_text(encoding='utf-8'))
+
+    def test_missing_or_invalid_metadata_fails_before_publication(self):
+        for text in ('','## Interface: 120105','## Version: 1.0.18',
+                     '## Interface: current\n## Version: 1.0.18',
+                     '## Interface: 120105\n## Version: next'):
+            with self.subTest(text=text),self.assertRaises(ValueError):
+                render_toc('MAGE',text)
 
 if __name__=='__main__':unittest.main()

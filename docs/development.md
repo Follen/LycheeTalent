@@ -38,7 +38,17 @@ python -m unittest discover -s tests -p 'test_*.py'
 powershell -File tools/package.ps1
 ```
 
+`test_repository.py` 检查 TOC 加载路径与 Lua 覆盖、随包协议一致性、文档本地链接，以及中英文平台 Markdown／HTML 文本一致性。
+
 `test_data_publication.py` 的完整等价性比较需要本地采集数据库；没有数据库会明确 skip，其他纯逻辑测试无需凭据。离线替身测试不能证明原生 API、taint 或真实帧时间。
+
+`tests/run.lua` 和 `tests/inactive_hero.lua` 还依赖 Lua BitOp（`require("bit")`；LuaJIT 也提供此模块）。它们读取以下固定暴雪源码，`tests/native_open.lua` 读取原生天赋框体源码：
+
+| 忽略目录中的目标 | 固定提交内的源文件 |
+| --- | --- |
+| `analyze/Blizzard/ExportUtil.lua` | `Interface/AddOns/Blizzard_SharedXMLBase/ExportUtil.lua` |
+| `analyze/Blizzard/Import.lua` | `Interface/AddOns/Blizzard_PlayerSpells/ClassTalents/Blizzard_ClassTalentImportExport.lua` |
+| `analyze/Blizzard/Frame.lua` | `Interface/AddOns/Blizzard_PlayerSpells/ClassTalents/Blizzard_ClassTalentsFrame.lua` |
 
 两个图标测试的标准输入需要完整的暴雪 `Interface/AddOns/Blizzard_FrameXMLBase/IconDataProvider.lua`。本次固定源码为 `Gethe/wow-ui-source` 提交 `09b9db7948abc9b9648dedaab51eb0cf3ee67b31`；通过 LycheeDev `source inspect` 提取 `result.text` 到忽略目录 `analyze/IconDataProvider.lua`。不要把原始源码、实机记录或角色数据提交到仓库。
 
@@ -48,7 +58,11 @@ powershell -File tools/package.ps1
 
 凭据保存在项目外，支持 `WCL_CLIENT_ID` / `WCL_CLIENT_SECRET` 环境变量，也可向 `tools/wcl/collect.py --credentials` 传入本地文件路径。不要把凭据提交到仓库。原始 SQLite 数据库位于忽略的 `data/private/`。
 
+`tools/wcl/client.py --query-file <文件> --output <忽略目录中的结果文件>` 是手动查询入口；`inspect.graphql` 用于核对 schema，`sample.graphql` 是固定场景的示例，两者不是自动采集任务。`collect.py` 读取同目录的场景本地化、首领排序和地图 JSON；生成职业包 TOC 时继承主包的版本与 Interface，避免刷新数据后降回旧版本。
+
 采集前检查游戏补丁、赛季、场景与观察窗口。不能只改版本标签冒充新数据。`data/publication.json` 记录采集时间及数量；生成的职业分片随源码提交。
+
+`--class-name` / `--limit` 只缩小采集请求范围；当前脚本的发布阶段仍重新输出数据库内所有职业，并重写总采集时间。不要把这些选项当成独立的局部发布入口，或把缓存中未重新采集的职业误标为新数据。需要局部发布时，应先修正并验证发布范围与时间字段，再执行采集。
 
 采集选择规则（包括奶骑大秘境的固定来源）见 [产品定义](../product.md#推荐数据)。局部刷新与全量采集的时间字段见 [架构说明](../architecture.md#数据采集与发布)。
 

@@ -3,6 +3,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import re
 import sqlite3
 import time
 from pathlib import Path
@@ -73,6 +74,23 @@ def render_package(token, package):
     pool='local n={'+','.join(lua(value) for value in encoded)+'}\n'
     body='LycheeTalentData['+lua(token)+'] = {["version"]='+lua(package['version'])+', ["patch"]='+lua(package['patch'])+', ["builds"]={'+','.join(serialized)+'}}\n'
     return header+pool+body
+
+def render_toc(token, main_toc):
+    """Keep regenerated class packages on the main addon's release metadata."""
+    fields={}
+    for line in main_toc.splitlines():
+        if line.startswith('## ') and ': ' in line:
+            key,value=line[3:].split(': ',1)
+            fields[key]=value
+    version=fields.get('Version','');interface=fields.get('Interface','')
+    if not re.fullmatch(r'\d+\.\d+\.\d+',version) or not re.fullmatch(r'\d+',interface):
+        raise ValueError('Main addon TOC must contain a valid Version and Interface')
+    return (f'## Interface: {interface}\n'
+            f'## Title: |cffd53c49Lychee|r Talent Data - {token}\n'
+            '## IconTexture: Interface\\AddOns\\LycheeTalent\\Media\\logo.tga\n'
+            '## LoadOnDemand: 1\n## Dependencies: LycheeTalent\n'
+            f'## Version: {version}\nData.lua\n')
+
 
 def normalize(rank):
     report=rank.get("report") or {}
@@ -158,7 +176,10 @@ def collect_one(client,job,max_pages,cutoff):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--credentials');p.add_argument('--class-name');p.add_argument('--pages',type=int,default=2)
     p.add_argument('--workers',type=int,default=3);p.add_argument('--days',type=int,default=14);p.add_argument('--limit',type=int,default=0)
-    a=p.parse_args();client=WCL(a.credentials)
+    a=p.parse_args()
+    main_toc=(ROOT/'addon/LycheeTalent/LycheeTalent.toc').read_text(encoding='utf-8-sig')
+    tocs={token:render_toc(token,main_toc) for token,_ in CLASSES.values()}
+    client=WCL(a.credentials)
     zones=client.query('{worldData{zones{id name expansion{id name} encounters{id name journalID}}}}')['worldData']['zones']
     # Explicit current-season IDs; a season bump is reviewed, never guessed from max(id).
     active=[z for z in zones if z['id'] in (55,53)]
@@ -207,7 +228,7 @@ def main():
         folder=ROOT/'addon'/('LycheeTalent_Data_'+token);folder.mkdir(parents=True,exist_ok=True)
         package={'version':now,'patch':'12.1','builds':builds}
         (folder/'Data.lua').write_text(render_package(token,package),encoding='utf-8')
-        (folder/(folder.name+'.toc')).write_text('## Interface: 120105\n## Title: |cffd53c49Lychee|r Talent Data - '+token+'\n## IconTexture: Interface\\AddOns\\LycheeTalent\\Media\\logo.tga\n## LoadOnDemand: 1\n## Dependencies: LycheeTalent\n## Version: 1.0.0\nData.lua\n',encoding='utf-8')
+        (folder/(folder.name+'.toc')).write_text(tocs[token],encoding='utf-8')
     (ROOT/'addon/LycheeTalent/Scenarios.lua').write_text('local _, A = ...\nA.Scenarios = '+lua(localize(scenes))+'\n',encoding='utf-8')
     summary={'completed':completed,'failed':failed,'builds':db.execute('SELECT COUNT(*) FROM builds').fetchone()[0],'collected':now,'zones':[55,53]}
     (ROOT/'data/publication.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')

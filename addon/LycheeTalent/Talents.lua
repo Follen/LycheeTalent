@@ -74,9 +74,8 @@ function T:StageEntries(config,entries)
     for _,entry in ipairs(entries) do
         local id=entry.nodeID
         local target=targets[id]
-        if not target then target={id=id,ranks=0,granted=0};targets[id]=target;order[#order+1]=target end
+        if not target then target={id=id,ranks=0};targets[id]=target;order[#order+1]=target end
         target.ranks=target.ranks+(entry.ranksPurchased or 0)
-        target.granted=target.granted+(entry.ranksGranted or 0)
         if (entry.ranksPurchased or 0)+(entry.ranksGranted or 0)>0 then target.selection=entry.selectionEntryID end
     end
     table.sort(order,function(a,b)
@@ -170,25 +169,6 @@ function T:Code(build)
     if #self.order>16 then self.cache[table.remove(self.order,1)]=nil end
     return code
 end
-function T:Diff(build)
-    local code,err=self:Code(build); if not code then return nil,err end
-    local target=self:Entries(code); local current=self:ReadEntries(C_ClassTalents.GetActiveConfigID())
-    if not target or not current then return nil,"NOT_READY" end
-    local map={}; for _,v in ipairs(current) do map[v.selectionEntryID]=(v.ranksPurchased or 0)+(v.ranksGranted or 0) end
-    local changes={}
-    for _,v in ipairs(target) do
-        local count=(v.ranksPurchased or 0)+(v.ranksGranted or 0)
-        if map[v.selectionEntryID]~=count then
-            local e=C_Traits.GetEntryInfo(C_ClassTalents.GetActiveConfigID(),v.selectionEntryID)
-            local d=e and C_Traits.GetDefinitionInfo(e.definitionID)
-            local name=d and (d.overrideName or (d.spellID and C_Spell.GetSpellName(d.spellID)))
-            changes[#changes+1]=(name or tostring(v.selectionEntryID)).." ("..count..")"
-        end
-        map[v.selectionEntryID]=nil
-    end
-    local removed=0; for _ in pairs(map) do removed=removed+1 end
-    return changes,removed
-end
 function T:Frame()
     if InCombatLockdown() then return nil,"COMBAT" end
     if not A:GetSpec() then return nil,"NO_SPEC" end
@@ -264,23 +244,5 @@ function T:OpenNative()
     end
     local ok=pcall(PlayerSpellsUtil.OpenToClassTalentsTab)
     if not ok then return nil,"NOT_READY" end
-    return true
-end
-function T:PrepareImport(build)
-    if not build then return nil,"BAD_CODE" end
-    local code,err=self:Validate(build.code)
-    if not code then return nil,err end
-    local config=C_ClassTalents.GetActiveConfigID()
-    if config and C_Traits.ConfigHasStagedChanges and C_Traits.ConfigHasStagedChanges(config) then return nil,"PENDING" end
-    if not C_ClassTalents.CanCreateNewConfig or not C_ClassTalents.CanCreateNewConfig() then return nil,"NATIVE_LIMIT" end
-    local opened,openErr=self:OpenNative(); if not opened then return nil,openErr end
-    local d=ClassTalentLoadoutImportDialog
-    if not d or not d.ShowDialog or not d.ImportControl or not d.NameControl then return nil,"APPLY_UNAVAILABLE" end
-    -- Only populate the game's new-loadout dialog. Never call OnAccept, ImportLoadout,
-    -- CommitConfig, ResetTree, SetAction, or manipulate any existing config.
-    d:ShowDialog()
-    d.ImportControl:GetEditBox():SetText(code)
-    d.NameControl:GetEditBox():SetText(build.name)
-    d:UpdateAcceptButtonEnabledState()
     return true
 end

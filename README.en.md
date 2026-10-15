@@ -36,7 +36,7 @@ Browse builds drawn from high-performing WCL records beside the native talent wi
 | Your current setup | Choose Save Current under My Builds |
 | Different action bars | Enable Independent Action Bars in the build's menu; applied on the next switch |
 
-Importing or saving adds a build without applying it. All builds share one native “Lychee Talent” loadout per specialization. Independent action bars store each build's layout; otherwise the addon restores the specialization's initial default layout. Key bindings stay unchanged.
+Importing or saving adds a build without applying it. All builds share one native “Lychee Talent” loadout per specialization. Independent action bars store each build's layout; otherwise the addon uses that specialization's shared layout. Manual changes are saved to the active shared or independent layout before switching. Key bindings stay unchanged.
 
 Encounter reminders offer matching recommendations or linked personal builds. **Talents change only when you click Switch.** Reminders hide in combat and skip matching builds. Turn them off using the settings gear.
 
@@ -46,11 +46,11 @@ Encounter reminders offer matching recommendations or linked personal builds. **
 2. For source downloads, copy `LycheeTalent` and every `LycheeTalent_Data_*` folder from `addon` into `_retail_/Interface/AddOns/`. Release packages contain these folders directly.
 3. Enable the addon and data packages, then open the native talent window or type `/lt`.
 
-Requires Retail 12.1 (interface 120100). No Lychee Launcher or WCL credentials are needed. Class data loads on demand. Chinese and English interfaces are included.
+Requires Retail 12.1.5 (interface 120105). No Lychee Launcher or WCL credentials are needed. Class data loads on demand. Chinese and English interfaces are included.
 
 ## Recommendations
 
-The snapshot was collected on **2026-09-26**: 1,815 builds across 13 classes, 40 specializations, eight Mythic+ scenarios and raid encounters, separating Heroic and Mythic.
+The snapshot was collected on **2026-10-13 (UTC)**: 1,856 builds across 13 classes, 40 specializations, eight Mythic+ scenarios and raid encounters, separating Heroic and Mythic. Holy Paladin Mythic+ builds use timed logs from a selected player and were refreshed separately on 2026-10-14 (UTC). See the [publication record](data/publication.json) for full and per-class collection times.
 
 The default Mythic+ reference is the highest key with usable talent data within the collected sample. Equal keys favor timed and faster runs. Collection used a 14-day window and up to two ranking pages by default; it is not a complete scan of every log. Data ships with addon updates. Gear, group and strategy still matter.
 

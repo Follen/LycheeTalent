@@ -12,7 +12,7 @@ Import a friend's string or save your current talents. Edit the name, icon, tale
 
 ## Bring the right action bars
 
-Enable independent action bars for builds that need a different layout. Otherwise, use the specialization's initial default layout. The preference takes effect when applying a build; key bindings are unchanged.
+Enable independent action bars for builds that need a different layout. Otherwise, use the specialization's shared layout. The preference takes effect when applying a build; key bindings are unchanged.
 
 ## A reminder when you arrive
 
@@ -20,8 +20,8 @@ Matching recommendations and linked personal builds can appear on reaching an en
 
 ## Install and open talents
 
-For Retail 12.1. Install LycheeTalent and all LycheeTalent_Data_* folders under Interface/AddOns, then open talents or type /lt. No Lychee Launcher or WCL credentials required; class data loads on demand.
+For Retail 12.1.5. Install LycheeTalent and all LycheeTalent_Data_* folders under Interface/AddOns, then open talents or type /lt. No Lychee Launcher or WCL credentials required; class data loads on demand.
 
-Version 1.0.0 ships 1,815 builds collected on 2026-09-26 across 13 classes and 40 specializations. Data updates with the addon. Recommendations are a starting point; gear, group and strategy still matter.
+The current package contains 1,856 builds across 13 classes and 40 specializations, collected on 2026-10-13 (UTC), with a separate Holy Paladin Mythic+ refresh on 2026-10-14. Data updates with the addon. Recommendations are a starting point; gear, group and strategy still matter.
 
 Free to use under the Lychee Non-Commercial Attribution License 1.0. Full terms and feedback: https://github.com/Follen/LycheeTalent
