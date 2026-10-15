@@ -38,6 +38,8 @@ python -m unittest discover -s tests -p 'test_*.py'
 powershell -File tools/package.ps1
 ```
 
+`test_repository.py` 检查 TOC 加载路径与 Lua 覆盖、随包协议一致性、文档本地链接，以及中英文平台 Markdown／HTML 文本一致性。
+
 `test_data_publication.py` 的完整等价性比较需要本地采集数据库；没有数据库会明确 skip，其他纯逻辑测试无需凭据。离线替身测试不能证明原生 API、taint 或真实帧时间。
 
 `tests/run.lua` 和 `tests/inactive_hero.lua` 还依赖 Lua BitOp（`require("bit")`；LuaJIT 也提供此模块）。它们读取以下固定暴雪源码，`tests/native_open.lua` 读取原生天赋框体源码：
