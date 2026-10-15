@@ -1,6 +1,6 @@
 local _, A = ...
 local L=A.L
-local U={scene="mythic",results={},offset=0,rows={},shared=true}
+local U={scene="mythic",results={},offset=0,rows={}}
 A.UI=U
 local C={bg={.055,.055,.063},hover={.09,.09,.09},selected={.085,.085,.085},
     red={.835,.235,.285},hot={.95,.35,.4},text={.94,.932,.91},muted={.71,.705,.69},
@@ -140,10 +140,10 @@ function U:ShowTooltip(owner,build,title)
             tip.bindingRows[i]=row
         end
         tip:SetScript("OnEvent",function()U:HideTooltip()end)
-        tip:SetScript("OnHide",function()tip:UnregisterAllEvents();tip.owner=nil;tip.build=nil;tip.bindings=nil end)
+        tip:SetScript("OnHide",function()tip:UnregisterAllEvents();tip.owner=nil;tip.bindings=nil end)
         tip:Hide()
     end
-    local tip=self.tooltip;tip.owner=owner;tip.build=build;tip.bindings=nil
+    local tip=self.tooltip;tip.owner=owner;tip.bindings=nil
     if build and build.source=="user" and type(build.contexts)=="table" then
         local entries={}
         for id,enabled in pairs(build.contexts)do local scene=A.Catalog.scenarios[id];if enabled and scene then entries[#entries+1]={name=scene.label or scene.name,icon=scene.icon}end end
@@ -300,7 +300,6 @@ function U:Refresh()
         self.emptyTitle:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED or L.EMPTY)
         self.emptyHelp:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED_HELP or L.EMPTY_HELP)
     end
-    self.shared=A.ActionBars:IsShared(A:GetSpec(),self.selected)
     local secondary=(self.dialog and self.dialog:IsShown()) or (self.contextSettings and self.contextSettings:IsShown()) or (self.settings and self.settings:IsShown())
     self.back:SetShown(secondary)
     if self.settingsButton then self.settingsButton:SetShown(not secondary) end
@@ -313,7 +312,6 @@ function U:SetShared(shared,id)
     id=id or self.selected
     if not id then return end
     A.ActionBars:SetShared(A:GetSpec(),id,shared)
-    if id==self.selected then self.shared=shared==true end
 end
 function U:BuildOptions(id,anchor)
     self:HideTooltip()
@@ -1153,7 +1151,7 @@ function U:CloseSocial()
     if A.Motion.frame==s.popup then A.Motion:Finish(s.popup)end
     s.backdrop:Hide()
 end
-function U:OpenSocial(entry,anchor)
+function U:OpenSocial(entry)
     if InCombatLockdown() or not self.settings:IsShown()then return end
     if self.social and self.social.active==entry then self:CloseSocial();return end
     self:CloseSocial();self:HideTooltip()
@@ -1209,7 +1207,7 @@ function U:CreateAbout(parent)
         local b=CreateFrame("Button",nil,footer);self.social.buttons[i]=b;b.entry=entry
         b:SetSize(40,40);b:SetPoint("TOPLEFT",(i-1)*44,-16)
         local icon=b:CreateTexture(nil,"ARTWORK");icon:SetSize(20,20);icon:SetPoint("CENTER");icon:SetTexture(media.."About\\"..entry.icon..".tga");icon:SetVertexColor(unpack(C.muted))
-        b:SetScript("OnClick",function()U:OpenSocial(entry,b)end)
+        b:SetScript("OnClick",function()U:OpenSocial(entry)end)
         b:SetScript("OnEnter",function()icon:SetVertexColor(unpack(C.text))end)
         b:SetScript("OnLeave",function()icon:SetVertexColor(unpack(C.muted))end)
         b:SetScript("OnHide",function()icon:SetVertexColor(unpack(C.muted))end)

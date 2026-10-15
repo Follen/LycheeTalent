@@ -61,7 +61,7 @@ function X:RememberPending(op,active)
     if self.op==op and not InCombatLockdown() and C_Traits.ConfigHasStagedChanges(active) then
         -- Only immediately after our native calls, never arbitrary later edits.
         local ok,entries=pcall(A.Talents.ReadEntries,A.Talents,active)
-        if ok and entries then op.pendingEntries=entries; A.Store.character.recovery.pendingEntries=entries end
+        if ok and entries then A.Store.character.recovery.pendingEntries=entries end
     end
 end
 function X:ResetPending(active,entries)
@@ -142,7 +142,7 @@ function X:LoadNative(id,done)
     local op=self.op
     op.loading=id;op.afterLoad=done;op.stage="native-loading";op.inNativeCall=true
     local result=C_ClassTalents.LoadConfig(id,true)
-    op.inNativeCall=nil;op.loadResult=result
+    op.inNativeCall=nil
     if result==Enum.LoadConfigResult.Error then self:Finish(false,"APPLY_FAILED");return end
     if result==Enum.LoadConfigResult.Ready then
         local active=C_ClassTalents.GetActiveConfigID()
