@@ -1,5 +1,5 @@
 local _,A=...
-local X={revision="20261015-spec-macro-content"}
+local X={revision="20261015-schema-v1"}
 A.Apply=X
 function X:GuardCreation(frame)
     if not frame or not frame.IsEventRegistered then return end
@@ -251,12 +251,7 @@ end
 function X:CompleteWorking()
     local op=self.op
     local state=A.ActionBars:Spec(op.spec)
-    local snapshot,why=A.ActionBars:Get(op.spec,op.buildID,op.shared)
-    if not snapshot and not op.shared then
-        snapshot,why=A.ActionBars:Get(op.spec,nil,true)
-        if snapshot then A.ActionBars:SaveIndependent(op.spec,op.buildID,snapshot) end
-    end
-    if not snapshot then self:Finish(false,why);return end
+    local snapshot=op.targetBars
     op.stage="action-bars"
     local ok,reason,detail=A.ActionBars:Restore(snapshot)
     if not ok then
@@ -392,12 +387,14 @@ function X:CaptureBeforeApply()
         local saved,why=A.ActionBars:SaveLayout(spec,op.previousBuildID,op.previousApplied.shared,before)
         if not saved then self:Finish(false,why);return end
     end
-    local target=A.ActionBars:Get(spec,op.buildID,op.shared)
-    if not target then target=A.ActionBars:Get(spec,nil,true) end
-    if target then
-        local plan,why=A.ActionBars:Plan(target,before)
-        if not plan then self:Finish(false,why);return end
+    local target,why=A.ActionBars:Get(spec,op.buildID,op.shared)
+    if not target and not op.shared and why=="BARS_MISSING" then
+        target,why=A.ActionBars:Get(spec,nil,true)
     end
+    if not target then self:Finish(false,why);return end
+    local plan;plan,why=A.ActionBars:Plan(target,before)
+    if not plan then self:Finish(false,why);return end
+    op.targetBars=target
     op.stage="preparing"
     op.recovery={revision=self.revision,status="active",spec=spec,code=op.originalCode,bars=before,
         originalSaved=op.originalSaved,targetCode=op.code,buildID=op.buildID,shared=op.shared,time=time()}

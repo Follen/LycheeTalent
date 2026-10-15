@@ -10,9 +10,6 @@ function B:Spec(spec)
     local specs=char.actionBars.specs
     if not specs[spec] then specs[spec]={profiles={}} end
     if type(specs[spec])~="table" or type(specs[spec].profiles)~="table" then return nil end
-    if char.applied and char.applied.spec==spec and not specs[spec].applied then
-        specs[spec].applied=char.applied;char.applied=nil
-    end
     return specs[spec]
 end
 function B:IsShared(spec,buildID)
@@ -20,9 +17,6 @@ function B:IsShared(spec,buildID)
     if not state then return true end
     state.modes=state.modes or {}
     local key=tostring(buildID)
-    if state.modes[key]==nil and A.Store.character.modes then
-        state.modes[key]=A.Store.character.modes[key]
-    end
     return state.modes[key]~=false
 end
 function B:SetShared(spec,buildID,shared)
@@ -36,7 +30,7 @@ local function clone(value)
     return out
 end
 function B:Valid(snapshot,spec)
-    if type(snapshot)~="table" or (snapshot.version~=1 and snapshot.version~=2) or snapshot.spec~=spec
+    if type(snapshot)~="table" or snapshot.version~=2 or snapshot.spec~=spec
         or type(snapshot.slots)~="table" or #snapshot.slots~=self.slotCount then return false end
     for i=1,self.slotCount do
         local entry=snapshot.slots[i]
@@ -44,7 +38,7 @@ function B:Valid(snapshot,spec)
         if entry.kind=="unreadableMacro" and entry.id~=i then return false end
         if entry.kind~=nil and (type(entry.kind)~="string" or
             (type(entry.id)~="number" and type(entry.id)~="string")) then return false end
-        if entry.kind=="macro" and snapshot.version==2 then
+        if entry.kind=="macro" then
             local macro=snapshot.macros and snapshot.macros[entry.id]
             if type(macro)~="table" or type(macro.name)~="string" or type(macro.body)~="string" then return false end
         end
@@ -87,13 +81,7 @@ function B:Get(spec,buildID,shared)
     if shared then snapshot=state.default else snapshot=state.profiles[tostring(buildID)] end
     if not snapshot then return nil,"BARS_MISSING" end
     if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
-    local out=clone(snapshot)
-    if out.version==1 then
-        local why;out,why=A.Macros:Pack(out)
-        if not out then return nil,why end
-        if shared then state.default=clone(out) else state.profiles[tostring(buildID)]=clone(out) end
-    end
-    return out
+    return clone(snapshot)
 end
 local function secret(value) return issecretvalue and issecretvalue(value) end
 function B:ReadSlot(slot,passive,native)
@@ -242,7 +230,6 @@ end
 function B:RestorePhysical(snapshot)
     local spec=A:GetSpec()
     if InCombatLockdown() then return nil,"COMBAT" end
-    if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
     local before,why=self:CapturePhysical(spec)
     if not before then return nil,why end
@@ -364,9 +351,6 @@ function B:Restore(snapshot)
     if InCombatLockdown() then return nil,"COMBAT" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
     local target=clone(snapshot)
-    if target.version==1 then
-        local why;target,why=A.Macros:Pack(target);if not target then return nil,why end
-    end
     local before,why=self:Capture(spec);if not before then return nil,why end
     local plan;plan,why,target=self:Plan(target,before);if not plan then return nil,why end
     self.writing=true
@@ -462,14 +446,6 @@ end
 function B:Init()
     if self.events or A.Store.readonly then return end
     self.macroBaseline=A.Macros:Scan()
-    -- Freeze readable version 1 layouts before the first user macro edit.
-    local root=A.Store.character.actionBars
-    if root and root.version==1 then
-        for spec,state in pairs(root.specs) do
-            if state.default then self:Get(spec,nil,true) end
-            for id in pairs(state.profiles) do self:Get(spec,id,false) end
-        end
-    end
     local events=CreateFrame("Frame");self.events=events
     for _,event in ipairs({"UPDATE_MACROS","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD",
         "ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","CURSOR_CHANGED","PLAYER_TALENT_UPDATE",

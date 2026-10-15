@@ -6,13 +6,11 @@ local B=A.ActionBars
 assert(B:IsShared(62,'new') and B:IsShared(63,'new'),'all new builds default to shared bars')
 assert(B:SetShared(62,'new',false))
 assert(not B:IsShared(62,'new') and B:IsShared(63,'new'),'explicit independent preference is scoped by specialization')
-A.Store.character.modes={explicit=false,implicit=nil}
-assert(not B:IsShared(62,'explicit') and B:IsShared(62,'implicit'),'legacy explicit choices migrate, absent preference becomes shared')
 assert(not B:Spec(0) and not B:Spec(-1),'uninitialized specialization creates no profile')
 local function snapshot(spec,id)
  local slots={};for i=1,180 do slots[i]={} end
  slots[1]={kind='spell',id=id}
- return {version=1,spec=spec,slots=slots}
+ return {version=2,spec=spec,slots=slots,macros={},bindings={}}
 end
 assert(B:SaveIndependent(65,'independent',snapshot(65,99)))
 assert(not B:Get(65,'independent',true),'missing shared default must never fall back to independent')

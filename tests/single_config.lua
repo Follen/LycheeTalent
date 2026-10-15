@@ -202,6 +202,22 @@ assert(char.lastAttempt.reason=='BARS_MACRO_CAPACITY' and commits==commitsBefore
 Constants=nil
 print('PASS macro capacity rejects before native talent writes')
 
+-- A broken target must fail before talents change, without silently choosing
+-- the shared layout when an independent layout already exists.
+local broken=assert(B:Capture(testSpec))
+broken.slots[26]={kind='macro',id='missing-definition'}
+builds.broken={id='broken',code='broken'}
+B:Spec(testSpec).profiles.broken=broken
+commitsBefore=commits
+assert(A.Apply:Start(builds.broken,false));settle()
+assert(char.lastAttempt.reason=='BARS_INVALID' and char.lastAttempt.stage=='capture-bars' and commits==commitsBefore)
+local originalShared=B:Spec(testSpec).default
+B:Spec(testSpec).default=broken
+assert(A.Apply:Start(builds.b,true));settle()
+assert(char.lastAttempt.reason=='BARS_INVALID' and commits==commitsBefore,'shared target also rejects before talent writes')
+B:Spec(testSpec).default=originalShared
+print('PASS invalid shared/independent targets reject before native talent writes')
+
 -- The reported empty cursor macros must not stop the actual Apply pipeline.
 A.L.BARS_PARTIAL='Preserved macro slots: %s'
 local copiedPickup=PickupAction

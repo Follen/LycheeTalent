@@ -70,7 +70,7 @@ C_AddOns={DoesAddOnExist=function()return true end,LoadAddOn=function()dofile("a
 local timers={}
 C_Timer={NewTimer=function(_,fn)local t={fn=fn,Cancel=function(self)self.cancelled=true end};timers[#timers+1]=t;return t end}
 local A={}
-for _,name in ipairs({"Locales","Storage","Scenarios","Catalog","Talents","TalentEx","Macros","ActionBars","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
+for _,name in ipairs({"Locales","Migration","Storage","Scenarios","Catalog","Talents","TalentEx","Macros","ActionBars","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
 A.Store:Init();A.Store.db.reducedMotion=true
 PlayerSpellsFrame=new("Frame",UIParent);PlayerSpellsFrame:SetSize(1100,820);PlayerSpellsFrame:Hide()
 PlayerSpellsFrame.TalentsFrame=new("Frame",PlayerSpellsFrame)

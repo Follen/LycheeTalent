@@ -4,6 +4,7 @@ local combat=false
 InCombatLockdown=function()return combat end
 UnitClass=function()return "Mage","MAGE" end
 C_SpecializationInfo={GetSpecialization=function()return 1 end}
+assert(loadfile("addon/LycheeTalent/Migration.lua"))("LycheeTalent",A)
 assert(loadfile("addon/LycheeTalent/Storage.lua"))("LycheeTalent",A)
 assert(loadfile("addon/LycheeTalent/TalentEx.lua"))("LycheeTalent",A)
 A.Store:Init()

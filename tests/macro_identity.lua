@@ -52,16 +52,9 @@ PickupAction=function(slot,keep)assert(slot~=61 or not keep,'plain macros need n
 local direct=assert(B:Capture(62));assert(T.body(direct,61)=='/say Character macro')
 direct.slots[61]={kind='unreadableMacro',id=61}
 assert(B:Restore(direct) and T.body(B.verified,61)=='/say Character macro')
-local legacy={version=1,spec=62,slots={}}
-for i=1,180 do legacy.slots[i]={}end
-legacy.slots[1]={kind='macro',id=1}
-assert(B:SaveIndependent(62,'legacy',legacy))
-assert(T.body(B:Get(62,'legacy',false),1)=='/say Replacement','legacy imports text still available at migration')
-T.native[1].body='/say Later'
-assert(T.body(B:Get(62,'legacy',false),1)=='/say Replacement','converted legacy layouts freeze their own content')
 T.native[4]={name='Empty macro',icon=134400}
 assert(A.Macros:Read(4).body=='','native macros without a body are saved as empty text')
 local getMacro=GetMacroInfo
 GetMacroInfo=function(index)local name,icon,body=getMacro(index);return name,icon and 999999,body end
 assert(A.Macros:Read(4).icon==134400,'store the selected icon, not the dynamic tooltip icon')
-print('PASS macro snapshots: raw text, duplicate names, replacement IDs, reusable pool, capacity, rollback, plain macros and legacy import')
+print('PASS macro snapshots: raw text, duplicate names, replacement IDs, reusable pool, capacity, rollback and plain macros')

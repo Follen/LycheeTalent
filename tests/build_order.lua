@@ -1,7 +1,7 @@
 local A={}
 time=function()return 100 end
 C_SpecializationInfo={GetSpecialization=function()return 1 end}
-for _,name in ipairs({"Storage","Catalog"}) do
+for _,name in ipairs({"Migration","Storage","Catalog"}) do
     assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)
 end
 A.Store:Init()

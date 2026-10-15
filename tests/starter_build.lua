@@ -94,7 +94,7 @@ assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
  -- A remembered native config cannot identify a plugin build while Starter is active.
  if mode=='remembered' then
   active='desired';nodes[20].code=active
-  char.applied={id=build.id,code=build.code,spec=62,config=20,entries={code=active}}
+  A.ActionBars:Spec(62).applied={id=build.id,code=build.code,spec=62,config=20,entries={code=active}}
   assert(not A.Apply:CurrentBuildID(),'starter mode must not overwrite a previous managed profile')
  end
  local ok,why=A.Apply:Start(build,false)
