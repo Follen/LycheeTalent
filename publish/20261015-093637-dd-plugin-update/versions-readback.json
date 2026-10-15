@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "stage": "local-cli-argument-validation",
+  "reason": "The follow-up versions command omitted required --game-type; no history request was sent. The task session was then stopped in finally.",
+  "remote_mutation_repeated": false
+}

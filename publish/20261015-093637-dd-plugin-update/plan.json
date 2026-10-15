@@ -1,0 +1,32 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.17",
+  "tag": "v1.0.17",
+  "commit": "83e5b44031b5fbb5c115f8cfc23645310c0aab7e",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "authorization": "User authorized PR 26 merge, version bump and updates to DD and NewBeeBox; repository AGENTS authorizes official DD GUI close.",
+  "expected_readback": {
+    "version": "1.0.17",
+    "game_versions": [
+      "12.1.5"
+    ]
+  },
+  "archive": "dist/LycheeTalent-1.0.17.zip",
+  "sha256": "07eb8678b592f5ee78324e2cccfd2e53a2e8e82ef3964df02e8af3af510cff80",
+  "bytes": 747979,
+  "platform": "dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "ordered_steps": [
+    "update --dry-run",
+    "update once",
+    "get and author-list readback",
+    "session stop in finally"
+  ]
+}

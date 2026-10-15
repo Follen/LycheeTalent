@@ -1,0 +1,21 @@
+{
+  "mod_id": 27799,
+  "name": "荔枝天赋",
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "is_paid": false,
+  "latest_file": {
+    "file_id": 653145,
+    "version_name": "1.0.17",
+    "release_type": 1,
+    "release_type_text": "正式版",
+    "file_size": 758562,
+    "upload_time": 1792028267696,
+    "game_versions": [
+      "12.1.5"
+    ],
+    "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.17"
+  }
+}

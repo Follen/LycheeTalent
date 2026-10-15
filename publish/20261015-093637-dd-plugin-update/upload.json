@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.output.v1",
+  "platform": "dd",
+  "operation": "plugin.update",
+  "success": true,
+  "reference": "40ce264bd1714ceb89132f5157f22869",
+  "result": {
+    "code": 0,
+    "msg": "ok"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.17",
+  "tag": "v1.0.17",
+  "commit": "83e5b44031b5fbb5c115f8cfc23645310c0aab7e",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "authorization": "User authorized PR 26 merge, version bump and updates to DD and NewBeeBox; repository AGENTS authorizes official DD GUI close.",
+  "expected_readback": {
+    "version": "1.0.17",
+    "game_versions": [
+      "12.1.5"
+    ]
+  },
+  "archive": "dist/LycheeTalent-1.0.17-ncc.zip",
+  "sha256": "9ccea24f387e3773d7aea1ab356c2c99406a0753807ebfd5cc242e8aa7f36d63",
+  "bytes": 756220,
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount",
+  "id": 27799,
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "push",
+    "addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.0.17",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount\\publish\\20261015-093637-newbeebox-plugin-update\\changelog.txt",
+    "--game-versions",
+    "12.1.5",
+    "-o",
+    "json"
+  ],
+  "ordered_steps": [
+    "push --dry-run",
+    "pack and verify contents",
+    "push once",
+    "info and versions readback"
+  ],
+  "preflight": "passed",
+  "packages": 14,
+  "verified_files": 58
+}

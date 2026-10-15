@@ -1,0 +1,29 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.17",
+  "tag": "v1.0.17",
+  "commit": "83e5b44031b5fbb5c115f8cfc23645310c0aab7e",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "verified_files": 58,
+  "platform": "dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "status": "upload-accepted-detail-stale-approval-unconfirmed",
+  "sha256": "07eb8678b592f5ee78324e2cccfd2e53a2e8e82ef3964df02e8af3af510cff80",
+  "bytes": 747979,
+  "upload_success": true,
+  "upload_business_code": 0,
+  "detail_readback_version": "1.0.16",
+  "detail_readback_version_sn": "d2da6481cbaa4f2ca087b64878adffa5",
+  "detail_game_versions": [
+    "12.1.0",
+    "12.1.5"
+  ],
+  "version_sn": null,
+  "public_visibility_confirmed": false,
+  "cleanup_complete": true,
+  "followup": "Read author list and version history for 1.0.17; do not upload this version again."
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "name": "荔枝天赋",
+  "version": "1.0.17",
+  "tag": "v1.0.17",
+  "commit": "83e5b44031b5fbb5c115f8cfc23645310c0aab7e",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "verified_files": 58,
+  "platform": "newbeebox",
+  "id": 27799,
+  "file_id": 653145,
+  "status": "approved-public",
+  "review_status": 1,
+  "visibility": 1,
+  "sha256": "9ccea24f387e3773d7aea1ab356c2c99406a0753807ebfd5cc242e8aa7f36d63",
+  "bytes": 756220,
+  "download_sha256": "b1d26d4f917535631c0171e6f6b214bcb6afe94920d06bb8dd1fa48a27cb7f11",
+  "download_bytes": 758562,
+  "download_release_files_match": true,
+  "platform_added_entries": [
+    "LycheeTalent/addon_version.txt",
+    "LycheeTalent_Data_DEATHKNIGHT/addon_version.txt",
+    "LycheeTalent_Data_DEMONHUNTER/addon_version.txt",
+    "LycheeTalent_Data_DRUID/addon_version.txt",
+    "LycheeTalent_Data_EVOKER/addon_version.txt",
+    "LycheeTalent_Data_HUNTER/addon_version.txt",
+    "LycheeTalent_Data_MAGE/addon_version.txt",
+    "LycheeTalent_Data_MONK/addon_version.txt",
+    "LycheeTalent_Data_PALADIN/addon_version.txt",
+    "LycheeTalent_Data_PRIEST/addon_version.txt",
+    "LycheeTalent_Data_ROGUE/addon_version.txt",
+    "LycheeTalent_Data_SHAMAN/addon_version.txt",
+    "LycheeTalent_Data_WARLOCK/addon_version.txt",
+    "LycheeTalent_Data_WARRIOR/addon_version.txt"
+  ]
+}

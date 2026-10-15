@@ -1,0 +1,25 @@
+{
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "name": "荔枝天赋",
+  "scope": "public",
+  "need_buy": false,
+  "game_versions": [
+    "12.1.0",
+    "12.1.5"
+  ],
+  "latest_version": {
+    "file_path_summary": {
+      "host": "uires.w.163.com"
+    },
+    "folders": [],
+    "game_versions": [
+      "12.1.0"
+    ],
+    "release_type": 1,
+    "size": 749523,
+    "sn": "d2da6481cbaa4f2ca087b64878adffa5",
+    "version": "1.0.16"
+  },
+  "status": 1,
+  "update_desc": "<p>奶骑八个大秘境统一使用国服霜之哀伤快乐阳阳的最高限时天赋，本次均为 23 层记录。</p><p>同层优先选择用时最短的公开日志，排除超时记录，并移除奶骑大秘境中其他玩家的热门方案。</p>"
+}
