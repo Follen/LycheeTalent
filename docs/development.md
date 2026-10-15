@@ -17,6 +17,8 @@ lua tests/single_config.lua
 lua tests/starter_build.lua
 lua tests/actionbar_profiles.lua
 lua tests/actionbar_restore.lua
+lua tests/inactive_actionbar_spells.lua
+lua tests/inactive_actionbar_spells.lua deferred
 lua tests/actionbar_edgecases.lua
 lua tests/actionbar_edgecases.lua override
 lua tests/actionbar_edgecases.lua pickup-fallback
@@ -81,3 +83,5 @@ powershell -File tools/package.ps1
 `actionbar_profiles.lua` 验证默认共用、显式独立和专精隔离；`single_config.lua` 验证单配置复用、共用／独立往返、重载后保存、读取前显示进度、首次读取失败，以及目标布局无效或宏空位不足时不提交天赋。`unreadable_macros.lua` 保留不可读宏槽位的回归检查。UI 替身检查默认未勾选和控件状态。
 
 `legacy_macro_migration.lua` 先复现旧编号消失导致的读取错误，再验证已有原文优先、偏好与应用状态转入专精、旧字段清理、已标记数据跳过转换及未知结构保留。正式服 12.1.5.70391 的真实数据副本迁移已通过；这不等于完整插件更新后的 taint 或真实事件时序验证。诊断原始数据只保留在忽略目录。
+
+`inactive_actionbar_spells.lua` 复现旧布局中未学会技能导致的 `BARS_UNAVAILABLE`，覆盖其余动作恢复、待恢复位置保留、同步／延迟事件、独立布局、手动改槽、重载、重新学会后的恢复，以及已学会技能和物品的真实失败。正式服 12.1.5.70391 敏锐贼实机确认四个旧技能槽位无法拾取；隔离加载修复模块后，针对这些槽位的恢复与 180 槽核对通过，动作条和宏写入均为零。此检查没有替玩家应用天赋，也不代表完整更新后所有交互已验证。

@@ -78,6 +78,7 @@ elseif arg[1]=="pickup-fallback" then
  assert(slots[1].id==100 and picked[1]==101 and picked[2]==100 and not cursor)
  -- Missing spells must still fail preflight without changing the bar.
  target.slots[1]={kind="spell",id=999,sub="spell"}
+ C_Spell.GetSpellInfo=function(id)if id~=999 then return {spellID=id} end end
  ok,why=B:Restore(target)
  assert(not ok and why=="BARS_UNAVAILABLE" and slots[1].id==100 and not cursor)
  print("PASS saved override pickup falls back to base; unknown spell preserves layout")
