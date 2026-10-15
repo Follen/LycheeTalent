@@ -1,0 +1,39 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "commit": "a5bb30c1fd87cf22a54f867a9761262dde6a6e16",
+  "id": 27799,
+  "file_id": 654467,
+  "archive": "dist/LycheeTalent-1.1.0-ncc.zip",
+  "sha256": "0744112153a008fb32a79285f0c72715619cb0ae0c1199210683125d0beaa860",
+  "source_zip_bytes": 762048,
+  "remote_file_bytes": 764390,
+  "packages": 14,
+  "verified_files": 60,
+  "source_files_match_standard_release": true,
+  "upload_accepted": true,
+  "upload_exit_code": 0,
+  "status": "approved-public",
+  "readback": {
+    "name": "荔枝天赋",
+    "version": "1.1.0",
+    "file_id": 654467,
+    "game_versions": [
+      "12.1.5"
+    ],
+    "release_type": 1,
+    "release_type_text": "正式版",
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "review_message": "",
+    "visibility": 1,
+    "visibility_text": "公开",
+    "is_paid": false,
+    "changelog": "• 修复动作条包含当前未学会的天赋技能时，整套布局无法恢复的问题。\r\n• 未学会的技能保留在方案记录中，其余动作条照常恢复；以后学会并再次应用时自动补回。\r\n• 手动改动对应格子后保留玩家的新安排，避免旧技能覆盖。\r\n"
+  },
+  "metadata_fields_sent": [],
+  "verification_required": false
+}

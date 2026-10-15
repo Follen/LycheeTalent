@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.1.0.zip",
+  "release_type": 1,
+  "version": "1.1.0",
+  "update_desc": "<p>修复动作条包含当前未学会的天赋技能时，整套布局无法恢复的问题。</p><p>未学会的技能保留在方案记录中，其余动作条照常恢复；以后学会并再次应用时自动补回。</p><p>手动改动对应格子后保留玩家的新安排，避免旧技能覆盖。</p>"
+}

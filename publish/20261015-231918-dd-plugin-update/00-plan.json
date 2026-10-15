@@ -1,0 +1,38 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "commit": "a5bb30c1fd87cf22a54f867a9761262dde6a6e16",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "authorization": "User requested merge and Fupload publishing, then explicitly selected 1.1.0; repository AGENTS authorizes both existing-platform updates and verified official DD GUI close.",
+  "expected_readback": {
+    "version": "1.1.0",
+    "game_versions": [
+      "12.1.5"
+    ]
+  },
+  "packages": 14,
+  "verified_files": 60,
+  "platform": "dd",
+  "archive": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.1.0.zip",
+  "sha256": "29f515406b11b371089d2baade8515536d2a581c81d1ab6287d3e4a8fdfc0469",
+  "bytes": 753808,
+  "channel": "fupload-dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "previous_version": "1.0.17",
+  "game_type": 10001,
+  "ordered_steps": [
+    "plugin update --dry-run",
+    "plugin update once",
+    "author list and detail readback",
+    "session stop in finally; require cleanup_complete"
+  ]
+}

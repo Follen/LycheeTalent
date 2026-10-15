@@ -1,0 +1,64 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "dd",
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "commit": "a5bb30c1fd87cf22a54f867a9761262dde6a6e16",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "version_sn": "a6c79b19908944ada4d2cb7c0ffe31d8",
+  "archive": "dist/LycheeTalent-1.1.0.zip",
+  "sha256": "29f515406b11b371089d2baade8515536d2a581c81d1ab6287d3e4a8fdfc0469",
+  "bytes": 753808,
+  "upload_accepted": true,
+  "upload_result": {
+    "code": 0,
+    "msg": "ok"
+  },
+  "status": "uploaded-version-verified-approval-unconfirmed",
+  "initial_readback": {
+    "version": "1.0.17",
+    "verification_required": true
+  },
+  "final_readback": {
+    "version": "1.1.0",
+    "version_sn": "a6c79b19908944ada4d2cb7c0ffe31d8",
+    "game_versions": [
+      "12.1.5"
+    ],
+    "author_list": {
+      "game_type": null,
+      "kind": "plugin",
+      "name": "荔枝天赋",
+      "reference": "40ce264bd1714ceb89132f5157f22869",
+      "scope": "public",
+      "status": 1,
+      "updated_at": 1792077665,
+      "version": "1.1.0"
+    },
+    "history_match": [
+      {
+        "version": "1.1.0",
+        "sn": "a6c79b19908944ada4d2cb7c0ffe31d8",
+        "ctime": "2026-10-15 23:21:04",
+        "display_game_version": "12.1.5",
+        "release_type": 1
+      }
+    ],
+    "raw_status": 1,
+    "scope": "public",
+    "need_buy": false,
+    "need_anchor_vip": false,
+    "update_desc": "<p>修复动作条包含当前未学会的天赋技能时，整套布局无法恢复的问题。</p><p>未学会的技能保留在方案记录中，其余动作条照常恢复；以后学会并再次应用时自动补回。</p><p>手动改动对应格子后保留玩家的新安排，避免旧技能覆盖。</p>",
+    "description_preserved": true,
+    "media_preserved": true,
+    "commercial_settings_preserved": true
+  },
+  "verification_required": false,
+  "approval_status": "No explicit approval label was returned; raw platform status is recorded without interpreting it.",
+  "recovery": "The first immediate readback showed 1.0.17. A later read-only recovery confirmed 1.1.0 in author list, detail and version history. No upload was repeated.",
+  "cleanup": {
+    "publishing_session_complete": true,
+    "readback_session_complete": true
+  }
+}

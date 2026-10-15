@@ -1,0 +1,53 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "commit": "a5bb30c1fd87cf22a54f867a9761262dde6a6e16",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "preserve": "Descriptions, media, categories, ownership, commercial settings, channel links and associations",
+  "cleared_fields": [],
+  "authorization": "User requested merge and Fupload publishing, then explicitly selected 1.1.0; repository AGENTS authorizes both existing-platform updates and verified official DD GUI close.",
+  "expected_readback": {
+    "version": "1.1.0",
+    "game_versions": [
+      "12.1.5"
+    ]
+  },
+  "packages": 14,
+  "verified_files": 60,
+  "platform": "newbeebox",
+  "archive": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.1.0-ncc.zip",
+  "sha256": "0744112153a008fb32a79285f0c72715619cb0ae0c1199210683125d0beaa860",
+  "bytes": 762048,
+  "channel": "official-ncc",
+  "working_directory": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\restore-inactive-spells",
+  "id": 27799,
+  "previous_version": "1.0.17",
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "push",
+    "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\restore-inactive-spells\\analyze\\release-1.1.0-source\\addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.1.0",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\restore-inactive-spells\\publish\\20261015-231918-newbeebox-plugin-update\\changelog.txt",
+    "--game-versions",
+    "12.1.5",
+    "-o",
+    "json"
+  ],
+  "ordered_steps": [
+    "push --dry-run",
+    "push once",
+    "info and versions readback"
+  ]
+}
