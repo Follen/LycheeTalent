@@ -18,6 +18,7 @@ lua tests/actionbar_restore.lua
 lua tests/actionbar_edgecases.lua
 lua tests/actionbar_edgecases.lua override
 lua tests/actionbar_edgecases.lua pickup-fallback
+lua tests/actionbar_edgecases.lua random-mount
 lua tests/macro_identity.lua
 lua tests/unreadable_macros.lua
 lua tests/actionbar_capture_events.lua
@@ -65,6 +66,8 @@ powershell -File tools/package.ps1
 
 完整动作条读取、切换前保存、恢复、校验与最终保存由 `Apply.op` 管理，首次默认布局也在第一次应用时捕获。点击后先显示“应用中”，下一帧开始读取；关闭面板不取消事务，完成全部操作和保存后才结束。后续图标通知不再启动主动读取。首次捕获失败保留已有恢复备份。
 
-应用完成后的动作条保存只用被动读取，不调用 `PickupAction`、`PlaceAction` 或 `ClearCursor`。宏的显示技能变化不改变已校验的宏编号；真实拖放由同步 `CURSOR_CHANGED` 记录 `GetCursorInfo` 返回的真实宏编号，再由 `PlaceAction` 后置钩子更新目标槽，不把虚拟鼠标 ID 当宏编号。同名宏和账号/角色宏不按名称或正文匹配。未知来源的宏保留为不可读槽，下一次应用前完整捕获重新确认。加载、鼠标悬停、宏刷新、退出游戏都不主动拿宏。
+动作条布局只在切换前读取并保存当前方案，恢复后核对并保存目标方案；不注册动作条刷新、鼠标变化、宏编辑或退出事件，也不挂接拾取、放置、宏删除函数。日常拖动由原生动作条保存，下次切换读取当时的实际布局；重载后仍通过原生方案和天赋匹配确认当前布局归属。共用布局和独立布局分别保存，互不覆盖。
 
-`actionbar_capture_events.lua` 覆盖 500 次独立刷新、同步/延迟槽事件、同名宏交换、拖出/取消、宏删除后的编号变化及退出时保留用户鼠标内容。`single_config.lua` 覆盖初始读取前显示进度、关闭面板后完成、结束时无事务计时器和首次读取失败。它们是离线 API 替身，不能替代复现玩家客户端的事件顺序与游戏内验证。
+宏仍按绝对编号区分。`GetActionInfo` 没有子类型时直接读取宏编号；有技能／物品子类型时才在切换期间复制到光标读取。恢复时使用准确编号调用 `PickupMacro`，不按名称或正文匹配，不创建或编辑宏。差异恢复和已有技能查找使用本次快照，写入结束统一核对，不在查找过程中反复读取宏。旧快照中的不可读占位符在当前槽位可读时更新为实际动作。
+
+`actionbar_capture_events.lua` 覆盖 500 次独立刷新、同步／延迟通知、同名宏交换和删除后在切换时保存、重载及退出时保留用户光标。`macro_identity.lua` 覆盖普通宏直接读取、带子类型宏的准确编号读取、61 槽旧占位符恢复及缺失宏报错。`single_config.lua` 覆盖单配置复用、共用／独立布局往返、重载后保存、读取前显示进度和首次读取失败。以上均为离线 API 替身；本次按用户要求不做实机验证，第 61 槽的实际返回值尚未取得。

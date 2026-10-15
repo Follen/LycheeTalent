@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120105
 ## Title: |cffd53c49Lychee|r Talent Data - WARLOCK
 ## IconTexture: Interface\AddOns\LycheeTalent\Media\logo.tga
 ## LoadOnDemand: 1

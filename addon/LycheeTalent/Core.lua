@@ -25,7 +25,6 @@ events:RegisterEvent("ADDON_LOADED")
 events:SetScript("OnEvent",function(self,event,loaded)
     if loaded~=name then return end
     A.Store:Init()
-    A.ActionBars:Init()
     A.Reminders:RefreshSettings()
     A.Dock:Init()
     self:UnregisterEvent("ADDON_LOADED")

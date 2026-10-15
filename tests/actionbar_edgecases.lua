@@ -36,7 +36,34 @@ local function assertLayout(snapshot)
  end
  assert(not cursor,"cursor must be clean")
 end
-if arg[1]=="pickup-fallback" then
+if arg[1]=="random-mount" then
+ reset()
+ local randomMount=268435455
+ C_MountJournal={
+  GetMountInfoByID=function(id)
+   if id==42 then return "Ordinary mount",1000 end
+  end,
+  Pickup=function(index)
+   assert(index==0,"random favorite mount uses journal index zero")
+   cursor={kind="summonmount",id=randomMount}
+  end,
+ }
+ local target=assert(B:Capture(62))
+ target.slots[60]={kind="summonmount",id=randomMount}
+ local ok,why,slot=B:Restore(target)
+ assert(ok,"random favorite mount at slot 60 must restore: "..tostring(why).." slot "..tostring(slot))
+ assertLayout(target)
+ -- Preflight must also be able to preserve the old random mount for rollback.
+ target.slots[60]={kind="item",id=200}
+ assert(B:Restore(target));assertLayout(target)
+ -- An ordinary mount still resolves to its summon spell; invalid IDs fail.
+ assert(B:Pickup({kind="summonmount",id=42}))
+ assert(cursor.kind=="spell" and cursor.id==1000);ClearCursor()
+ target.slots[60]={kind="summonmount",id=999999}
+ ok,why=B:Restore(target)
+ assert(not ok and why=="BARS_UNAVAILABLE" and slots[60].id==200 and not cursor)
+ print("PASS random favorite mount restores and can be replaced; ordinary and invalid mount IDs retain behavior")
+elseif arg[1]=="pickup-fallback" then
  reset()
  local picked={}
  C_Spell.PickupSpell=function(id)

@@ -79,55 +79,40 @@ C_ActionBar={GetActionText=function(slot)local s=slots[slot];return s and macros
 C_Timer={NewTimer=function(_,fn)local t={Cancel=function(self)self.cancelled=true end};timers[#timers+1]=function()if not t.cancelled then fn()end end;return t end}
 assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
 local B=A.ActionBars
-B:Init()
 assert(pickups==0,'addon loading must not start cursor work')
-A.Apply.op={stage='capture-bars'}
-local initial=assert(B:Capture(62));assert(B:SaveLayout(62,'active',false,initial))
-if B.Track then B:Track(initial)end
-A.Apply.op=nil;settle()
+local function saveCurrent()
+ A.Apply.op={stage='capture-bars'}
+ local snapshot=assert(B:Capture(62))
+ assert(B:SaveLayout(62,'active',false,snapshot))
+ A.Apply.op=nil;settle()
+ return snapshot
+end
+local initial=saveCurrent()
+assert(B:SaveIndependent(62,'other',initial))
 local completedPickups=pickups
 for i=1,500 do display=1000+i;emit('ACTIONBAR_SLOT_CHANGED',i%2==0 and 1 or 0);settle()end
-assert(pickups==completedPickups,'mouseover/assist refreshes must not mount cursor icons after Applying')
-assert(B:Get(62,'active',false).slots[1].id==1,'display spell changes must not replace the macro index')
-assert(not cursor,'idle notifications must not change the cursor')
--- Same name and identical body, but a different absolute index.
+assert(pickups==completedPickups and not cursor,'idle notifications cannot touch cursor')
+-- Real drags and swaps are owned entirely by the native action bar.
 PickupMacro(2);PlaceAction(1);settle()
-assert(B:Get(62,'active',false).slots[1].id==2,'real same-name macro drop saves its exact index')
-assert(cursor.id==1,'autosave must preserve the displaced action on the user cursor')
+assert(cursor.id==1,'displaced macro stays on player cursor')
 PlaceAction(2);settle()
-assert(B:Get(62,'active',false).slots[2].id==1,'a second drop in the same drag chain must not reuse the first ID')
-assert(cursor.id==121,'account/character macro swaps preserve absolute indices and cursor contents')
-ClearCursor();PlaceAction(1);settle()
-assert(B:Get(62,'active',false).slots[1].id==2,'cancelled/empty-cursor drops must not change macro identity')
-PickupAction(2);settle()
-assert(not B:Get(62,'active',false).slots[2].kind and cursor.id==1,'drag removal saves without stealing the held macro')
-PlaceAction(4);settle()
-assert(B:Get(62,'active',false).slots[4].id==1,'dragging a macro from an action slot saves its new destination')
+assert(cursor.id==121,'character macro survives account macro swap')
+ClearCursor();PickupAction(2);PlaceAction(4);settle()
 slots[3].id=200;emit('ACTIONBAR_SLOT_CHANGED',3);settle()
-assert(B:Get(62,'active',false).slots[3].id==200,'ordinary spell edits still autosave')
-assert(B:SaveIndependent(62,'other',initial))
+assert(B:Get(62,'active',false).slots[1].id==1,'background events do not overwrite profiles')
+assert(pickups==completedPickups,'drags do not invoke plugin pickups')
+local fresh=saveCurrent()
+assert(fresh.slots[1].id==2 and fresh.slots[4].id==1 and not fresh.slots[2].kind,'next switch captures exact macro drag result')
+assert(fresh.slots[3].id==200,'next switch captures spell edits')
 DeleteMacro(1);settle()
-assert(B:Get(62,'active',false).slots[1].id==1,'active macro slots follow native index compaction')
-assert(not B:Get(62,'active',false).slots[4].kind,'deleted macro slot is saved empty')
-assert(B:Get(62,'other',false).slots[1].id==1,'deletion must not rewrite other profiles by name/body')
-assert(macros[121]=='same','account compaction must not touch character macros')
-DeleteMacro(119);settle()
-assert(B:Get(62,'active',false).slots[1].id==1,'rejected deletion must not shift cached macro indices')
--- First edit after a reload works before a deferred slot event can run.
-emit('PLAYER_ENTERING_WORLD');macros[2]='same';PickupMacro(2);PlaceAction(1);settle()
-assert(B:Get(62,'active',false).slots[1].id==2,'first post-reload macro drop must not wait for a slot event')
-ClearCursor();PickupMacro(1);rejectDrop=true
-emit('CURSOR_CHANGED',false,7,7,99999);PlaceAction(1);settle()
-assert(B:Get(62,'active',false).slots[1].id==2 and cursor.id==1,'cursor repaint and rejected placement must not claim an edit')
-rejectDrop=false;ClearCursor()
-macros[2]='renamed';emit('UPDATE_MACROS');settle()
-assert(B:Get(62,'active',false).slots[1].id==2,'renaming/editing a macro keeps its exact index')
-readError=true
-local ok,why=pcall(emit,'ACTIONBAR_SLOT_CHANGED',3)
-assert(not ok and tostring(why):find('injected action read failure',1,true),'API failures remain visible')
-readError=false;slots[3].id=300;emit('ACTIONBAR_SLOT_CHANGED',3);settle()
-assert(B:Get(62,'active',false).slots[3].id==300,'a failed read does not block subsequent edits')
+macros[1]='renamed';emit('UPDATE_MACROS');settle()
+-- Recreate Lua service state as on reload. Native bars remain authoritative.
+assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A);B=A.ActionBars
+fresh=saveCurrent()
+assert(fresh.slots[1].id==1 and not fresh.slots[4].kind,'capture follows native deletion compaction after reload')
+assert(B:Get(62,'other',false).slots[2].id==121,'inactive profile is not changed by native edits')
+assert(macros[121]=='same','account deletion does not touch character macros')
+completedPickups=pickups
 cursor={kind='item',id=123};emit('PLAYER_LOGOUT');settle()
-assert(cursor.kind=='item' and cursor.id==123,'logout does not clear a player cursor')
-assert(pickups==completedPickups,'all post-Apply saves are passive')
-print('PASS '..(deferred and 'deferred' or 'synchronous')..' events: 500 idle refreshes, exact duplicate macro drag/swap/delete, autosave, untouched cursor, no post-Apply pickups')
+assert(cursor.kind=='item' and cursor.id==123 and pickups==completedPickups,'logout preserves player cursor')
+print('PASS '..(deferred and 'deferred' or 'synchronous')..' notifications: no background pickups/saves, exact macro edits captured at switch, reload, inactive profiles and player cursor')
