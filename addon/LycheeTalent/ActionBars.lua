@@ -155,7 +155,7 @@ function B:Capture(spec,passive)
     local packed,reason=A.Macros:Pack(snapshot);if not packed then return nil,reason end
     local state=self:Spec(spec);local applied=state and state.applied
     local previous=applied and self:Get(spec,applied.id,applied.shared)
-    return A.Macros:PreserveNames(packed,previous)
+    return self:PreserveDeferred(A.Macros:PreserveNames(packed,previous),previous)
 end
 local function baseSpell(id)
     if C_Spell and C_Spell.GetBaseSpell then
@@ -173,6 +173,27 @@ local function same(a,b)
         return a.id==b.id or baseSpell(a.id)==baseSpell(b.id)
     end
     return a.id==b.id and a.sub==b.sub
+end
+function B:PreserveDeferred(snapshot,previous)
+    for slot,entry in pairs(previous and previous.deferredSpells or {}) do
+        local actual,old=snapshot.slots[slot],previous.slots[slot]
+        local unchanged=same(actual,old)
+        if actual.kind=="macro" and old.kind=="macro" then
+            unchanged=A.Macros:Same(snapshot.macros[actual.id],previous.macros[old.id])
+        end
+        -- Keep unavailable talent spells until the user changes this slot.
+        -- Passive reads and switching away must not turn them into deletions.
+        if unchanged then
+            snapshot.deferredSpells=snapshot.deferredSpells or {}
+            snapshot.deferredSpells[slot]=clone(entry)
+        end
+    end
+    return snapshot
+end
+local function unlearned(entry)
+    return entry.kind=="spell" and (entry.sub==nil or entry.sub=="spell")
+        and C_Spell.GetSpellInfo(entry.id)
+        and not C_SpellBook.IsSpellKnown(entry.id) and not C_SpellBook.IsSpellKnown(baseSpell(entry.id))
 end
 function B:MacroIndex(entry)
     -- Only physical execution entries reach this helper.
@@ -246,7 +267,7 @@ function B:RestorePhysical(snapshot)
     end
     -- Preflight every pickup before removing/replacing any action. Unknown
     -- action types can remain in place but are never silently discarded.
-    local moveFirst={}
+    local moveFirst,deferredSpells={},{}
     for _,slot in ipairs(changes) do
         local desired=target.slots[slot]
         if desired.kind then
@@ -254,14 +275,19 @@ function B:RestorePhysical(snapshot)
             ClearCursor()
             if not called or not ok then
                 if desired.kind=="spell" and findSlot(current,desired) then moveFirst[slot]=true
-                else return nil,reason or "BARS_UNAVAILABLE",slot end
+                elseif called and reason=="BARS_UNAVAILABLE" and unlearned(desired) then
+                    deferredSpells[slot]=clone(desired)
+                    target.slots[slot]=clone(before.slots[slot])
+                else return nil,reason or "BARS_UNAVAILABLE",{slot=slot,kind=desired.kind,id=desired.id,phase="pickup"} end
             end
         end
         local old=before.slots[slot]
-        if old.kind then
+        if old.kind and not deferredSpells[slot] then
             local called,ok,reason=pcall(self.Pickup,self,old)
             ClearCursor()
-            if (not called or not ok) and not (old.kind=="spell" and findSlot(current,old)) then return nil,reason or "BARS_UNAVAILABLE",slot end
+            if (not called or not ok) and not (old.kind=="spell" and findSlot(current,old)) then
+                return nil,reason or "BARS_UNAVAILABLE",{slot=slot,kind=old.kind,id=old.id,phase="backup"}
+            end
         end
     end
     -- Copy unavailable spells to their final slots before any replacement can
@@ -331,6 +357,7 @@ function B:RestorePhysical(snapshot)
     end
     if not ok then return nil,"BARS_RESTORE",{reason=tostring(reason),rolledBack=rolledBack} end
     self.verified=verified
+    self.verified.deferredSpells=next(deferredSpells) and deferredSpells or nil
     if #preservedSlots>0 then return true,nil,{preservedSlots=preservedSlots} end
     return true
 end
@@ -351,6 +378,8 @@ function B:Restore(snapshot)
     if InCombatLockdown() then return nil,"COMBAT" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
     local target=clone(snapshot)
+    for slot,entry in pairs(target.deferredSpells or {}) do target.slots[slot]=clone(entry) end
+    target.deferredSpells=nil
     local before,why=self:Capture(spec);if not before then return nil,why end
     local plan;plan,why,target=self:Plan(target,before);if not plan then return nil,why end
     self.writing=true
@@ -360,6 +389,7 @@ function B:Restore(snapshot)
         local restored,restoreWhy,restoreDetail=self:RestorePhysical(A.Macros:Physical(target,plan.bindings))
         if not restored then return nil,restoreWhy,restoreDetail end
         local verified=A.Macros:Pack(self.verified)
+        verified.deferredSpells=self.verified.deferredSpells
         -- Preserve each saved display name while its execution slot uses a
         -- registered pool name. The binding records the actual native name.
         for slot,entry in ipairs(target.slots) do

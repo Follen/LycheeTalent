@@ -255,6 +255,7 @@ function X:CompleteWorking()
     op.stage="action-bars"
     local ok,reason,detail=A.ActionBars:Restore(snapshot)
     if not ok then
+        op.failedSlot=detail and detail.slot
         A.Store.character.recovery.actionBars={reason=reason,detail=detail,backup=A.ActionBars.recovery}
         self:Finish(false,reason);return
     end
