@@ -1,0 +1,53 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "version": "1.1.1",
+  "tag": "v1.1.1",
+  "commit": "9e421710e89dae71c02b6191a9313021cc1316dd",
+  "id": 27799,
+  "archive": "dist/LycheeTalent-1.1.1-ncc.zip",
+  "sha256": "13876d8188e48f1d6423e2e07d2cb871e6da1db42bcf0b14e57c6aab2d14fa98",
+  "source_zip_bytes": 1156328,
+  "packages": 14,
+  "verified_files": 61,
+  "source_files_match_standard_release": true,
+  "upload_exit_code": 0,
+  "upload_accepted": true,
+  "file_id": 659066,
+  "remote_file_bytes": 1158670,
+  "status": "approved-public",
+  "readback": {
+    "name": "荔枝天赋",
+    "version": "1.1.1",
+    "file_id": 659066,
+    "game_versions": [
+      "12.1.5"
+    ],
+    "release_type": 1,
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "review_message": "",
+    "visibility": 1,
+    "visibility_text": "公开",
+    "is_paid": false,
+    "changelog": "• 全量刷新13职业、40专精的WCL推荐，共1971套大秘境和团本天赋，补齐基希克斯的首领信息。\r\n• 敏锐潜行者全部使用对应榜单中的欺诈者榜首，不再提供其他英雄天赋和热门备选。\r\n• 原生加载遗漏请求天赋点时，先补齐目标再提交，处理噬灭等专精可能少一点的情况。\r\n• 更换主包与职业数据包的插件列表图标，游戏内各页面的荔枝图案和动画保持原样。\r\n"
+  },
+  "descriptions_preserved": true,
+  "commercial_settings_preserved": true,
+  "verification_required": false,
+  "logo": {
+    "status": "logo-updated-and-read-back",
+    "source": "docs/media/talent-logo.png",
+    "sha256": "fdcd9b8e0d0d8ef3b80dfb77534ad7aaf5e8fa0c052b2fd94259b3403f6df065",
+    "changed": true,
+    "descriptions_preserved": true,
+    "screenshots_preserved": true,
+    "commercial_settings_preserved": true
+  },
+  "metadata_fields_sent": [
+    "logo"
+  ],
+  "version_upload_preserved_media": true,
+  "screenshots_preserved": true
+}

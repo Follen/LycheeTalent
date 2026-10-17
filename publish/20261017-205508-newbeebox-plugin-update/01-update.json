@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "push",
+    "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\refresh-talents-logo\\analyze\\release-1.1.1-source\\addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.1.1",
+    "--changelog",
+    "@D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\refresh-talents-logo\\publish\\20261017-205508-newbeebox-plugin-update\\changelog.txt",
+    "--game-versions",
+    "12.1.5",
+    "-o",
+    "json"
+  ]
+}

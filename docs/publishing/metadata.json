@@ -13,22 +13,22 @@
   "package": "dist/LycheeTalent-1.1.1.zip",
   "cover": "docs/media/release-cover.png",
   "logo": "docs/media/talent-logo.png",
-  "status": "release-prepared",
+  "status": "platform-versions-verified-dd-approval-unconfirmed",
   "platforms": {
     "dd": {
       "status": "uploaded-version-verified-approval-unconfirmed",
       "share_code": "766554",
       "sn": "40ce264bd1714ceb89132f5157f22869",
-      "version": "1.1.0",
-      "version_sn": "a6c79b19908944ada4d2cb7c0ffe31d8",
+      "version": "1.1.1",
+      "version_sn": "9d789b5df36d4d2fb781dfe4ce3d184c",
       "logo_status": "unchanged-tool-unsupported"
     },
     "newbeebox": {
       "id": 27799,
       "status": "approved-public",
-      "version": "1.1.0",
-      "file_id": 654467,
-      "logo_status": "pending-update"
+      "version": "1.1.1",
+      "file_id": 659066,
+      "logo_status": "updated-and-read-back"
     }
   },
   "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word"

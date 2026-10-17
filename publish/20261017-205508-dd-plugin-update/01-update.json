@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.1.1.zip",
+  "release_type": 1,
+  "version": "1.1.1",
+  "update_desc": "<p>全量刷新13职业、40专精的WCL推荐，共1971套大秘境和团本天赋，补齐基希克斯的首领信息。</p><p>敏锐潜行者全部使用对应榜单中的欺诈者榜首，不再提供其他英雄天赋和热门备选。</p><p>原生加载遗漏请求天赋点时，先补齐目标再提交，处理噬灭等专精可能少一点的情况。</p><p>更换主包与职业数据包的插件列表图标，游戏内各页面的荔枝图案和动画保持原样。</p>"
+}

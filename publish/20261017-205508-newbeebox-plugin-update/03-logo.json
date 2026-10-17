@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "ncc",
+    "wow",
+    "addons",
+    "edit",
+    "27799",
+    "--logo",
+    "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\refresh-talents-logo\\docs\\media\\talent-logo.png",
+    "-o",
+    "json"
+  ],
+  "changed_fields": [
+    "logo"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "newbeebox",
+  "action": "logo-edit",
+  "id": 27799,
+  "version": "1.1.1",
+  "source": "docs/media/talent-logo.png",
+  "sha256": "fdcd9b8e0d0d8ef3b80dfb77534ad7aaf5e8fa0c052b2fd94259b3403f6df065",
+  "changed_fields": [
+    "logo"
+  ],
+  "edit_exit_code": 0,
+  "logo_changed": true,
+  "descriptions_preserved": true,
+  "screenshots_preserved": true,
+  "commercial_settings_preserved": true,
+  "readback": {
+    "name": "荔枝天赋",
+    "version": "1.1.1",
+    "file_id": 659066,
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "review_message": "",
+    "visibility": 1,
+    "visibility_text": "公开",
+    "is_paid": false
+  },
+  "verification_required": false,
+  "status": "logo-updated-and-read-back"
+}

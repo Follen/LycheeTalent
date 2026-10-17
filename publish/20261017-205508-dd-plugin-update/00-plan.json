@@ -1,0 +1,38 @@
+{
+  "schema": "lychee.publish-plan.v1",
+  "name": "荔枝天赋",
+  "version": "1.1.1",
+  "tag": "v1.1.1",
+  "commit": "9e421710e89dae71c02b6191a9313021cc1316dd",
+  "previous_version": "1.1.0",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "visibility": "public",
+  "paid": false,
+  "packages": 14,
+  "verified_files": 61,
+  "authorization": "User requested a new release with all-class talent refresh, DH point fix, addon-list logo and platform-logo updates. Repository AGENTS authorizes version/tag publishing, both existing-platform updates and closing verified official DD GUI.",
+  "cleared_fields": [],
+  "platform": "dd",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "share_code": "766554",
+  "archive": "D:\\Code\\wow\\addons\\Lychee Talent\\dist\\LycheeTalent-1.1.1.zip",
+  "sha256": "ae9bf6c9de460e3c623d69d9e711589c9884adfa50104434e61207c0709e58bb",
+  "bytes": 1145638,
+  "preserve": "Descriptions, logo, cover, screenshots, categories, ownership, commercial settings and associations",
+  "logo_status": "unchanged-tool-unsupported",
+  "ordered_steps": [
+    "local dry-run",
+    "publish new version once",
+    "read author list, detail and version history",
+    "stop the single task session in finally"
+  ],
+  "expected_readback": {
+    "version": "1.1.1",
+    "game_versions": [
+      "12.1.5"
+    ],
+    "release_type": 1
+  }
+}

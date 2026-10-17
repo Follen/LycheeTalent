@@ -1,0 +1,39 @@
+{
+  "schema": "lychee.publish-result.v1",
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "version": "1.1.1",
+  "tag": "v1.1.1",
+  "commit": "9e421710e89dae71c02b6191a9313021cc1316dd",
+  "id": 27799,
+  "archive": "dist/LycheeTalent-1.1.1-ncc.zip",
+  "sha256": "13876d8188e48f1d6423e2e07d2cb871e6da1db42bcf0b14e57c6aab2d14fa98",
+  "source_zip_bytes": 1156328,
+  "packages": 14,
+  "verified_files": 61,
+  "source_files_match_standard_release": true,
+  "upload_exit_code": 0,
+  "upload_accepted": true,
+  "file_id": 659066,
+  "remote_file_bytes": 1158670,
+  "status": "approved-public",
+  "readback": {
+    "name": "荔枝天赋",
+    "version": "1.1.1",
+    "file_id": 659066,
+    "game_versions": [
+      "12.1.5"
+    ],
+    "release_type": 1,
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "review_message": "",
+    "visibility": 1,
+    "visibility_text": "公开",
+    "is_paid": false
+  },
+  "descriptions_preserved": true,
+  "media_preserved": true,
+  "commercial_settings_preserved": true,
+  "verification_required": false
+}
