@@ -15,7 +15,7 @@
 | [更新记录](../../Changelog.md) | 各版本更新内容 |
 | [封面](../media/release-cover.png) | 参照荔枝黑红风格的宣传封面 |
 | [实机图库](../media/README.md) | 独立游戏截图与说明 |
-| [Logo](../media/logo.png) | 平台项目标识 |
+| [Logo](../media/talent-logo.png) | 平台项目标识 |
 
 安装包由 `tools/package.ps1` 生成于 `dist/LycheeTalent-<主包 TOC 版本>.zip`，附 SHA256 文件。14 个文件夹须完整保留；附带许可证与第三方声明。平台适配图片时保留原始实机截图，不用生成式图片替换真实 UI 证据。
 

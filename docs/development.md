@@ -14,6 +14,7 @@ lua tests/build_order.lua
 lua tests/ui_smoke.lua same-build-refresh
 lua tests/ui_smoke.lua pending-prompt
 lua tests/single_config.lua
+lua tests/native_partial_load.lua
 lua tests/starter_build.lua
 lua tests/actionbar_profiles.lua
 lua tests/actionbar_restore.lua
@@ -81,6 +82,8 @@ powershell -File tools/package.ps1
 `actionbar_capture_events.lua` 覆盖宏正文／名称／图标编辑、500 次被动槽位刷新、同步／延迟通知、自身宏替换隔离、删除重编号、专精往返与重载。宏编辑和退出检查同时确认玩家光标不被改动。`macro_identity.lua` 覆盖宏原文恢复、同名宏、旧编号被替换、角色宏槽位复用、容量不足、宏与槽位回滚及 61 槽直接读取。两者使用 `macro_runtime.lua` 提供的原生 API 替身。
 
 `actionbar_profiles.lua` 验证默认共用、显式独立和专精隔离；`single_config.lua` 验证单配置复用、共用／独立往返、重载后保存、读取前显示进度、首次读取失败，以及目标布局无效或宏空位不足时不提交天赋。`unreadable_macros.lua` 保留不可读宏槽位的回归检查。UI 替身检查默认未勾选和控件状态。
+
+`native_partial_load.lua` 用噬灭“虚空净化”（节点 110174、入口 136699）模拟原生导入后已保存配置和 Ready 草稿同时遗漏一项请求等级，覆盖提交前补齐、目标已完整、节点不可购买、提交被拒绝、Starter 交接，以及首次新建／已有工作配置的完整应用路径。它使用生产准备与事务代码，原生返回值由替身提供，不是该角色的实机复现。
 
 `legacy_macro_migration.lua` 先复现旧编号消失导致的读取错误，再验证已有原文优先、偏好与应用状态转入专精、旧字段清理、已标记数据跳过转换及未知结构保留。正式服 12.1.5.70391 的真实数据副本迁移已通过；这不等于完整插件更新后的 taint 或真实事件时序验证。诊断原始数据只保留在忽略目录。
 

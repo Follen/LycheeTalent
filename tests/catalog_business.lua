@@ -11,7 +11,7 @@ table.sort(raid,function(a,b)
     if a.raidOrder~=b.raidOrder then return a.raidOrder<b.raidOrder end
     return a.bossOrder<b.bossOrder
 end)
-local expected={'3470','3445','3497','3455','3420','3421','3429','3492','3379'}
+local expected={'3470','3445','3497','3455','3420','3421','3429','3492','3379','3513'}
 assert(#raid==#expected,'published raid boss count')
 for i,id in ipairs(expected) do assert(raid[i].id==id,'raid boss order at '..i) end
 

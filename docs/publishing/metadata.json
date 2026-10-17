@@ -12,7 +12,7 @@
   "license": "LicenseRef-Lychee-NC-1.0",
   "package": "dist/LycheeTalent-1.1.0.zip",
   "cover": "docs/media/release-cover.png",
-  "logo": "docs/media/logo.png",
+  "logo": "docs/media/talent-logo.png",
   "status": "platform-versions-verified-dd-approval-unconfirmed",
   "platforms": {
     "dd": {

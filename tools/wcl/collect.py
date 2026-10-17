@@ -18,8 +18,10 @@ CLASSES={"Warrior":("WARRIOR",["Arms","Fury","Protection"]),"Paladin":("PALADIN"
 "Druid":("DRUID",["Balance","Feral","Guardian","Restoration"]),"Demon Hunter":("DEMONHUNTER",["Havoc","Vengeance","Devourer"]),
 "Evoker":("EVOKER",["Devastation","Preservation","Augmentation"])}
 ICONS={12993:7956175,12825:7266214,61762:2011123,12813:7266213,112521:4578416,61877:2011143,12859:7354408,12923:7439626,
-3470:7966621,3445:7966620,3455:7966618,3497:7966622,3420:7966619,3421:7966623,3429:7966625,3492:7966624,3379:3012069}
+3470:7966621,3445:7966620,3455:7966618,3497:7966622,3420:7966619,3421:7966623,3429:7966625,3492:7966624,3379:3012069,3513:8214195}
 MAPS={12993:2993,12825:2825,61762:1762,12813:2813,112521:2521,61877:1877,12859:2859,12923:2923}
+# Required root entry for Trickster (TraitSubTreeID 51), retail 12.1.5.70391.
+TRICKSTER_ENTRY=117708
 
 def localize(scenes):
     order=json.loads(Path(__file__).with_name('raid-order.json').read_text(encoding='utf-8'))
@@ -87,7 +89,7 @@ def render_toc(token, main_toc):
         raise ValueError('Main addon TOC must contain a valid Version and Interface')
     return (f'## Interface: {interface}\n'
             f'## Title: |cffd53c49Lychee|r Talent Data - {token}\n'
-            '## IconTexture: Interface\\AddOns\\LycheeTalent\\Media\\logo.tga\n'
+            '## IconTexture: Interface\\AddOns\\LycheeTalent\\Media\\talent-icon.tga\n'
             '## LoadOnDemand: 1\n## Dependencies: LycheeTalent\n'
             f'## Version: {version}\nData.lua\n')
 
@@ -133,6 +135,7 @@ def collect_one(client,job,max_pages,cutoff):
     metric="playerscore" if scene=="mythic" else ("hps" if spec in ("Holy","Discipline","Restoration","Mistweaver","Preservation") else "dps")
     records=[]; seen=set(); scanned=0; has_more=False
     preferred=cls=='Paladin' and spec=='Holy' and scene=='mythic'
+    trickster=cls=='Rogue' and spec=='Subtlety'
     if preferred:
         records,scanned=holy_mythic_record(client,enc,cutoff)
         page=1
@@ -147,6 +150,7 @@ def collect_one(client,job,max_pages,cutoff):
         for rank in ranks:
             nodes=normalize(rank)
             if not nodes or rank.get('startTime',0)<cutoff:continue
+            if trickster and not any(entry==TRICKSTER_ENTRY for entry,_ in nodes):continue
             report=rank['report']; key=(report['code'],report['fightID'],rank.get('name'))
             if key in seen:continue
             seen.add(key); records.append((rank,nodes))
@@ -160,7 +164,7 @@ def collect_one(client,job,max_pages,cutoff):
         sig=json.dumps(nodes,separators=(',',':')); frequencies[sig]=frequencies.get(sig,0)+1
     best=records[0]; common=max(records,key=lambda v:frequencies[json.dumps(v[1],separators=(',',':'))])
     selected=[('highest' if scene=='mythic' else 'ranked',best)]
-    if common[1]!=best[1] and frequencies[json.dumps(common[1],separators=(',',':'))]>1:selected.append(('popular',common))
+    if not trickster and common[1]!=best[1] and frequencies[json.dumps(common[1],separators=(',',':'))]>1:selected.append(('popular',common))
     builds=[]
     for kind,(rank,nodes) in selected:
         sig=hashlib.sha256(json.dumps(nodes).encode()).hexdigest()[:16]
@@ -171,6 +175,7 @@ def collect_one(client,job,max_pages,cutoff):
             'sample':len(records),'scanned':scanned,'pages':page,'hasMore':has_more,'count':frequencies[json.dumps(nodes,separators=(',',':'))],
             'report':rank['report']['code'],'fight':rank['report']['fightID'],'updated':int(time.time()),'patch':'12.1',
             'recordTime':int(rank.get('startTime',0)/1000),'icon':ICONS.get(enc['id'],134400)})
+        if trickster:builds[-1]['heroTree']=51
     return {'job':job,'builds':builds,'scanned':scanned,'pages':page,'hasMore':has_more}
 
 def main():

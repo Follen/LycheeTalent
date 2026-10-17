@@ -70,6 +70,32 @@ class CollectionTests(unittest.TestCase):
         c=FakeClient([{'rankings':[rank(0)],'hasMorePages':False}])
         job=('Paladin','Holy',1,'raid',53,{'id':3470,'name':'Boss'},5)
         self.assertEqual(collect_one(c,job,2,0)['builds'][0]['kind'],'ranked')
+    def test_subtlety_publishes_only_the_best_trickster_build(self):
+        for scene,difficulty in (('mythic',0),('raid',5)):
+            with self.subTest(scene=scene):
+                best=rank(23,'trickster');best['amount']=90
+                best['talents'].append({'talentID':117708,'points':1})
+                common=rank(22,'popular');common['amount']=80
+                common['talents'].extend([{'talentID':117708,'points':1},{'talentID':117712,'points':1}])
+                other=dict(common,report={'code':'popular2','fightID':1})
+                c=FakeClient([{'rankings':[rank(24,'deathstalker'),best,common,other],'hasMorePages':True}])
+                job=('Rogue','Subtlety',3,scene,55,{'id':12993,'name':'Encounter'},difficulty)
+                builds=collect_one(c,job,2,0)['builds']
+                self.assertEqual(len(builds),1)
+                self.assertEqual(builds[0]['report'],'trickster')
+                self.assertEqual(builds[0]['heroTree'],51)
+    def test_subtlety_continues_past_a_page_without_trickster(self):
+        good=rank(23,'trickster');good['talents'].append({'talentID':117708,'points':1})
+        c=FakeClient([{'rankings':[rank(24,'deathstalker')],'hasMorePages':True},
+                      {'rankings':[good],'hasMorePages':False}])
+        job=('Rogue','Subtlety',3,'mythic',55,{'id':12993,'name':'Encounter'},0)
+        result=collect_one(c,job,2,0)
+        self.assertEqual(result['pages'],2)
+        self.assertEqual(result['builds'][0]['report'],'trickster')
+    def test_subtlety_does_not_fall_back_to_deathstalker(self):
+        c=FakeClient([{'rankings':[rank(24,'deathstalker')],'hasMorePages':False}])
+        job=('Rogue','Subtlety',3,'mythic',55,{'id':12993,'name':'Encounter'},0)
+        self.assertEqual(collect_one(c,job,2,0)['builds'],[])
     def test_lua_serialization_escapes(self):
         self.assertEqual(lua('a"b\\c\n'), '"a\\"b\\\\c\\n"')
     def test_packed_publication_reuses_identical_nodes(self):
