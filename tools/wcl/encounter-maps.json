@@ -1,6 +1,6 @@
 {
-  "build": "12.1.0.69933",
-  "snapshot": "PIN-e32991d54917ec6aff1e63725999c380b110e8e3140b10857e0f4dc48a648647",
+  "build": "12.1.5.70391",
+  "snapshot": "PIN-10da1ff7199a6c17d90c7720ccf7ba97fc0c815911f2f4731ece487dd26b09fd",
   "encounters": {
     "3429": {
       "uiMapID": 2610,
@@ -46,6 +46,11 @@
       "uiMapID": 2609,
       "journalInstanceID": 1320,
       "journalID": 2894
+    },
+    "3513": {
+      "uiMapID": 2669,
+      "journalInstanceID": 1324,
+      "journalID": 2896
     }
   }
 }

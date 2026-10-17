@@ -1,6 +1,6 @@
 ## Interface: 120105
 ## Title: |cffd53c49Lychee|r Talent Data - MONK
-## IconTexture: Interface\AddOns\LycheeTalent\Media\logo.tga
+## IconTexture: Interface\AddOns\LycheeTalent\Media\talent-icon.tga
 ## LoadOnDemand: 1
 ## Dependencies: LycheeTalent
 ## Version: 1.1.0

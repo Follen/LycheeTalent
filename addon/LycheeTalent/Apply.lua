@@ -149,9 +149,20 @@ function X:LoadNative(id,done)
         local entries=A.Talents:ReadEntries(active)
         if not entries or not A.Talents:Matches(id,entries) then self:Finish(false,"STAGED_MISMATCH");return end
         op.inNativeCall=true
+        -- Matching native snapshots can both lack a rank requested by this
+        -- operation. Complete the requested build before this first commit.
+        -- Starter must finish its native load before its flag can be cleared.
+        if not C_ClassTalents.GetStarterBuildActive() and not A.Talents:Matches(active,op.entries) then
+            local called,staged,why=pcall(A.Talents.StageEntries,A.Talents,active,op.entries)
+            if not called or not staged then
+                C_Traits.RollbackConfig(active);op.inNativeCall=nil
+                self:Finish(false,why or "STAGED_MISMATCH");return
+            end
+            self:RememberPending(op,active)
+        end
         local ok=C_ClassTalents.CommitConfig(id)
         op.inNativeCall=nil
-        if not ok then self:Finish(false,"COMMIT_FAILED");return end
+        if not ok then C_Traits.RollbackConfig(active);self:Finish(false,"COMMIT_FAILED");return end
     end
     self:Advance()
 end

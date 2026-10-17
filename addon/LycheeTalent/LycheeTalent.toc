@@ -10,7 +10,7 @@
 ## Version: 1.1.0
 ## SavedVariables: LycheeTalentDB
 ## SavedVariablesPerCharacter: LycheeTalentCharacterDB
-## IconTexture: Interface\AddOns\LycheeTalent\Media\logo.tga
+## IconTexture: Interface\AddOns\LycheeTalent\Media\talent-icon.tga
 Locales.lua
 Migration.lua
 Storage.lua
