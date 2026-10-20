@@ -1,0 +1,58 @@
+{
+  "version": "1.1.2",
+  "tag": "v1.1.2",
+  "release_commit": "bca81165df36aa145a6a5953d6b82ba18b27cba9",
+  "source_tree": "d1c1f376f2c63ae782e8fdeb1020311840c89071",
+  "pr": "https://github.com/Follen/LycheeTalent/pull/31",
+  "verified_at_utc": "2026-10-20 18:08:24 UTC",
+  "verified_files": 61,
+  "packages": 14,
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "cli_version": "0.1.29",
+  "target": {
+    "id": 27799,
+    "name": "荔枝天赋"
+  },
+  "status": "approved-public",
+  "upload": {
+    "success": true,
+    "package": "dist/LycheeTalent-1.1.2-ncc.zip",
+    "package_bytes": 1157193,
+    "sha256": "5e564ed503d7e106ad1d92948fa0adafcddd0ecad5d4a1582a976d7af91ff188",
+    "content_identical_to_main_package": true
+  },
+  "readback": {
+    "version": "1.1.2",
+    "file_id": 666227,
+    "game_versions": [
+      "12.1.5"
+    ],
+    "release_type": 1,
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "visibility": 1,
+    "visibility_text": "公开",
+    "is_paid": false,
+    "changelog_matches": true
+  },
+  "preserved_fields": {
+    "name": true,
+    "intro": true,
+    "description": true,
+    "content_format": true,
+    "categories": true,
+    "logo": true,
+    "logo_url": true,
+    "screenshots": true,
+    "home_page": true,
+    "home_page_link": true,
+    "link_to_channel": true,
+    "visibility": true,
+    "is_paid": true,
+    "subscribe_plan_level": true,
+    "source": true,
+    "is_co_creation": true,
+    "co_authors": true
+  }
+}

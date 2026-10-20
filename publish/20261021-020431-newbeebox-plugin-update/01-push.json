@@ -1,0 +1,56 @@
+{
+  "channel": "official-ncc",
+  "cli_version": "0.1.29",
+  "command": "ncc",
+  "working_directory": "D:/Code/wow/addons/Lychee Talent/.worktrees/refresh-talents-logo",
+  "arguments": [
+    "wow",
+    "addons",
+    "push",
+    "D:/Code/wow/addons/Lychee Talent/.worktrees/refresh-talents-logo/analyze/release-1.1.2/addon",
+    "--id",
+    "27799",
+    "--version",
+    "1.1.2",
+    "--changelog",
+    "@D:/Code/wow/addons/Lychee Talent/.worktrees/refresh-talents-logo/publish/20261021-020431-newbeebox-plugin-update/changelog.txt",
+    "--game-versions",
+    "auto",
+    "-o",
+    "json"
+  ],
+  "business_inputs": {
+    "id": 27799,
+    "name": "荔枝天赋",
+    "version": "1.1.2",
+    "game_versions": "auto",
+    "changelog_file": "publish/20261021-020431-newbeebox-plugin-update/changelog.txt"
+  },
+  "tag": "v1.1.2",
+  "source_tree": "d1c1f376f2c63ae782e8fdeb1020311840c89071",
+  "package": "dist/LycheeTalent-1.1.2-ncc.zip",
+  "package_sha256": "5e564ed503d7e106ad1d92948fa0adafcddd0ecad5d4a1582a976d7af91ff188",
+  "package_bytes": 1157193,
+  "verified_files": 61,
+  "packages": 14,
+  "before": {
+    "id": 27799,
+    "name": "荔枝天赋",
+    "version": "1.1.1",
+    "file_id": 659066,
+    "review_status": 1,
+    "review_status_text": "审核通过",
+    "visibility": 1,
+    "visibility_text": "公开",
+    "is_paid": false
+  },
+  "expected_readback": {
+    "id": 27799,
+    "name": "荔枝天赋",
+    "version": "1.1.2",
+    "game_versions": [
+      "12.1.5"
+    ],
+    "metadata_preserved": true
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "version": "1.1.2",
+  "tag": "v1.1.2",
+  "release_commit": "bca81165df36aa145a6a5953d6b82ba18b27cba9",
+  "source_tree": "d1c1f376f2c63ae782e8fdeb1020311840c89071",
+  "pr": "https://github.com/Follen/LycheeTalent/pull/31",
+  "verified_at_utc": "2026-10-20 18:08:24 UTC",
+  "verified_files": 61,
+  "packages": 14,
+  "platform": "dd",
+  "target": {
+    "name": "荔枝天赋",
+    "sn": "40ce264bd1714ceb89132f5157f22869",
+    "share_code": "766554"
+  },
+  "status": "uploaded-version-verified-approval-unconfirmed",
+  "upload": {
+    "success": true,
+    "business_code": 0,
+    "package": "dist/LycheeTalent-1.1.2.zip",
+    "package_bytes": 1146489,
+    "sha256": "755491f5c5481c91dd62f21fde00f6c60c6342fdf745c550e78ece0857ce3803"
+  },
+  "author_readback": {
+    "reference": "40ce264bd1714ceb89132f5157f22869",
+    "name": "荔枝天赋",
+    "version": "1.1.2",
+    "scope": "public",
+    "status": 1
+  },
+  "version_history_readback": {
+    "sn": "e2b5200716fe47eeabdbe6fcf6a0ff06",
+    "version": "1.1.2",
+    "release_type": 1
+  },
+  "detail_readback": {
+    "latest_version": "1.1.1",
+    "game_versions": [
+      "12.1.5"
+    ],
+    "scope": "public",
+    "status": 1,
+    "update_desc_matches": true,
+    "note": "Detail latest_version still showed the previous version; the author-list update projection and version history both confirmed 1.1.2. No upload was repeated."
+  },
+  "preserved_fields": {
+    "name": true,
+    "description_summary": true,
+    "html_desc": true,
+    "logo": true,
+    "detail_imgs": true,
+    "scope": true,
+    "need_buy": true,
+    "need_anchor_vip": true,
+    "price_fen": true,
+    "buy_life_type": true,
+    "share_code_life_type": true,
+    "jump_room": true,
+    "room_id": true,
+    "channel_id": true,
+    "channel_type": true,
+    "sync_room": true,
+    "creation_statement": true,
+    "with_associate": true,
+    "associated_acts": true
+  },
+  "approval": {
+    "confirmed": false,
+    "note": "The API returned raw status 1 but no explicit approval conclusion for the new version."
+  },
+  "cleanup": {
+    "cleanup_complete": true,
+    "credential_kind": "mobile"
+  }
+}

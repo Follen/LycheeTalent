@@ -1,0 +1,51 @@
+{
+  "platform": "dd",
+  "channel": "fupload",
+  "action": "plugin-update",
+  "target": {
+    "sn": "40ce264bd1714ceb89132f5157f22869",
+    "name": "荔枝天赋",
+    "share_code": "766554"
+  },
+  "before": {
+    "version": "1.1.1",
+    "version_sn": "9d789b5df36d4d2fb781dfe4ce3d184c",
+    "game_types": [
+      10001
+    ],
+    "game_versions": [
+      "12.1.5"
+    ],
+    "scope": "public",
+    "status": 1,
+    "need_buy": false,
+    "need_anchor_vip": false,
+    "creation_statement": "original"
+  },
+  "target_version": "1.1.2",
+  "tag": "v1.1.2",
+  "source_tree": "d1c1f376f2c63ae782e8fdeb1020311840c89071",
+  "package_sha256": "755491f5c5481c91dd62f21fde00f6c60c6342fdf745c550e78ece0857ce3803",
+  "package_bytes": 1146489,
+  "verified_files": 61,
+  "packages": 14,
+  "write_order": [
+    "01-update.json"
+  ],
+  "unchanged_fields": [
+    "description",
+    "html_desc",
+    "logo",
+    "detail_imgs",
+    "scope",
+    "commercial_settings"
+  ],
+  "expected_readback": {
+    "name": "荔枝天赋",
+    "version": "1.1.2",
+    "game_versions": [
+      "12.1.5"
+    ]
+  },
+  "authorization": "User explicitly requested merging PR 31 and publishing to DD and NewBeeBox without further confirmation; AGENTS.md also authorizes release."
+}

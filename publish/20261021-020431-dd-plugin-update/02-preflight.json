@@ -1,0 +1,6 @@
+{
+  "command": "fupload dd plugin update --input 01-update.json --dry-run",
+  "success": true,
+  "dry_run": true,
+  "note": "Local schema and file validation only; target ownership and version options were checked in the active DD task session."
+}
