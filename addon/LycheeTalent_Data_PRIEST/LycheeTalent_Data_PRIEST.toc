@@ -3,5 +3,5 @@
 ## IconTexture: Interface\AddOns\LycheeTalent\Media\talent-icon.tga
 ## LoadOnDemand: 1
 ## Dependencies: LycheeTalent
-## Version: 1.1.1
+## Version: 1.1.2
 Data.lua
