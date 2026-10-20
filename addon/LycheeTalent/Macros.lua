@@ -25,7 +25,10 @@ function M:Scan()
     return out
 end
 function M:Same(a,b,ignoreName)
-    return a and b and (ignoreName or a.name==b.name) and a.icon==b.icon and a.body==b.body
+    -- Final line feeds can differ between saved and native macro bodies.
+    -- Compare those as the same commands without changing the saved text.
+    return a and b and (ignoreName or a.name==b.name) and a.icon==b.icon
+        and (a.body==b.body or a.body:gsub("\n+$","")==b.body:gsub("\n+$",""))
 end
 function M:Named(native,name)
     local found
