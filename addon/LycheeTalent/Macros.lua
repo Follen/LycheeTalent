@@ -33,7 +33,7 @@ end
 function M:Named(native,name)
     local found
     for index,macro in pairs(native) do
-        if macro.name==name then if found then return end;found=index end
+        if macro.name==name then if found then return nil,"ambiguous" end;found=index end
     end
     return found
 end
@@ -69,7 +69,7 @@ function M:Pack(snapshot,native)
 end
 function M:Plan(snapshot,protected)
     local native=self:Scan();local owned=self:Owned(native)
-    local plan={bindings={},writes={},native=native};local used={}
+    local plan={bindings={},existing={},writes={},native=native};local used={}
     local refs,seen={},{}
     for _,entry in ipairs(snapshot.slots) do
         if entry.kind=="macro" and not seen[entry.id] then seen[entry.id]=true;refs[#refs+1]=entry.id end
@@ -82,7 +82,7 @@ function M:Plan(snapshot,protected)
         for index,value in pairs(native) do
             if not found and self:Same(macro,value,owned[index]~=nil) then found=index end
         end
-        if found then plan.bindings[ref]=found;used[found]=true end
+        if found then plan.bindings[ref]=found;plan.existing[ref]=native[found];used[found]=true end
     end
     local account,limit=self:Limits();local count=0
     for index in pairs(native) do if index>account then count=count+1 end end
@@ -111,38 +111,62 @@ function M:Plan(snapshot,protected)
     end
     return plan
 end
+local function failure(phase,name,index,reason)
+    return nil,"BARS_MACRO",{phase=phase,macro=name,index=index,reason=reason}
+end
 function M:Execute(plan)
     plan.undo={}
+    local native=self:Scan()
     for _,write in ipairs(plan.writes) do
-        local undo={name=write.name,before=write.index and copy(plan.native[write.index]),record=write.record}
+        -- A preceding native call can renumber macros. Never edit a replacement
+        -- at the planned index or reclaim a managed macro changed elsewhere.
+        local index,ambiguous=self:Named(native,write.name)
+        local phase=write.index and "macro-edit" or "macro-create"
+        if write.index then
+            if not index or not self:Same(native[index],plan.native[write.index]) then
+                return failure(phase,write.name,index,ambiguous or (index and "changed" or "missing"))
+            end
+        elseif index or ambiguous then return failure(phase,write.name,index,"name-in-use") end
+        local undo={name=write.name,before=index and copy(native[index]),record=write.record}
         plan.undo[#plan.undo+1]=undo
-        local ok,index=pcall(function()
-            if write.index then return EditMacro(write.index,write.name,write.macro.icon,write.macro.body) end
+        local ok,err=pcall(function()
+            if index then return EditMacro(index,write.name,write.macro.icon,write.macro.body) end
             return CreateMacro(write.name,write.macro.icon,write.macro.body,true)
         end)
-        local native=self:Scan()
-        index=type(index)=="number" and index or self:Named(native,write.name)
-        if not ok or not index or not self:Same(native[index],write.macro,true) then return nil,"BARS_MACRO" end
-        if not undo.record then
-            undo.record={};self:Pool()[#self:Pool()+1]=undo.record;undo.created=true
+        native=self:Scan()
+        index,ambiguous=self:Named(native,write.name)
+        if index then
+            undo.after=copy(native[index])
+            -- A native call may mutate and then throw. Track the created macro
+            -- so failed cleanup cannot leave an unregistered execution slot.
+            if not undo.record then
+                undo.record={};self:Pool()[#self:Pool()+1]=undo.record;undo.created=true
+            end
+            for k,v in pairs(native[index]) do undo.record[k]=v end
         end
-        for k,v in pairs(native[index]) do undo.record[k]=v end
+        if not ok or not index or not self:Same(native[index],write.macro,true) then
+            return failure(phase,write.name,index,not ok and tostring(err):sub(1,240) or ambiguous or (index and "content-mismatch" or "missing"))
+        end
         for _,ref in ipairs(write.refs) do plan.bindings[ref]=index end
     end
     -- Creation may renumber native indices. Resolve all bindings again after
     -- the final write, including unchanged user macros selected by the plan.
-    local current=self:Scan()
-    for ref,index in pairs(plan.bindings) do
-        local expected=plan.native[index]
-        if expected and not self:Same(current[index],expected) then
-            for candidate,value in pairs(current) do
-                if self:Same(value,expected) then plan.bindings[ref]=candidate;break end
+    for ref,expected in pairs(plan.existing) do
+        local index=plan.bindings[ref]
+        if not self:Same(native[index],expected) then
+            index=nil
+            for candidate,value in pairs(native) do
+                if self:Same(value,expected) then index=candidate;break end
             end
         end
+        if not index then return failure("macro-bind",expected.name,plan.bindings[ref],"missing") end
+        plan.bindings[ref]=index
     end
     for _,write in ipairs(plan.writes) do
-        local index=self:Named(current,write.name)
-        if not index or not self:Same(current[index],write.macro,true) then return nil,"BARS_MACRO" end
+        local index,ambiguous=self:Named(native,write.name)
+        if not index or not self:Same(native[index],write.macro,true) then
+            return failure("macro-bind",write.name,index,ambiguous or (index and "content-mismatch" or "missing"))
+        end
         for _,ref in ipairs(write.refs) do plan.bindings[ref]=index end
     end
     return true
@@ -158,23 +182,40 @@ function M:PreserveNames(snapshot,previous)
     return snapshot
 end
 function M:Rollback(plan)
-    local ok=true
+    local failures={}
     for n=#(plan.undo or {}),1,-1 do
-        local undo=plan.undo[n];local native=self:Scan();local index=self:Named(native,undo.name)
-        local called=pcall(function()
+        local undo=plan.undo[n]
+        local called,restored,reason=pcall(function()
+            local native=self:Scan();local index,ambiguous=self:Named(native,undo.name)
+            if ambiguous then return nil,ambiguous end
             if undo.before then
-                if not index then error("missing macro") end
-                EditMacro(index,undo.before.name,undo.before.icon,undo.before.body)
-                for k,v in pairs(undo.before) do undo.record[k]=v end
-                if not self:Same(self:Read(index),undo.before) then error("macro rollback") end
-            elseif index then DeleteMacro(index) end
+                if not index then return nil,"missing" end
+                if not self:Same(native[index],undo.before) then
+                    if not self:Same(native[index],undo.after) then return nil,"changed" end
+                    local ok,err=pcall(EditMacro,index,undo.before.name,undo.before.icon,undo.before.body)
+                    native=self:Scan();index,ambiguous=self:Named(native,undo.name)
+                    if not index or not self:Same(native[index],undo.before) then
+                        return nil,not ok and tostring(err):sub(1,240) or ambiguous or "content-mismatch"
+                    end
+                end
+                for k,v in pairs(native[index]) do undo.record[k]=v end
+            elseif index then
+                if not self:Same(native[index],undo.after) then return nil,"changed" end
+                local ok,err=pcall(DeleteMacro,index)
+                index,ambiguous=self:Named(self:Scan(),undo.name)
+                if index or ambiguous then return nil,not ok and tostring(err):sub(1,240) or ambiguous or "not-deleted" end
+            end
+            return true
         end)
-        if called and undo.created then
+        if called and restored and undo.created then
             local pool=self:Pool();for i=#pool,1,-1 do if pool[i]==undo.record then table.remove(pool,i) end end
         end
-        ok=called and ok
+        if not called or not restored then
+            failures[#failures+1]={phase=undo.before and "macro-edit" or "macro-delete",macro=undo.name,
+                reason=called and reason or tostring(restored):sub(1,240)}
+        end
     end
-    return ok
+    return #failures==0,#failures>0 and failures or nil
 end
 function M:Physical(snapshot,bindings)
     local out=copy(snapshot)

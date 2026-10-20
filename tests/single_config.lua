@@ -256,3 +256,16 @@ assert(not A.Apply.op and char.lastAttempt.reason=='BARS_CURSOR' and cursor.id==
 assert(char.recovery==previousRecovery and B:Get(testSpec,'b',true).slots[1].id==previousLayout,
  'cursor interruption preserves the prior backup and layout')
 print('PASS unreadable macro integration: talents switch, other actions restore, preserved slots reported, early failures recorded')
+
+-- Incomplete rollback pauses ownership. Retrying the same build must read the
+-- saved target without first replacing it with the partially restored bars.
+cursor=nil
+for _,i in ipairs({77,78,113,114})do slots[i]={}end
+local retryTarget=B:Get(testSpec,nil,true).slots[1].id
+slots[1]={kind='spell',id=999,sub='spell'}
+B.pendingSpec=testSpec;B.resumeFailed=true
+assert(not A.Apply:CurrentBuildID())
+assert(A.Apply:Start(builds.b,true));settle()
+assert(char.lastAttempt.reason=='APPLY_SUCCESS' and slots[1].id==retryTarget)
+assert(B:Get(testSpec,nil,true).slots[1].id==retryTarget and not B.pendingSpec and not B.resumeFailed)
+print('PASS explicit recovery keeps the saved target across pre-switch capture')
