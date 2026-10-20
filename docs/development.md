@@ -25,6 +25,8 @@ lua tests/actionbar_edgecases.lua override
 lua tests/actionbar_edgecases.lua pickup-fallback
 lua tests/actionbar_edgecases.lua random-mount
 lua tests/macro_identity.lua
+lua tests/macro_line_endings.lua
+lua tests/macro_transactions.lua
 lua tests/legacy_macro_migration.lua
 lua tests/unreadable_macros.lua
 lua tests/actionbar_capture_events.lua
@@ -81,7 +83,11 @@ powershell -File tools/package.ps1
 
 `actionbar_capture_events.lua` 覆盖宏正文／名称／图标编辑、500 次被动槽位刷新、同步／延迟通知、自身宏替换隔离、删除重编号、专精往返与重载。宏编辑和退出检查同时确认玩家光标不被改动。`macro_identity.lua` 覆盖宏原文恢复、同名宏、旧编号被替换、角色宏槽位复用、容量不足、宏与槽位回滚及 61 槽直接读取。两者使用 `macro_runtime.lua` 提供的原生 API 替身。
 
-`actionbar_profiles.lua` 验证默认共用、显式独立和专精隔离；`single_config.lua` 验证单配置复用、共用／独立往返、重载后保存、读取前显示进度、首次读取失败，以及目标布局无效或宏空位不足时不提交天赋。`unreadable_macros.lua` 保留不可读宏槽位的回归检查。UI 替身检查默认未勾选和控件状态。
+`macro_line_endings.lua` 覆盖保存正文与原生正文仅差末尾 LF 时的复用、创建和执行宏编辑，确认保存原文不变，实际命令或图标变化仍被检出。2026-10-21 读取的本机恢复记录包含 `BARS_MACRO`，其中两条保存宏与切换前原生宏分别仅差一个末尾 LF；按这一读回结果回放生产恢复路径，修复前可复现同一错误。该检查是保存数据回放与原生返回值替身验证，没有在朋友客户端复现，也未据此断言是哪一个原生 API 添加了换行。
+
+`macro_transactions.lua` 在生产恢复路径中注入宏编号变化、外部编辑、原生调用异常、删除或编辑静默失败，以及动作放置期间的宏内容变化。覆盖失效绑定拒绝、原有宏保护、部分写入清理、回滚读回、登记保留、失败明细和目标 SV 保留；回滚未完成后的延迟事件不能覆盖保存布局，显式恢复成功后重新接收正常编辑。正常创建排序也有对应通过用例。这些故障是替身注入，不代表已在实机观察到所有情形。
+
+`actionbar_profiles.lua` 验证默认共用、显式独立和专精隔离；`single_config.lua` 验证单配置复用、共用／独立往返、重载后保存、读取前显示进度、首次读取失败、目标布局无效或宏空位不足时不提交天赋，以及回滚未完成后再次应用时保留原目标布局。`unreadable_macros.lua` 保留不可读宏槽位的回归检查。UI 替身检查默认未勾选和控件状态。
 
 `native_partial_load.lua` 用噬灭“虚空净化”（节点 110174、入口 136699）模拟原生导入后已保存配置和 Ready 草稿同时遗漏一项请求等级，覆盖提交前补齐、目标已完整、节点不可购买、提交被拒绝、Starter 交接，以及首次新建／已有工作配置的完整应用路径。它使用生产准备与事务代码，原生返回值由替身提供，不是该角色的实机复现。
 

@@ -248,7 +248,7 @@ local function findSlot(slots,entry,except)
         if slot~=except and actual and same(actual,entry) then return slot end
     end
 end
-function B:RestorePhysical(snapshot)
+function B:RestorePhysical(snapshot,validate)
     local spec=A:GetSpec()
     if InCombatLockdown() then return nil,"COMBAT" end
     if GetCursorInfo() then return nil,"BARS_CURSOR" end
@@ -334,12 +334,18 @@ function B:RestorePhysical(snapshot)
         end
         verified={version=1,spec=spec,slots=slots}
     end
+    local failureCode,failureDetail
     local ok,reason=pcall(function()
         for _,slot in ipairs(changes) do
             if InCombatLockdown() or A:GetSpec()~=spec then error("BARS_CONTEXT") end
             put(slot,target.slots[slot])
         end
         verify(target)
+        if validate then
+            local valid
+            valid,failureCode,failureDetail=validate(verified)
+            if not valid then error(failureCode) end
+        end
     end)
     local rolledBack=true
     if not ok then
@@ -355,7 +361,11 @@ function B:RestorePhysical(snapshot)
         else rolledBack=false end
         self.recovery={before=before,requested=clone(snapshot),rolledBack=rolledBack}
     end
-    if not ok then return nil,"BARS_RESTORE",{reason=tostring(reason),rolledBack=rolledBack} end
+    if not ok then
+        local detail=failureDetail or {reason=tostring(reason)}
+        detail.rolledBack=rolledBack
+        return nil,failureCode or "BARS_RESTORE",detail
+    end
     self.verified=verified
     self.verified.deferredSpells=next(deferredSpells) and deferredSpells or nil
     if #preservedSlots>0 then return true,nil,{preservedSlots=preservedSlots} end
@@ -382,32 +392,44 @@ function B:Restore(snapshot)
     target.deferredSpells=nil
     local before,why=self:Capture(spec);if not before then return nil,why end
     local plan;plan,why,target=self:Plan(target,before);if not plan then return nil,why end
-    self.writing=true
+    self.writing=true;self.verified=nil
     local ok,result,reason,detail=pcall(function()
-        local written,err=A.Macros:Execute(plan)
-        if not written then return nil,err end
-        local restored,restoreWhy,restoreDetail=self:RestorePhysical(A.Macros:Physical(target,plan.bindings))
-        if not restored then return nil,restoreWhy,restoreDetail end
-        local verified=A.Macros:Pack(self.verified)
-        verified.deferredSpells=self.verified.deferredSpells
-        -- Preserve each saved display name while its execution slot uses a
-        -- registered pool name. The binding records the actual native name.
-        for slot,entry in ipairs(target.slots) do
-            local actual=verified.slots[slot]
-            if entry.kind=="macro" and actual.kind=="macro"
-                and A.Macros:Same(target.macros[entry.id],verified.macros[actual.id],true) then
-                verified.macros[actual.id]=clone(target.macros[entry.id])
+        local written,err,writeDetail=A.Macros:Execute(plan)
+        if not written then return nil,err,writeDetail end
+        local verified
+        local restored,restoreWhy,restoreDetail=self:RestorePhysical(A.Macros:Physical(target,plan.bindings),function(physical)
+            local why
+            verified,why=A.Macros:Pack(clone(physical))
+            if not verified then return nil,why,{phase="macro-verify"} end
+            -- Validate content while action-slot rollback is still available.
+            -- Never save a different native macro as the requested SV content.
+            for slot,entry in ipairs(target.slots) do
+                if entry.kind=="macro" then
+                    local actual=verified.slots[slot]
+                    if actual.kind~="macro" or not A.Macros:Same(target.macros[entry.id],verified.macros[actual.id],true) then
+                        return nil,"BARS_MACRO",{phase="macro-verify",slot=slot,macro=target.macros[entry.id].name,reason="content-mismatch"}
+                    end
+                    verified.macros[actual.id]=clone(target.macros[entry.id])
+                end
             end
-        end
+            return true
+        end)
+        if not restored then return nil,restoreWhy,restoreDetail end
+        verified.deferredSpells=self.verified.deferredSpells
         self.verified=verified
         return true,nil,restoreDetail
     end)
     if not ok or not result then
-        local rolledBack=A.Macros:Rollback(plan)
+        local rolledBack,macroRollback=A.Macros:Rollback(plan)
         detail=type(detail)=="table" and detail or {}
         detail.rolledBack=rolledBack and detail.rolledBack~=false
-        self.recovery={before=before,requested=target,rolledBack=detail.rolledBack}
+        detail.macroRollback=macroRollback
+        self.verified=nil
+        self.recovery={before=before,requested=target,rolledBack=detail.rolledBack,detail=detail}
+        if not detail.rolledBack then self.pendingSpec=spec;self.resumeFailed=true end
         reason=ok and reason or "BARS_RESTORE"
+    elseif self.pendingSpec==spec and self.resumeFailed then
+        self.pendingSpec=nil;self.resumeFailed=nil
     end
     self.writing=nil;self.macroBaseline=A.Macros:Scan()
     if not ok or not result then return nil,reason,detail end
