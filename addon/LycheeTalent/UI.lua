@@ -193,6 +193,12 @@ function U:ShowError(key)
     return true
 end
 function U:ShowApplyError(buildID,key,partial)
+    if partial then
+        self.applyError=nil
+        if self.errorText then self.errorText:Hide() end
+        self:ShowApplySuccess(buildID,GetTime()-1.5)
+        return
+    end
     self.applyError={buildID=buildID,key=key,partial=partial}
     if not self:ShowError(key) then A:Message(key) else self:Refresh() end
 end
@@ -240,11 +246,6 @@ function U:Refresh()
     A.Catalog:Load()
     self.difficulty=self.difficulty or A.Store.character.raidDifficulty or 5
     A.Catalog:Query(spec,self.scene,self.scene=="mine" and "user" or "builtin","",nil,self.difficulty,self.results)
-    local bars=A.ActionBars:Spec(spec);local applied=bars and bars.applied
-    if not A.Apply.op and applied and applied.partial and not self.applyError then
-        self.applyError={buildID=applied.id,key="BARS_PENDING",partial=true}
-        self:ShowError("BARS_PENDING")
-    end
     if A.Apply.op and self.errorText then self.errorText:Hide() end
     self:LayoutRows()
     local maximum=math.max(0,#self.results-self.visibleRows)
@@ -279,7 +280,7 @@ function U:Refresh()
             row.title:SetText(A.Catalog:Title(b))
             if applying then self:ClearApplyFeedback(row) end
             local failure=not applying and self.applyError and self.applyError.buildID==b.id and self.applyError
-            row.progress:SetText(failure and (failure.partial and L.BARS_PENDING_SHORT or L.APPLY_FAILED_SHORT) or
+            row.progress:SetText(failure and L.APPLY_FAILED_SHORT or
                 (b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
             color(row.progress,failure and C.hot or row.successRemaining and C.red or C.muted)
             row.more:SetShown(b.id~=applying and not row.successRemaining and not failure)
@@ -479,10 +480,7 @@ function U:UpdateHeroControls()
     self.heroSelector:SetValue(position)
 end
 function U:UpdateBarsPending(buildID,pending)
-    if pending then
-        self.applyError={buildID=buildID,key="BARS_PENDING",partial=true}
-        self:ShowError("BARS_PENDING")
-    elseif self.applyError and self.applyError.buildID==buildID and self.applyError.key=="BARS_PENDING" then
+    if self.applyError and self.applyError.buildID==buildID and self.applyError.key=="BARS_PENDING" then
         self.applyError=nil
         if self.errorText and self.errorText:GetText()==L.BARS_PENDING then self.errorText:Hide() end
     end
@@ -1356,7 +1354,18 @@ function U:ShowReminder(prompt)
     if not self.reminder then
         local p=CreateFrame("Frame","LycheeTalentReminder",UIParent);self.reminder=p
         p.lycheeContext=newContext();p.lycheeContext:SetWindow(p)
-        p:SetWidth(380);p:SetPoint("CENTER",UIParent,"CENTER",0,150);p:SetFrameStrata("DIALOG");p:SetClampedToScreen(true);p:EnableMouse(true)
+        p:SetWidth(380);p:SetFrameStrata("DIALOG");p:SetClampedToScreen(true)
+        local position=A.Store.character.reminderPosition
+        local anchors={TOPLEFT=true,TOP=true,TOPRIGHT=true,LEFT=true,CENTER=true,RIGHT=true,BOTTOMLEFT=true,BOTTOM=true,BOTTOMRIGHT=true}
+        if type(position)=="table" and anchors[position.point] and anchors[position.relativePoint]
+            and type(position.x)=="number" and math.abs(position.x)<100000
+            and type(position.y)=="number" and math.abs(position.y)<100000 then
+            p:SetPoint(position.point,UIParent,position.relativePoint,position.x,position.y)
+        else p:SetPoint("CENTER",UIParent,"CENTER",0,150) end
+        p.drag=p.lycheeContext.C.Draggable(p,{onStop=function(frame)
+            local point,_,relativePoint,x,y=frame:GetPoint()
+            A.Store.character.reminderPosition={point=point,relativePoint=relativePoint,x=x,y=y}
+        end})
         rounded(p,C.bg,10)
         p.logo=p:CreateTexture(nil,"ARTWORK");p.logo:SetSize(44,44);p.logo:SetPoint("TOPLEFT",10,-9);p.logo:SetTexture(media.."logo.tga")
         p.context=text(p,18,C.text,"",0,0)
@@ -1371,12 +1380,9 @@ function U:ShowReminder(prompt)
             row.label:ClearAllPoints();row.label:SetPoint("LEFT",44,0);row.label:SetWidth(212);row.label:SetJustifyH("LEFT");row.label:SetMaxLines(1)
             row.label:SetFont(STANDARD_TEXT_FONT,16,"")
             row.icon=row:CreateTexture(nil,"ARTWORK");row.icon:SetSize(32,32);row.icon:SetPoint("LEFT",0,0);row.icon:SetTexCoord(.08,.92,.08,.92)
-            local action=CreateFrame("Frame",nil,row);action:SetSize(68,32);action:SetPoint("RIGHT");rounded(action,C.red,6)
-            row.actionLabel=text(action,10,C.text,L.REMINDER_SWITCH,0,0)
-            row.actionLabel:ClearAllPoints();row.actionLabel:SetPoint("CENTER");row.actionLabel:SetFont(STANDARD_TEXT_FONT,14,"")
-            row:HookScript("OnEnter",function()action:SetAlpha(.8)end)
-            row:HookScript("OnLeave",function()action:SetAlpha(1)end)
-            row:HookScript("OnHide",function()action:SetAlpha(1);row.label:SetAlpha(1)end)
+            row.switch=p.lycheeContext.C.Button(row,L.REMINDER_SWITCH,68,function(_,mouse)row.action(row,mouse)end,
+                {variant="primary",height=32,radius=6,fontSize=14,lineHeight=20})
+            row.switch:SetPoint("RIGHT")
             p.rows[i]=row
         end
         function p:Render()
@@ -1388,6 +1394,7 @@ function U:ShowReminder(prompt)
             self:SetScale(math.min(1,(UIParent:GetHeight()-40)/height,(UIParent:GetWidth()-40)/380))
             for i,row in ipairs(self.rows) do
                 local build=self.prompt.builds[self.offset+i];row.buildID=build and build.id;row:SetShown(build~=nil)
+                row:SetAvailable(not A.Apply.op);row.switch:SetAvailable(not A.Apply.op)
                 if build then row.label:SetText(build.source=="builtin" and L.LYCHEE_RECOMMENDATION or build.name);buildIcon(row.icon,build.icon,true)end
             end
             self.previous:ClearAllPoints();self.previous:SetPoint("TOPRIGHT",-56,-footer)

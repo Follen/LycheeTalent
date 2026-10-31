@@ -230,9 +230,10 @@ PickupAction=function(i,keep)
  if slots[i].unreadable then assert(keep==true,'unreadable macro must stay in place');return end
  return copiedPickup(i,keep)
 end
+A.message=nil
 assert(A.Apply:Start(builds.b,true));settle()
 assert(activeCode=='beta' and not A.Apply.op and char.lastAttempt.reason=='BARS_PENDING','talent switch completes')
-assert(A.message=='BARS_PENDING','partial action restore is visible, not silent success')
+assert(A.message==nil,'confirmed talents do not print a pending action-bar warning')
 assert(char.recovery.actionBars.reason=='BARS_PARTIAL','partial restore is retained in diagnostics')
 for _,i in ipairs({77,78,113,114})do assert(slots[i].unreadable)end
 assert(slots[1].id==902,'readable actions still restore')
@@ -290,6 +291,8 @@ for _,completeRollback in ipairs({true,false}) do
  local state=B:Spec(testSpec)
  assert(activeCode==id and state.applied.id==id and state.applied.partial and state.applied.barsPending)
  assert(char.lastAttempt.reason=="BARS_PENDING" and char.lastAttempt.partial and char.lastAttempt.actionBarsReason=="BARS_RESTORE")
+ assert(char.failures and char.failures[#char.failures].buildID==id and char.failures[#char.failures].reason=="BARS_PENDING","partial recovery keeps a bounded diagnostic summary")
+ local failureCount=#char.failures
  assert(char.recovery.status=="partial" and char.recovery.actionBars.detail.rolledBack==completeRollback)
  assert(state.pendingBars.snapshot.slots[1].id==7001 and B:Get(testSpec,id,false).slots[1].id==7001)
  assert(B.pendingSpec==testSpec and B.resumeFailed and not B:Owner() and not A.Apply:CurrentBuildID())
@@ -306,5 +309,7 @@ for _,completeRollback in ipairs({true,false}) do
  assert(commits==beforeRetryCommits and loads==beforeRetryLoads,"explicit retry only restores bars when talents already match")
  assert(slots[1].id==7001 and slots[2].id==7002 and not state.pendingBars and not B.pendingSpec and not B.resumeFailed)
  assert(char.lastAttempt.reason=="APPLY_SUCCESS" and char.recovery.status=="complete" and not state.applied.partial)
+ assert(#char.failures==failureCount and char.failures[#char.failures].buildID==id,"a later success cannot erase the last failure reason")
 end
+assert(#char.failures<=8,'failure summaries have a fixed eight-record limit')
 print("PASS committed talents plus failed bars: complete/incomplete rollback, durable target, paused autosave/login, bars-only explicit retry")

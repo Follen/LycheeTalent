@@ -83,6 +83,11 @@ function X:InvalidateCurrent(event)
     if event=="PLAYER_LEAVING_WORLD" or event=="PLAYER_LOGOUT" then self.currentWorldInactive=true
     elseif event=="PLAYER_ENTERING_WORLD" then self.currentWorldInactive=nil end
 end
+function X:RememberFailure(record)
+    local char=A.Store.character
+    char.failures=char.failures or {};char.failures[#char.failures+1]=record
+    if #char.failures>8 then table.remove(char.failures,1) end
+end
 function X:CurrentBuildID(allowPendingBars)
     if self.currentWorldInactive or InCombatLockdown() then return self:InvalidateCurrent() end
     if A.ActionBars.pendingSpec and not allowPendingBars then return end
@@ -128,6 +133,18 @@ function X:Finish(ok,key)
     char.lastAttempt={revision=self.revision,time=time(),buildID=op.buildID,spec=op.spec,
         shared=op.shared,stage=op.stage,slot=op.failedSlot,luaError=op.luaError,
         reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED"),partial=op.partial,actionBarsReason=op.barsReason}
+    if not ok or op.partial then
+        local detail=op.recovery and char.recovery==op.recovery and char.recovery.actionBars and char.recovery.actionBars.detail
+        if detail then
+            char.lastAttempt.phase=detail.phase
+            if detail.reason then char.lastAttempt.detail=tostring(detail.reason):sub(1,240) end
+            local slots=detail.missingMacros or detail.preservedSlots
+            if slots then char.lastAttempt.slots=table.concat(slots,",") end
+        end
+        -- A later successful retry must not erase the preceding reason. These
+        -- are eight small summaries, never layout, tree or macro-body copies.
+        self:RememberFailure(char.lastAttempt)
+    end
     -- A failed initial capture must not destroy an earlier recovery backup.
     if op.recovery and char.recovery==op.recovery then
         char.recovery.status=op.partial and "partial" or ok and "complete" or "interrupted"
@@ -136,14 +153,14 @@ function X:Finish(ok,key)
         char.recovery.targetName=op.targetName
         char.recovery.stage=op.stage
     end
-    if not ok or key then
+    if not ok then
         if A.UI.ShowApplyError then A.UI:ShowApplyError(op.buildID,char.lastAttempt.reason,ok)
         else A:Message(char.lastAttempt.reason) end
     end
-    if ok and not op.partial and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
+    if ok and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
     if A.UI.frame and A.UI.frame:IsShown() then
         A.UI:Refresh()
-        if ok and not key and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID,op.startedAt) end
+        if ok and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID,op.startedAt) end
     end
 end
 function X:CheckContext()

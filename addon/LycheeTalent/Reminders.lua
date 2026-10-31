@@ -84,7 +84,7 @@ function R:Check()
     if self.visible and self.visible.key~=key then self:Hide() end
     if A.Apply.op then self:Hide();return end
     A.Catalog:Load()
-    local current=A.Apply:CurrentBuildID()
+    local current=A.Apply:CurrentBuildID(true)
     if self.visible then
         for _,build in ipairs(self.visible.builds) do if build.id==current then self:Hide();return end end
     end

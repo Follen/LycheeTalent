@@ -477,10 +477,11 @@ function B:Owner()
     local spec=A:GetSpec();local state=self:Spec(spec)
     if self.observedSpec and self.observedSpec~=spec then return end
     local applied=state and state.applied
-    if self.pendingSpec or state.pendingBars or not applied or not A.Apply:CurrentBuildID() then return end
+    if not state or self.pendingSpec or state.pendingBars or not applied or not A.Apply:CurrentBuildID() then return end
     return spec,applied
 end
 function B:ObserveMacros()
+    if not self:Spec(A:GetSpec()) then return end
     A.Macros:Current()
     if self.writing or self.reading or A.Apply.op then return end
     local spec,applied=self:Owner()
@@ -524,14 +525,18 @@ function B:ResumeSpec()
     if state.pendingBars then self.resumeFailed=true;return end
     local snapshot=self:Get(spec,applied.id,applied.shared);if not snapshot then return end
     local ok,why,detail=self:Restore(snapshot)
-    if not ok then self.resumeFailed=true;if A.Message then A:Message(why) end;return end
+    if not ok then
+        self.resumeFailed=true
+        if A.Apply.RememberFailure then A.Apply:RememberFailure({time=time(),spec=spec,buildID=applied.id,
+            reason="BARS_PENDING",partial=true,actionBarsReason=why,stage="resume-bars",slot=detail and detail.slot}) end
+        return
+    end
     self.pendingSpec=nil
     self:SaveLayout(spec,applied.id,applied.shared,self.verified)
     applied.partial=detail and (detail.missingMacros~=nil or detail.preservedSlots~=nil) or false
-    if applied.partial then
-        if A.UI and A.UI.ShowApplyError then A.UI:ShowApplyError(applied.id,"BARS_PENDING",true)
-        elseif A.Message then A:Message("BARS_PENDING") end
-    end
+    if applied.partial and A.Apply.RememberFailure then A.Apply:RememberFailure({time=time(),spec=spec,buildID=applied.id,
+        reason="BARS_PENDING",partial=true,actionBarsReason="BARS_PARTIAL",stage="resume-bars",
+        slots=table.concat(detail.missingMacros or detail.preservedSlots,",")}) end
 end
 function B:QueueObservation()
     if self.queued then return end
@@ -546,8 +551,8 @@ local currentEvents={PLAYER_ENTERING_WORLD=true,PLAYER_LEAVING_WORLD=true,ACTIVE
     PLAYER_REGEN_ENABLED=true}
 function B:Init()
     if self.events then return end
-    A.Macros:Initialize()
     local current=self:Spec(A:GetSpec())
+    if current then A.Macros:Initialize() end
     if current and current.pendingBars then self.pendingSpec=A:GetSpec();self.resumeFailed=true end
     local events=CreateFrame("Frame");self.events=events
     for _,event in ipairs({"UPDATE_MACROS","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD",
@@ -569,6 +574,12 @@ function B:Init()
             self:QueueObservation()
         end
         if self.reading or self.writing or A.Apply.op then return end
+        -- Cursor artwork/held content does not change action slots. Only a
+        -- pending specialization restore needs to wake when the cursor clears.
+        if event=="CURSOR_CHANGED" then
+            if self.pendingSpec and not self.resumeFailed then self:QueueObservation() end
+            return
+        end
         if event=="UPDATE_MACROS" then self:ObserveMacros();return end
         self:QueueObservation()
     end)

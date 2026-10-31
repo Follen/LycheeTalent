@@ -5,6 +5,45 @@ T.cache={}; T.order={}
 function T:ReadEntries(config)
     local f=self:Frame(); if not f then return nil end
     local tree=C_ClassTalents.GetTraitTreeForSpec(A:GetSpec())
+    -- These flags match serialization v2; newer formats keep the native codec.
+    if type(f.CreateImportLoadoutEntryInfoFromSingleNode)=="function"
+        and type(f.CreateImportLoadoutEntryInfoFromTieredNode)=="function"
+        and type(f.GetActiveEntryIndex)=="function"
+        and C_Traits.GetLoadoutSerializationVersion()==2 then
+        -- Mirror native WriteLoadoutContent -> ReadLoadoutContent flags, then
+        -- let Blizzard allocate entries (especially Tiered per-entry ranks).
+        -- No serialized string or second GetNodeInfo pass is needed.
+        local nodes=C_Traits.GetTreeNodes(tree)
+        if not nodes then return nil end
+        local results={}
+        for _,id in ipairs(nodes) do
+            local node=C_Traits.GetNodeInfo(config,id)
+            if not node then return nil end -- never return a partial tree as complete
+            local purchased=node.ranksPurchased>0
+            local selected=node.activeRank-node.ranksPurchased>0 or purchased
+            if selected then
+                local indexInfo={isNodeSelected=true,isNodeGranted=not purchased,
+                    isPartiallyRanked=false,partialRanksPurchased=0,isChoiceNode=false,choiceNodeSelection=1}
+                if purchased then
+                    indexInfo.isPartiallyRanked=node.ranksPurchased~=node.maxRanks
+                    if indexInfo.isPartiallyRanked then indexInfo.partialRanksPurchased=node.ranksPurchased end
+                    indexInfo.isChoiceNode=node.type==Enum.TraitNodeType.Selection or node.type==Enum.TraitNodeType.SubTreeSelection
+                    if indexInfo.isChoiceNode then
+                        local selection=f:GetActiveEntryIndex(node)
+                        if selection<=0 or selection>4 then
+                            error("Error exporting tree node "..node.ID..". The active choice node entry index ("..selection..") is out of bounds. ")
+                        end
+                        indexInfo.choiceNodeSelection=selection
+                    end
+                end
+                if node.type==Enum.TraitNodeType.Tiered then
+                    f:CreateImportLoadoutEntryInfoFromTieredNode(results,config,node,indexInfo)
+                else f:CreateImportLoadoutEntryInfoFromSingleNode(results,config,node,indexInfo) end
+            end
+        end
+        return results
+    end
+    -- Older/custom native frames can keep their existing roundtrip contract.
     local stream=ExportUtil.MakeExportDataStream()
     f:WriteLoadoutHeader(stream,C_Traits.GetLoadoutSerializationVersion(),A:GetSpec(),C_Traits.GetTreeHash(tree))
     f:WriteLoadoutContent(stream,config,tree)

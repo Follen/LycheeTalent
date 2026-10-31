@@ -40,7 +40,7 @@ Importing or saving adds a build without applying it. All builds share one nativ
 
 The hero talent selector filters recommendations without applying talents. Its choice is remembered per specialization and shared by Mythic+ and Raids; My Builds stays unfiltered. Progress and actionable problems appear in the panel, with ordinary switches staying quiet in chat.
 
-Action bars reuse existing native macros without reserving macro slots or rewriting their bodies. Layouts referencing the same macro use its latest content. Saved macro text remains available as a backup; a deleted macro leaves its action slot intact and is reported as pending.
+Action bars reuse existing native macros without reserving macro slots or rewriting their bodies. Layouts referencing the same macro use its latest content. Saved macro text remains available as a backup; a deleted macro leaves its action slot and recovery record intact. Confirmed talent switches display Applied.
 
 This saved-data upgrade starts fresh without migrating older SavedVariables. Personal builds, preferences and action-bar records are rebuilt on first load; native macros and native talent loadouts remain in the game.
 

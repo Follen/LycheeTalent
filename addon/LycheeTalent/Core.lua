@@ -7,7 +7,7 @@ function A:GetSpec()
 end
 function A:Message(key)
     -- Actionable failures stay beside the controls while the panel is open.
-    if key=="APPLYING" or key=="APPLY_SUCCESS" then return end
+    if key=="APPLYING" or key=="APPLY_SUCCESS" or key=="BARS_PENDING" then return end
     if self.UI and self.UI.ShowError and self.UI:ShowError(key) then self.UI:Refresh();return end
     local text=self.L[key] or key
     print("|cffd53c49"..self.L.TITLE.."|r: "..text)

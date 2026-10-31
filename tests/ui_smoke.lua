@@ -181,8 +181,8 @@ if arg[1]=="hero-controls" then
     local initial=#objects
     for i=1,100 do U.scene=i%2==0 and "mythic" or "raid";U:Refresh() end
     assert(#objects==initial and starts==0,"hero and difficulty controls reuse native objects")
-    U:UpdateBarsPending("colossus",true);assert(U.applyError and U.applyError.partial)
-    U:UpdateBarsPending("colossus",false);assert(not U.applyError and not U.errorText:IsShown(),"resolved pending slots clear old error feedback")
+    U:UpdateBarsPending("colossus",true);assert(not U.applyError,"bar recovery does not replace the confirmed talent result")
+    U:UpdateBarsPending("colossus",false);assert(not U.applyError and not (U.errorText and U.errorText:IsShown()),"bar recovery has no pending warning")
     print("PASS hero controls: native LycheeUI segments, localization/config arguments, remembered selection, no auto apply, missing data, personal page, fixed objects")
     return
 end
@@ -662,10 +662,41 @@ A.Talents.Validate=oldValidate
 local reminderChoice
 A.Reminders={Apply=function(_,id)reminderChoice=id;return true end,Hide=function()A.UI.reminder:Hide()end,RefreshSettings=function()end}
 local prompt={id=contextID,builds={imported}}
+A.Store.character.reminderPosition={point="TOPLEFT",relativePoint="TOPLEFT",x=90,y=-120}
 A.UI:ShowReminder(prompt)
 assert(A.UI.reminder.parent==UIParent,'reminder lives independently of native talent window')
+local reminder=A.UI.reminder
+assert(reminder.point[1]=="TOPLEFT" and reminder.point[2]==UIParent and reminder.point[4]==90 and reminder.point[5]==-120,
+    'reminder restores the saved character anchor')
+local moving,stops=false,0
+reminder.StartMoving=function()moving=true end
+reminder.StopMovingOrSizing=function()moving=false;stops=stops+1 end
+reminder.GetPoint=function()return "BOTTOMRIGHT",UIParent,"BOTTOMRIGHT",-85,135 end
+reminder.scripts.OnMouseDown(reminder,"RightButton");assert(not moving,'only left mouse starts reminder movement')
+reminder.scripts.OnMouseDown(reminder,"LeftButton");assert(moving,'passive reminder surface starts movement')
+reminder.scripts.OnMouseUp(reminder,"LeftButton")
+local savedPosition=A.Store.character.reminderPosition
+assert(not moving and stops==1 and savedPosition.point=="BOTTOMRIGHT" and savedPosition.x==-85 and savedPosition.y==135,
+    'drag release saves the anchor and stops native movement')
+local switch=reminder.rows[1].switch
+local theme=reminder.lycheeContext.Theme
+local function surfaceIs(expected)
+    for i=1,3 do assert(math.abs(switch.fill.color[i]-expected[i])<.00001,'reminder button pointer color') end
+end
+assert(switch.primary and switch:GetWidth()==68 and switch:GetHeight()==32,'reminder uses a compact filled primary button')
+surfaceIs(theme.primary)
+switch.scripts.OnEnter(switch);surfaceIs(theme.primaryHover)
+switch.scripts.OnMouseDown(switch,"LeftButton");surfaceIs(theme.primaryPressed)
+switch.scripts.OnMouseUp(switch,"LeftButton");switch.scripts.OnClick(switch,"LeftButton")
+assert(reminderChoice==imported.id,'primary reminder button applies the same stable build as the row')
+switch.scripts.OnLeave(switch);surfaceIs(theme.primary)
+switch:SetAvailable(false);reminderChoice=nil;switch.scripts.OnClick(switch,"LeftButton")
+assert(not reminderChoice and switch:GetAlpha()==theme.disabledAlpha,'disabled reminder button blocks actions and dims')
+switch:SetAvailable(true)
 A.UI.reminder.rows[1].scripts.OnClick(A.UI.reminder.rows[1]);assert(reminderChoice==imported.id,'reminder dispatches exact stable build ID')
+reminder.scripts.OnMouseDown(reminder,"LeftButton")
 A.UI.reminder:Hide()
+assert(not moving and stops==2,'hiding during a drag stops movement and saves once')
 local overlayObjects=#objects
 for i=1,100 do A.UI:ContextSettings(imported.id);contexts:Hide();A.UI:ShowReminder(prompt);A.UI.reminder:Hide()end
 assert(#objects==overlayObjects,'association and reminder controls reused across 100 openings')
@@ -736,10 +767,11 @@ print=function()output=output+1 end
 A:Message("APPLYING");A:Message("APPLY_SUCCESS");assert(output==0)
 local failedID=A.UI.rows[1].build.id
 A.UI:ShowApplyError(failedID,"BARS_PENDING",true);A.UI:Refresh()
-assert(A.UI.rows[1].progress:GetText()==A.L.BARS_PENDING_SHORT and A.UI.errorText:GetText()==A.L.BARS_PENDING)
+assert(A.UI.rows[1].progress:GetText()==A.L.APPLIED_SHORT and not A.UI.applyError and not (A.UI.errorText and A.UI.errorText:IsShown()),"confirmed talents show Applied during partial bar recovery")
 A:Message("BARS_RESTORE");assert(output==0,"visible errors never spam chat")
 A.UI.frame:Hide();A.UI:ShowApplyError(failedID,"BARS_PENDING",true)
-assert(output==1,"one result yields one hidden-panel notification")
+assert(output==0,"bar recovery does not send a hidden-panel warning")
+A:Message("BARS_RESTORE");assert(output==1,"a failed operation still reports its actual error")
 assert(A.UI.context:IsHiding(),"main context pauses while hidden")
 A.UI:ShowReminder(prompt)
 assert(not A.UI.reminder.lycheeContext:IsHiding(),"reminder owns an independent active context")

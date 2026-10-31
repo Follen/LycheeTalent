@@ -17,6 +17,10 @@ lua tests/ui_smoke.lua pending-prompt
 lua tests/ui_smoke.lua hero-controls
 lua tests/hero_selection.lua
 lua tests/current_build_cache.lua
+lua tests/talent_read_entries.lua
+lua tests/actionbar_spec_ready.lua
+lua tests/persisted_macro_readiness.lua
+lua tests/actionbar_cursor_events.lua
 lua tests/single_config.lua
 lua tests/native_partial_load.lua
 lua tests/starter_build.lua
@@ -101,3 +105,7 @@ powershell -File tools/package.ps1
 `hero_selection.lua` 覆盖合法英雄组合、首次实际英雄优先、每专精记忆、M+／团本共用筛选、个人方案隔离和缺数据／未知值空态。`ui_smoke.lua hero-controls` 使用小型推荐 fixture 与真实 LycheeUI 分段控件，检查中文 API 双参数、只换列表不自动应用、专精重绑／旧双击失效、空态、100 次复用及待处理反馈清除；其余 UI 入口加载真实职业数据包。
 
 `current_build_cache.lua` 使用生产 Apply／ActionBars、Talents 和固定原生序列化代码，检查反复读取当前方案只进行一次全树导出；原生事件、草稿、身份、专精、世界和原生 UI 可用性改变后必须重新确认，应用事务的直接核对不能命中展示缓存。`ui_smoke.lua hero-controls` 同时核对原生英雄图集、元信息复用和悬停不创建提示框。实机前后测量见 [性能记录](../PERFORMANCE.md)。
+
+`actionbar_spec_ready.lua` 与 `persisted_macro_readiness.lua` 通过生产事件入口复现登录早期专精 0／nil、原生宏尚不可读的状态，核对原有 V2 宏引用保留、就绪后恢复以及真实删除不误领替代宏。`actionbar_cursor_events.lua` 检查普通指针变化不再捕获／保存布局，待恢复专精仍等待光标清空，真实槽变和宏编辑继续保存。`single_config.lua` 保留失败恢复信息并核对成功重试不会删除最近失败摘要；UI 回归检查天赋确认后的部分恢复统一显示“已应用”。
+
+`talent_read_entries.lua` 将直接节点读取结果与固定原生导出／解析结果逐字段比较，覆盖 Tiered 等级分摊、赠送节点、非活动英雄系、已保存配置、草稿、异常选择和缺少 helper／格式版本变化的回退。`ui_smoke.lua` 同时检查提醒的拖动、位置保存、隐藏时停止移动，以及主按钮正常、悬停、按下、禁用状态；实际鼠标命中仍需客户端验证。
