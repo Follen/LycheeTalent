@@ -124,6 +124,33 @@ PlayerSpellsFrame:SetHeight(900);PlayerSpellsFrame.scripts.OnSizeChanged()
 assert(A.UI.frame:GetHeight()==900 and A.UI.frame.point[5]==0,"native resize preserves aligned edges")
 assert(#objects==beforeResize,"resize reuses row pools")
 PlayerSpellsFrame:SetHeight(820);PlayerSpellsFrame.scripts.OnSizeChanged()
+if arg[1]=="data-errors" then
+    local U,C=A.UI,A.Catalog
+    local load=C_AddOns.LoadAddOn
+    local exists=true
+    UnitName=function()return "CurrentPlayer"end
+    C.loaded={};C.builds={};C.byID={};C.heroTrees=nil;LycheeTalentData=nil
+    C_AddOns.DoesAddOnExist=function()return exists end
+    C_AddOns.EnableAddOn=function(name,character)
+        assert(name=="LycheeTalent_Data_WARRIOR" and character=="CurrentPlayer")
+    end
+    C_AddOns.LoadAddOn=function()return nil,"DISABLED"end
+    U:Refresh()
+    assert(#U.results==0 and U.emptyTitle:GetText()==A.L.DATA_LOAD_TITLE)
+    assert(U.emptyHelp:GetText()==A.L.DATA_DISABLED,"a native disabled failure has actionable help")
+    assert(not U.heroSelector.buttons[1].enabled and not U.heroSelector.buttons[2].enabled)
+    C_AddOns.LoadAddOn=function()return nil,"CORRUPT"end;U:Refresh()
+    assert(U.emptyHelp:GetText()==string.format(A.L.DATA_LOAD_FAILED,"CORRUPT"))
+    C_AddOns.LoadAddOn=function()return nil end;U:Refresh()
+    assert(U.emptyHelp:GetText()==string.format(A.L.DATA_LOAD_FAILED,"LOAD_FAILED"),"no unresolved format placeholder")
+    exists=false;U:Refresh();assert(U.emptyHelp:GetText()==A.L.DATA_MISSING)
+    A.Store:Save("Personal without class data","personal","mythic","",71)
+    U.scene="mine";U:Refresh()
+    assert(#U.results==1 and U.results[1].source=="user","personal builds still work while class data is unavailable")
+    exists=true;C_AddOns.LoadAddOn=load;U.scene="mythic";U:Refresh()
+    assert(#U.results>0 and not U.empty:IsShown() and U.heroSelector.buttons[1].enabled)
+    print("PASS UI class-data errors: disabled/missing/native reasons, personal isolation and successful retry");return
+end
 if arg[1]=="event-filter" then
     local U=A.UI;local invalidations,refreshes=0,0
     C_ClassTalents={GetActiveConfigID=function()return 1 end}

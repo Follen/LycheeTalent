@@ -1,23 +1,33 @@
 local _,A=...
 local C={loaded={},builds={},byID={},scenarios={}}
 A.Catalog=C
+local function loadFailed(self,reason)
+    self.loadFailure=reason
+    return false,reason
+end
 function C:Load()
     local _,class=UnitClass("player")
     if not self.loaded[class] then
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then return loadFailed(self,"COMBAT") end
         local name="LycheeTalent_Data_"..class
-        if C_AddOns.DoesAddOnExist(name) then
-            local loaded=C_AddOns.LoadAddOn(name)
-            if not loaded then return end
+        if not C_AddOns.DoesAddOnExist(name) then return loadFailed(self,"MISSING") end
+        local loaded,reason=C_AddOns.LoadAddOn(name)
+        if not loaded and reason=="DISABLED" then
+            -- This shard belongs to the enabled main addon. Enable only the
+            -- current class for this character, then retry the native load once.
+            C_AddOns.EnableAddOn(name,UnitName("player"))
+            loaded,reason=C_AddOns.LoadAddOn(name)
         end
-        self.loaded[class]=true
+        if not loaded then return loadFailed(self,reason or "LOAD_FAILED") end
         local pack=LycheeTalentData and LycheeTalentData[class]
-        if pack and type(pack.builds)=="table" then
-            self.builds=pack.builds;self.heroTrees=pack.heroTrees or {}
-            for _,b in ipairs(self.builds) do self.byID[b.id]=b end
-        end
+        if not pack or type(pack.builds)~="table" or type(pack.heroTrees)~="table" then return loadFailed(self,"INCOMPLETE") end
+        self.builds=pack.builds;self.heroTrees=pack.heroTrees
+        for _,b in ipairs(self.builds) do self.byID[b.id]=b end
+        self.loaded[class]=true
     end
+    self.loadFailure=nil
     self:Localize()
+    return true
 end
 function C:Localize()
     if self.localized then return end
