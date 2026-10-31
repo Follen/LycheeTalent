@@ -1,0 +1,44 @@
+{
+  "platform": "newbeebox",
+  "channel": "official-ncc",
+  "action": "plugin-update",
+  "target": {
+    "id": 27799,
+    "name": "荔枝天赋"
+  },
+  "version": "1.1.4",
+  "previous_version": "1.1.3",
+  "tag": "v1.1.4",
+  "source_commit": "8feb31f695eebdc5a18aa08bdb2d9f87f28a3d2e",
+  "archive": {
+    "path": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount\\analyze\\hero-icons-20261031\\newbee-1.1.4-tag.zip",
+    "sha256": "54ab7509026c68230101e89b70cc0c61b3300056ee7d2b218b2b3c1b6344c4cf",
+    "bytes": 1354528,
+    "packages": 14,
+    "files": 91,
+    "excluded_by_official_cli": [
+      "LycheeTalent/Libs/LycheeUI/.lock"
+    ]
+  },
+  "game_versions": [
+    "12.1.5"
+  ],
+  "global_write_order": [
+    "newbeebox.push",
+    "newbeebox.readback",
+    "dd.update",
+    "dd.readback"
+  ],
+  "preserve": [
+    "description",
+    "intro",
+    "logo",
+    "screenshots",
+    "categories",
+    "visibility",
+    "commercial_settings",
+    "associations"
+  ],
+  "cleared_fields": [],
+  "authorization": "用户已明确授权发包，无需再次确认；本批 PR #33 修复当前职业数据包被禁用的启动路径。"
+}

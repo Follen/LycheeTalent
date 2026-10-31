@@ -1,0 +1,69 @@
+{
+  "version": "1.1.4",
+  "version_sn": "6fd44394afc245fbb223cc6cd678b9d5",
+  "share_code": "766554",
+  "version_history_verified": true,
+  "author_version": "1.1.3",
+  "detail_version": "1.1.4",
+  "author_version_verified": false,
+  "changelog_verified": true,
+  "approval_status": "not-explicitly-returned",
+  "unchanged_fields": [
+    "description",
+    "html_desc",
+    "logo",
+    "detail_imgs",
+    "scope",
+    "need_buy",
+    "need_anchor_vip",
+    "price_fen",
+    "primary_category_id",
+    "second_category_ids",
+    "creation_statement",
+    "associated_acts",
+    "with_associate",
+    "room_id",
+    "channel_id",
+    "channel_type",
+    "sync_room",
+    "jump_room",
+    "buy_life_type",
+    "share_code_life_type",
+    "assign_user_sn"
+  ],
+  "polls": [
+    {
+      "attempt": 1,
+      "author_version": "1.1.3",
+      "detail_version": "1.1.3"
+    },
+    {
+      "attempt": 2,
+      "author_version": "1.1.3",
+      "detail_version": "1.1.3"
+    },
+    {
+      "attempt": 3,
+      "author_version": "1.1.3",
+      "detail_version": "1.1.3"
+    },
+    {
+      "attempt": 4,
+      "author_version": "1.1.3",
+      "detail_version": "1.1.3"
+    },
+    {
+      "attempt": 5,
+      "author_version": "1.1.3",
+      "detail_version": "1.1.4"
+    }
+  ],
+  "archive": {
+    "path": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount\\dist\\LycheeTalent-1.1.4.zip",
+    "sha256": "b1528b7417f8e669d4d38932d8cb367303baa99208fa62c0f2148f28852426df",
+    "bytes": 1342012,
+    "packages": 14,
+    "files": 92,
+    "excluded_by_official_cli": []
+  }
+}

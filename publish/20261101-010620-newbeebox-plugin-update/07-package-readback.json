@@ -1,0 +1,22 @@
+{
+  "version": "1.1.4",
+  "packages": 14,
+  "runtime_files_verified": 91,
+  "all_runtime_bytes_match_tag": true,
+  "platform_added_files": [
+    "LycheeTalent/addon_version.txt",
+    "LycheeTalent_Data_DEATHKNIGHT/addon_version.txt",
+    "LycheeTalent_Data_DEMONHUNTER/addon_version.txt",
+    "LycheeTalent_Data_DRUID/addon_version.txt",
+    "LycheeTalent_Data_EVOKER/addon_version.txt",
+    "LycheeTalent_Data_HUNTER/addon_version.txt",
+    "LycheeTalent_Data_MAGE/addon_version.txt",
+    "LycheeTalent_Data_MONK/addon_version.txt",
+    "LycheeTalent_Data_PALADIN/addon_version.txt",
+    "LycheeTalent_Data_PRIEST/addon_version.txt",
+    "LycheeTalent_Data_ROGUE/addon_version.txt",
+    "LycheeTalent_Data_SHAMAN/addon_version.txt",
+    "LycheeTalent_Data_WARLOCK/addon_version.txt",
+    "LycheeTalent_Data_WARRIOR/addon_version.txt"
+  ]
+}

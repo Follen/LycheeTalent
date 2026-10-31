@@ -1,0 +1,34 @@
+{
+  "version": "1.1.4",
+  "file_id": 682214,
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "unchanged_fields": [
+    "intro",
+    "description",
+    "logo",
+    "logo_url",
+    "screenshots",
+    "categories",
+    "home_page",
+    "home_page_link",
+    "visibility",
+    "is_paid",
+    "subscribe_plan_level",
+    "co_authors",
+    "link_to_channel",
+    "source"
+  ],
+  "archive": {
+    "path": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount\\analyze\\hero-icons-20261031\\newbee-1.1.4-tag.zip",
+    "sha256": "54ab7509026c68230101e89b70cc0c61b3300056ee7d2b218b2b3c1b6344c4cf",
+    "bytes": 1354528,
+    "packages": 14,
+    "files": 91,
+    "excluded_by_official_cli": [
+      "LycheeTalent/Libs/LycheeUI/.lock"
+    ]
+  }
+}

@@ -13,28 +13,30 @@
   "package": "dist/LycheeTalent-1.1.4.zip",
   "cover": "docs/media/release-cover.png",
   "logo": "docs/media/talent-logo.png",
-  "status": "release-prepared",
+  "status": "platform-history-detail-verified-dd-author-pending",
   "platforms": {
     "dd": {
-      "status": "uploaded-version-verified-approval-unconfirmed",
+      "status": "uploaded-history-detail-verified-author-pending",
       "share_code": "766554",
       "sn": "40ce264bd1714ceb89132f5157f22869",
-      "version": "1.1.3",
-      "version_sn": "f16dbf3b85de46549a2c0b01c9085330",
+      "version": "1.1.4",
+      "version_sn": "6fd44394afc245fbb223cc6cd678b9d5",
       "logo_status": "preserved",
-      "package_sha256": "7043423de642e09e1414b782a8a6885c89c019e2a8a52139a9a151ea912ca12b",
-      "author_version_verified": true,
+      "package_sha256": "b1528b7417f8e669d4d38932d8cb367303baa99208fa62c0f2148f28852426df",
+      "author_version_verified": false,
       "detail_version_verified": true,
       "changelog_verified": true,
-      "cleanup_complete": true
+      "cleanup_complete": true,
+      "author_version": "1.1.3",
+      "version_history_verified": true
     },
     "newbeebox": {
       "id": 27799,
       "status": "approved-public",
-      "version": "1.1.3",
-      "file_id": 682212,
+      "version": "1.1.4",
+      "file_id": 682214,
       "logo_status": "preserved",
-      "package_sha256": "c495c7677b3227c33ac4dbeb811f9a0451697ccaf5d7b787de313bb03e901eca",
+      "package_sha256": "54ab7509026c68230101e89b70cc0c61b3300056ee7d2b218b2b3c1b6344c4cf",
       "package_files": 91,
       "excluded_by_official_cli": [
         "LycheeTalent/Libs/LycheeUI/.lock"
@@ -47,6 +49,14 @@
     "date": "2026-11-01",
     "merged_prs": [
       33
+    ],
+    "source_commit": "8feb31f695eebdc5a18aa08bdb2d9f87f28a3d2e",
+    "package_sha256": "b1528b7417f8e669d4d38932d8cb367303baa99208fa62c0f2148f28852426df",
+    "packages": 14,
+    "verified_files": 92,
+    "records": [
+      "publish/20261101-010620-newbeebox-plugin-update/",
+      "publish/20261101-010620-dd-plugin-update/"
     ]
   }
 }

@@ -1,0 +1,92 @@
+{
+  "mod_id": 27799,
+  "name": "荔枝天赋",
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "review_message": "",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "is_paid": false,
+  "subscribe_plan_level": 0,
+  "subscribe_plan_text": "",
+  "source": "原创",
+  "download_count": 6656,
+  "like_count": 263,
+  "rating": null,
+  "is_co_creation": false,
+  "co_authors": [],
+  "game_versions": [],
+  "update_time": 1793466523660,
+  "intro": "全自动推荐基于WCL顶尖玩家的天赋，进本智能提醒。更聪明的天赋-动作条管理。",
+  "description": "# 荔枝天赋\r\n\r\n全自动推荐基于WCL顶尖玩家的天赋，进本智能提醒。更聪明的天赋-动作条管理。\r\n\r\n## WCL 天赋推荐\r\n\r\n在原生天赋页旁直接查看当前专精的推荐方案。大秘境按副本分类，团本按首领分类，并区分英雄与史诗难度。找到要打的副本，双击方案即可切换。\r\n\r\n鼠标悬停可以查看方案的记录信息，右侧菜单提供 WCL 来源和天赋字符串复制，方便参考原始记录，或把天赋分享给队友。\r\n\r\n目前覆盖 13 个职业、40 个专精。1.0.0 内置 2026 年 9 月 26 日采集的 1,815 条推荐组合，数据随插件版本更新，无需自行配置 WCL 密钥。推荐来自高表现记录，具体使用时仍可根据装备、队伍和打法调整。\r\n\r\n## 管理自己的天赋\r\n\r\n除了内置推荐，也可以建立自己的方案库：\r\n\r\n- 保存当前天赋，把正在使用的天赋存下来，方便以后切回。\r\n- 导入天赋字符串，收藏朋友分享或自己找到的方案。\r\n- 编辑方案名称、图标和天赋字符串，方便区分不同用途。\r\n- 关联副本与首领，一套方案可以用于多个场景。\r\n\r\n导入和保存只会加入方案库，不会立刻切换当前天赋。整理好后，再选择需要使用的方案。\r\n\r\n## 统一动作条，也支持独立布局\r\n\r\n同一专精下的多套天赋可以共用统一的动作条布局。如果某套天赋需要不同的技能摆放，也可以为它启用独立动作条，切换天赋时一起恢复对应布局。\r\n\r\n两种方式可以混用：常用方案共用一套动作条，需要特殊安排的方案单独保存。按自己的使用习惯设置即可，不影响按键绑定。\r\n\r\n荔枝天赋每个专精复用一个原生天赋方案，减少对原生方案栏位的占用。原生栏位不足时会停止操作，不会删除其他方案。\r\n\r\n## 进本智能提醒\r\n\r\n进入副本或到达插件能识别的首领区域时，会提示当前可用的推荐天赋，以及你为这个场景关联的个人方案。\r\n\r\n点击“切换”才会应用，不会擅自更换天赋。已经在使用对应方案时不再提醒，战斗中收起提示。喜欢自己手动选择的话，可以在右上角齿轮设置中关闭提醒。\r\n\r\n插件免费使用，采用 Lychee 非商业署名许可证 1.0。\r\n\r\n项目地址与问题反馈：https://github.com/Follen/LycheeTalent\r\n",
+  "content_format": 2,
+  "content_format_text": "Markdown",
+  "categories": [
+    {
+      "id": 1014,
+      "name": "副本&团队"
+    },
+    {
+      "id": 1020,
+      "name": "职业"
+    }
+  ],
+  "logo": "user_media/default/558213/1641079156884feda053afe62ced1b83.png",
+  "logo_url": "https://cdn8.newbeebox.com/user_media/default/558213/1641079156884feda053afe62ced1b83.png",
+  "screenshots": [
+    {
+      "title": "",
+      "description": "",
+      "url": "user_media/default/558213/48dc675b7738173bf92e15a6efd96ce2.png",
+      "preview": "https://cdn8.newbeebox.com/user_media/default/558213/48dc675b7738173bf92e15a6efd96ce2.png"
+    },
+    {
+      "title": "",
+      "description": "",
+      "url": "user_media/default/558213/cab0aeb8f61ac164ebd67ca68263bb38.png",
+      "preview": "https://cdn8.newbeebox.com/user_media/default/558213/cab0aeb8f61ac164ebd67ca68263bb38.png"
+    },
+    {
+      "title": "",
+      "description": "",
+      "url": "user_media/default/558213/91bcab15685db0a679c4082dea940d6c.png",
+      "preview": "https://cdn8.newbeebox.com/user_media/default/558213/91bcab15685db0a679c4082dea940d6c.png"
+    },
+    {
+      "title": "",
+      "description": "",
+      "url": "user_media/default/558213/debbb6af997cb8c368c94920a2ced2ed.png",
+      "preview": "https://cdn8.newbeebox.com/user_media/default/558213/debbb6af997cb8c368c94920a2ced2ed.png"
+    },
+    {
+      "title": "",
+      "description": "",
+      "url": "user_media/default/558213/111d6211c844e1b09181e8bf2ad66e78.png",
+      "preview": "https://cdn8.newbeebox.com/user_media/default/558213/111d6211c844e1b09181e8bf2ad66e78.png"
+    },
+    {
+      "title": "",
+      "description": "",
+      "url": "user_media/default/558213/dcd1c1e9152ff7e6d04dbb3bc2fbf19a.png",
+      "preview": "https://cdn8.newbeebox.com/user_media/default/558213/dcd1c1e9152ff7e6d04dbb3bc2fbf19a.png"
+    }
+  ],
+  "home_page": "GitHub",
+  "home_page_link": "https://github.com/Follen/LycheeTalent",
+  "link_to_channel": false,
+  "latest_versions": [
+    "12.1.5"
+  ],
+  "latest_file": {
+    "file_id": 682214,
+    "version_name": "1.1.4",
+    "release_type": 1,
+    "release_type_text": "正式版",
+    "file_size": 1356870,
+    "upload_time": 1793466523094,
+    "game_versions": [
+      "12.1.5"
+    ],
+    "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.1.4"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "fupload.v1.dd.plugin.update",
+  "sn": "40ce264bd1714ceb89132f5157f22869",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "file": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount\\dist\\LycheeTalent-1.1.4.zip",
+  "release_type": 1,
+  "version": "1.1.4",
+  "update_desc": "<p>修复职业数据包被禁用后，英雄天赋只显示“暂无信息”、推荐列表为空的问题；主包会自动启用当前角色的职业数据包。</p><p>数据包缺失、版本不完整或加载失败时，界面会说明具体原因。</p>"
+}

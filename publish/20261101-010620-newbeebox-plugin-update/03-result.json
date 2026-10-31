@@ -1,0 +1,17 @@
+{
+  "uploaded": true,
+  "mod_id": 27799,
+  "mod_name": "",
+  "version": "1.1.4",
+  "game_versions": [
+    "12.1.5"
+  ],
+  "changelog_chars": 84,
+  "zip_root": "addon",
+  "layout": "collection",
+  "addon_count": 14,
+  "skipped_top_files": [],
+  "file_count": 91,
+  "zip_bytes": 1354528,
+  "server_result": {}
+}
