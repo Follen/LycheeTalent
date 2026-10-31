@@ -7,6 +7,7 @@
 *.json text eol=lf
 *.svg text eol=lf
 *.ps1 text eol=crlf
+LICENSE text eol=lf
 *.png binary
 *.tga binary
 
