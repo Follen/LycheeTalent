@@ -16,6 +16,8 @@ lua tests/ui_smoke.lua same-build-refresh
 lua tests/ui_smoke.lua pending-prompt
 lua tests/ui_smoke.lua hero-controls
 lua tests/hero_selection.lua
+lua tests/catalog_loading.lua
+lua tests/ui_smoke.lua data-errors
 lua tests/current_build_cache.lua
 lua tests/talent_read_entries.lua
 lua tests/talent_stage_order.lua
@@ -127,3 +129,5 @@ powershell -File tools/package.ps1
 `actionbar_config_events.lua`、`actionbar_observation_routes.lua` 和 `ui_smoke.lua event-filter` 检查配置 ID 过滤、元信息通知不保存布局、真实槽变在战斗／事务中保留并在安全边界消费、宏修订不被提前读取吞掉、退出取消排队回调。`actionbar_snapshot_reads.lua` 检查单次观察只克隆一次旧布局；`macro_observation_changes.lua` 检查相同宏通知不复制布局，真实编辑和删除保留最新备份。`core_spec.lua` 检查专精未就绪及原生返回字段保留。`reminders.lua` 和 `motion.lua` 分别回放候选变更与入战中断动效。
 
 本轮全仓审计的范围、修复与验证记录见 [2026-10-31 审计结果](audit-20261031.md)。
+
+`catalog_loading.lua` 使用生产 Catalog 与实际圣骑士数据包，复现 `LoadAddOn` 返回 `false/nil, DISABLED` 后出现两个不可用英雄按钮的路径，核对仅启用当前角色的当前职业包、原生加载重试一次、8 个大秘境推荐恢复及成功缓存。它同时检查持续失败、缺包、旧分片和战斗延后。`ui_smoke.lua data-errors` 检查真实加载失败原因的空态、个人方案可用及后续成功加载。

@@ -243,7 +243,7 @@ function U:Refresh()
     if not self.frame or not self.frame:IsShown() then return end
     local spec=A:GetSpec()
     if self.drag and (self.scene~="mine" or spec~=self.drag.spec or A.Apply.op) then self:CancelDrag() end
-    A.Catalog:Load()
+    local catalogReady,loadReason=A.Catalog:Load()
     self.difficulty=self.difficulty or A.Store.character.raidDifficulty or 5
     A.Catalog:Query(spec,self.scene,self.scene=="mine" and "user" or "builtin","",nil,self.difficulty,self.results)
     if A.Apply.op and self.errorText then self.errorText:Hide() end
@@ -296,10 +296,14 @@ function U:Refresh()
     local empty=#self.results==0
     self.empty:SetShown(empty)
     if empty then
-        self.emptyTitle:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED or L.EMPTY)
+        self.emptyTitle:SetText(self.scene~="mine" and (not catalogReady and L.DATA_LOAD_TITLE or L.EMPTY_RECOMMENDED) or L.EMPTY)
         local heroReason
         if self.scene~="mine" then local _;_,heroReason=A.Catalog:SelectedHero(spec) end
-        self.emptyHelp:SetText(self.scene~="mine" and (L[heroReason] or L.EMPTY_RECOMMENDED_HELP) or L.EMPTY_HELP)
+        local help=self.scene~="mine" and (L[heroReason] or L.EMPTY_RECOMMENDED_HELP) or L.EMPTY_HELP
+        if self.scene~="mine" and not catalogReady then
+            help=string.format(L["DATA_"..(loadReason or "LOAD_FAILED")] or L.DATA_LOAD_FAILED,loadReason or "LOAD_FAILED")
+        end
+        self.emptyHelp:SetText(help)
     end
     local secondary=(self.dialog and self.dialog:IsShown()) or (self.contextSettings and self.contextSettings:IsShown()) or (self.settings and self.settings:IsShown())
     self.back:SetShown(secondary)
