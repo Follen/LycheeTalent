@@ -1,0 +1,37 @@
+{
+  "target_id": 27799,
+  "name": "荔枝天赋",
+  "version": "1.1.3",
+  "file_id": 682212,
+  "review_status": 1,
+  "review_status_text": "审核通过",
+  "visibility": 1,
+  "visibility_text": "公开",
+  "unchanged_fields": [
+    "intro",
+    "description",
+    "logo",
+    "logo_url",
+    "screenshots",
+    "categories",
+    "home_page",
+    "home_page_link",
+    "visibility",
+    "is_paid",
+    "subscribe_plan_level",
+    "co_authors",
+    "link_to_channel",
+    "source"
+  ],
+  "unexpected_changes": [],
+  "archive": {
+    "path": "D:\\Code\\wow\\addons\\Lychee Talent\\.worktrees\\random-favorite-mount\\analyze\\hero-icons-20261031\\newbee-1.1.3-tag.zip",
+    "sha256": "c495c7677b3227c33ac4dbeb811f9a0451697ccaf5d7b787de313bb03e901eca",
+    "bytes": 1353840,
+    "packages": 14,
+    "files": 91,
+    "excluded_by_official_cli": [
+      "LycheeTalent/Libs/LycheeUI/.lock"
+    ]
+  }
+}

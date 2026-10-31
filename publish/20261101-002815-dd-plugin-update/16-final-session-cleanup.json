@@ -1,0 +1,12 @@
+{
+  "data": {
+    "cleanup_complete": true,
+    "logout_requested": true,
+    "running": false
+  },
+  "dry_run": false,
+  "operation": "session.stop",
+  "platform": "dd",
+  "schema": "fupload.output.v1",
+  "success": true
+}

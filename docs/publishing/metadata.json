@@ -13,22 +13,32 @@
   "package": "dist/LycheeTalent-1.1.3.zip",
   "cover": "docs/media/release-cover.png",
   "logo": "docs/media/talent-logo.png",
-  "status": "release-prepared",
+  "status": "platform-versions-verified-dd-approval-unconfirmed",
   "platforms": {
     "dd": {
       "status": "uploaded-version-verified-approval-unconfirmed",
       "share_code": "766554",
       "sn": "40ce264bd1714ceb89132f5157f22869",
-      "version": "1.1.2",
-      "version_sn": "e2b5200716fe47eeabdbe6fcf6a0ff06",
-      "logo_status": "preserved"
+      "version": "1.1.3",
+      "version_sn": "f16dbf3b85de46549a2c0b01c9085330",
+      "logo_status": "preserved",
+      "package_sha256": "7043423de642e09e1414b782a8a6885c89c019e2a8a52139a9a151ea912ca12b",
+      "author_version_verified": true,
+      "detail_version_verified": true,
+      "changelog_verified": true,
+      "cleanup_complete": true
     },
     "newbeebox": {
       "id": 27799,
       "status": "approved-public",
-      "version": "1.1.2",
-      "file_id": 666227,
-      "logo_status": "preserved"
+      "version": "1.1.3",
+      "file_id": 682212,
+      "logo_status": "preserved",
+      "package_sha256": "c495c7677b3227c33ac4dbeb811f9a0451697ccaf5d7b787de313bb03e901eca",
+      "package_files": 91,
+      "excluded_by_official_cli": [
+        "LycheeTalent/Libs/LycheeUI/.lock"
+      ]
     }
   },
   "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word",
@@ -37,6 +47,14 @@
     "date": "2026-11-01",
     "merged_prs": [
       32
+    ],
+    "source_commit": "2e05a1c1e3cf0dd9aeb7e6b586ebe8047efdd00a",
+    "package_sha256": "7043423de642e09e1414b782a8a6885c89c019e2a8a52139a9a151ea912ca12b",
+    "packages": 14,
+    "verified_files": 92,
+    "records": [
+      "publish/20261101-002815-newbeebox-plugin-update/",
+      "publish/20261101-002815-dd-plugin-update/"
     ]
   }
 }

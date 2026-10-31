@@ -1,0 +1,8 @@
+{
+  "gui_running": false,
+  "session_source": "native-login",
+  "native_login_count": 1,
+  "credential_kind": "mobile",
+  "prior_sessions_cleaned": true,
+  "recovery_note": "The official DD GUI had exited; resume with the CLI-selected stored-credential flow. Earlier local capture/source checks stopped before any DD upload."
+}

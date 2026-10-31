@@ -1,0 +1,86 @@
+{
+  "data": {
+    "addon_type": 0,
+    "assign_user_sn": null,
+    "associated_acts": [],
+    "author_icon": "http://ddavatar.fp.ps.netease.com/file/6a81c3db3bd4656eff49bdb3tVZyX53507",
+    "author_name": "荔枝Lychee",
+    "author_sn": "0d991caf110d4838a1b7891dbf528eee",
+    "buy_life_type": "seven_day",
+    "channel_id": "",
+    "channel_type": "",
+    "creation_statement": "original",
+    "description": "按副本与首领选 WCL 推荐天赋，管理个人方案与独立动作条，到场提醒，双击切换。",
+    "detail_imgs": [
+      "https://uires.w.163.com/img/img/4l5o5Dgu4buNeST2cTTKntsGsGedXJOy",
+      "https://uires.w.163.com/img/img/osKEh2k5Ik7h1vgi0LWpsCTuYWs3ByAM",
+      "https://uires.w.163.com/img/img/ZviyttSfjVMSbcCCp3DaHQ9rSqINnZPI",
+      "https://uires.w.163.com/img/img/KfsQB55xGNw1ITLqUG203ty6UBlpYhWR",
+      "https://uires.w.163.com/img/img/dFmJ1zvCQGu3QjGM5dt0PwwybIxXbfhI",
+      "https://uires.w.163.com/img/img/QnhbhxVYxs1LWcCiwx0amvNe53AjAlNl"
+    ],
+    "display_game_version": "12.1.5",
+    "downloads": 3419,
+    "expired": false,
+    "game_types": [
+      10001
+    ],
+    "game_versions": [
+      "12.1.5"
+    ],
+    "html_desc": "<h1>荔枝天赋：这一战，用对天赋</h1>\r\n<p>换了副本，又要翻聊天记录找天赋字符串？荔枝天赋把 WCL 高表现方案整理到原生天赋页旁边。打开天赋页，找到副本或首领，双击应用。</p>\r\n<h2>打什么本，就选什么方案</h2>\r\n<p>大秘境按副本查看，团本可以切换英雄和史诗难度。悬停查看记录信息，行末菜单保留 WCL 来源与字符串复制入口，选方案时也能知道它从哪里来。</p>\r\n<h2>自己的天赋，也放在一起</h2>\r\n<p>导入朋友分享的字符串，或保存当前天赋；名称、图标、字符串和场景关联在同一个编辑页完成。一套方案可以关联多个副本或首领。导入和保存只加入方案库，不会立刻切换天赋。</p>\r\n<h2>技能摆放，跟着方案走</h2>\r\n<p>在方案菜单中启用独立动作条，下次应用时使用这套方案自己的布局。不启用时使用该专精首次启用时记录的默认布局。不会修改你的按键绑定。</p>\r\n<h2>到地方，提醒你准备</h2>\r\n<p>进入副本或到达可识别的首领区域时，提示可用的推荐与个人关联方案。点击“切换”才应用；战斗中收起，已使用对应方案时不提示。不需要时，在右上角齿轮设置关闭提醒。</p>\r\n<h2>安装后，打开天赋页</h2>\r\n<p>正式服 12.1 独立插件，无需荔枝启动器或 WCL 密钥。将 LycheeTalent 和全部 LycheeTalent_Data_* 文件夹安装到正式服 Interface/AddOns，启用后打开原生天赋页，或输入 /lt。职业数据按需加载。</p>\r\n<p>当前 1.0.0 随包提供 2026-09-26 采集的 1,815 条推荐组合，覆盖 13 职业、40 专精。数据随插件更新，推荐供实战准备参考，仍需结合装备、队伍和打法选择。</p>\r\n<p>免费使用。采用 Lychee 非商业署名许可证 1.0，完整条款见项目 LICENSE。</p>\r\n<p>项目与反馈：https://github.com/Follen/LycheeTalent</p>\r\n",
+    "is_owner": true,
+    "jump_room": false,
+    "latest_version": {
+      "file_path_summary": {
+        "host": "uires.w.163.com"
+      },
+      "folders": [],
+      "game_versions": [
+        "12.1.5"
+      ],
+      "release_type": 1,
+      "size": 1146489,
+      "sn": "e2b5200716fe47eeabdbe6fcf6a0ff06",
+      "version": "1.1.2"
+    },
+    "logo": "https://uires.w.163.com/img/img/bIaTCKkMsFjJKtwuKnRT78BjNA0FIon2",
+    "month_download": 3407,
+    "mtime": 1793464615,
+    "name": "荔枝天赋",
+    "need_anchor_vip": false,
+    "need_buy": false,
+    "price_fen": 0,
+    "primary_category_id": 1014,
+    "room_id": "",
+    "scope": "public",
+    "second_category_ids": [
+      999
+    ],
+    "share_code": "766554",
+    "share_code_life_type": "forever",
+    "show_update": false,
+    "sn": "40ce264bd1714ceb89132f5157f22869",
+    "source": "用户发布",
+    "source_link": "",
+    "status": 1,
+    "subscribed": false,
+    "sync_room": false,
+    "tags": [
+      {
+        "color": "#541D37",
+        "name": "用户发布"
+      }
+    ],
+    "total_download": 3419,
+    "update_desc": "<p>大秘境和团本现在可以按英雄天赋系查看推荐，顶部显示对应图标，并记住每个专精的选择。</p><p>更新全部 13 职业、40 专精的推荐，共 1909 套；奶骑毒牙祭坛推荐包含“双自由”。</p><p>优化打开列表和切换天赋时的内存占用与响应速度。</p><p>动作条直接复用游戏里已有的宏，不再额外占用宏位。修改宏后，使用它的各套方案会跟随最新内容。</p><p>到场提醒可以拖动并记住位置；恢复深红色切换按钮，编辑或删除方案后及时更新提醒列表。</p><p>切换进度和结果集中在界面内显示，普通操作不再刷聊天框；天赋切换成功后显示“已应用”。</p><p>修复登录初期报错、动作条恢复失败后丢失目标记录，以及进入战斗时动画停在半途的问题。</p><p>安装前会检查已有文件，避免覆盖被外部修改的内容。</p><p>升级说明：首次从旧保存结构升级时，插件会重新建立数据，旧的个人方案、偏好和动作条记录需要重新设置。游戏里的原生天赋方案、宏和按键绑定保留。</p>",
+    "user_uid": 282527135,
+    "week_download": 239,
+    "with_associate": false
+  },
+  "dry_run": false,
+  "operation": "plugin.get",
+  "platform": "dd",
+  "schema": "fupload.output.v1",
+  "success": true
+}

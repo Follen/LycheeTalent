@@ -1,0 +1,37 @@
+{
+  "tag": "v1.1.3",
+  "version": "1.1.3",
+  "source_commit": "2e05a1c1e3cf0dd9aeb7e6b586ebe8047efdd00a",
+  "result": {
+    "version": "1.1.3",
+    "tag": "v1.1.3",
+    "tag_pushed": true,
+    "commit": "2e05a1c1e3cf0dd9aeb7e6b586ebe8047efdd00a",
+    "platforms": {
+      "newbeebox": {
+        "uploaded": true,
+        "version": "1.1.3",
+        "file_id": 682212,
+        "review_status": "approved",
+        "visibility": "public"
+      },
+      "dd": {
+        "uploaded": true,
+        "version": "1.1.3",
+        "version_sn": "f16dbf3b85de46549a2c0b01c9085330",
+        "version_history_verified": true,
+        "author_version": "1.1.3",
+        "author_version_verified": true,
+        "detail_version": "1.1.3",
+        "approval_status": "not-explicitly-returned",
+        "changelog_verified": true
+      }
+    },
+    "cleanup_complete": true
+  },
+  "notes": [
+    "NewBeeBox upload was submitted once. CLI stdout was recovered after stderr progress text affected the first local capture; info/version readback verified the same file.",
+    "DD upload was submitted once. Earlier preflight sessions were cleaned before upload. The official GUI exited during the task, so the CLI used its stored-credential native flow.",
+    "A final GET-only readback confirmed DD author/detail/history version 1.1.3 and the HTML changelog. Every task session ended with cleanup_complete=true."
+  ]
+}

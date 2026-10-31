@@ -1,0 +1,293 @@
+{
+  "list": [
+    {
+      "file_id": 682212,
+      "version_name": "1.1.3",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 1356182,
+      "upload_time": 1793464309462,
+      "game_versions": [
+        "12.1.5"
+      ],
+      "changelog": "大秘境和团本现在可以按英雄天赋系查看推荐，顶部显示对应图标，并记住每个专精的选择。\r\n更新全部 13 职业、40 专精的推荐，共 1909 套；奶骑毒牙祭坛推荐包含“双自由”。\r\n优化打开列表和切换天赋时的内存占用与响应速度。\r\n动作条直接复用游戏里已有的宏，不再额外占用宏位。修改宏后，使用它的各套方案会跟随最新内容。\r\n到场提醒可以拖动并记住位置；恢复深红色切换按钮，编辑或删除方案后及时更新提醒列表。\r\n切换进度和结果集中在界面内显示，普通操作不再刷聊天框；天赋切换成功后显示“已应用”。\r\n修复登录初期报错、动作条恢复失败后丢失目标记录，以及进入战斗时动画停在半途的问题。\r\n安装前会检查已有文件，避免覆盖被外部修改的内容。\r\n升级说明：首次从旧保存结构升级时，插件会重新建立数据，旧的个人方案、偏好和动作条记录需要重新设置。游戏里的原生天赋方案、宏和按键绑定保留。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.1.3"
+    },
+    {
+      "file_id": 666227,
+      "version_name": "1.1.2",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 1159535,
+      "upload_time": 1792519646553,
+      "game_versions": [
+        "12.1.5"
+      ],
+      "changelog": "- 修复宏正文末尾换行差异导致的恢复失败，保留已保存的宏原文。\r\n- 恢复宏时重新核对编号和内容，避免宏排序变化或外部编辑后绑定错误、覆盖其他宏。\r\n- 失败后核对实际回滚结果；回滚未完成时保留原动作条配置并暂停自动保存，手动重试成功后恢复。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.1.2"
+    },
+    {
+      "file_id": 659066,
+      "version_name": "1.1.1",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 1158670,
+      "upload_time": 1792241940315,
+      "game_versions": [
+        "12.1.5"
+      ],
+      "changelog": "• 全量刷新13职业、40专精的WCL推荐，共1971套大秘境和团本天赋，补齐基希克斯的首领信息。\r\n• 敏锐潜行者全部使用对应榜单中的欺诈者榜首，不再提供其他英雄天赋和热门备选。\r\n• 原生加载遗漏请求天赋点时，先补齐目标再提交，处理噬灭等专精可能少一点的情况。\r\n• 更换主包与职业数据包的插件列表图标，游戏内各页面的荔枝图案和动画保持原样。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.1.1"
+    },
+    {
+      "file_id": 654467,
+      "version_name": "1.1.0",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 764390,
+      "upload_time": 1792077860346,
+      "game_versions": [
+        "12.1.5"
+      ],
+      "changelog": "• 修复动作条包含当前未学会的天赋技能时，整套布局无法恢复的问题。\r\n• 未学会的技能保留在方案记录中，其余动作条照常恢复；以后学会并再次应用时自动补回。\r\n• 手动改动对应格子后保留玩家的新安排，避免旧技能覆盖。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.1.0"
+    },
+    {
+      "file_id": 653145,
+      "version_name": "1.0.17",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 758562,
+      "upload_time": 1792028267696,
+      "game_versions": [
+        "12.1.5"
+      ],
+      "changelog": "适配正式服 12.1.5，主包及全部职业数据包的 TOC 更新为 120105。\r\n修复随机偏好坐骑导致动作条恢复失败的问题。\r\n动作条改为切换前保存、切换后恢复并统一核对，移除后台事件读取和反复拾取宏。\r\n宏按准确编号保存与恢复，普通宏直接读取编号；当前槽位可读时更新旧的不可读记录，保留共用与独立布局。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.17"
+    },
+    {
+      "file_id": 650185,
+      "version_name": "1.0.16",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 760129,
+      "upload_time": 1791968725514,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "奶骑八个大秘境统一使用国服霜之哀伤快乐阳阳的最高限时天赋，本次均为 23 层记录。\r\n同层优先选择用时最短的公开日志，排除超时记录，并移除奶骑大秘境中其他玩家的热门方案。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.16"
+    },
+    {
+      "file_id": 646491,
+      "version_name": "1.0.15",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 760493,
+      "upload_time": 1791866906995,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "修正发布压缩包的目录路径格式，解决网易 DD 无法识别 TOC 的兼容问题。\r\n打包时统一使用正斜杠，并检查文件路径，避免不同 PowerShell 环境生成不兼容的包。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.15"
+    },
+    {
+      "file_id": 646274,
+      "version_name": "1.0.14",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 760625,
+      "upload_time": 1791855997037,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "全量刷新 13 职业、40 专精的 WCL 第二赛季推荐，共 1861 套大秘境与团本天赋。\r\n使用最近 14 天记录，完成 1120 组采集；保留现有榜单选择规则与报告来源。\r\n夺目谷奥法默认推荐更新为带群体隐形的 23 层方案。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.14"
+    },
+    {
+      "file_id": 621302,
+      "version_name": "1.0.13",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 757861,
+      "upload_time": 1790758723612,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "修复应用完成后仍反复拿宏、鼠标出现宏图标的问题。\r\n读取、保存、恢复和检查都在“应用中”完成，关闭天赋面板后继续处理，结束后停止主动读取。\r\n保留动作条自动保存及共享/独立布局，同名宏按准确编号记录；读取失败保留恢复备份和鼠标上的物品。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.13"
+    },
+    {
+      "file_id": 621006,
+      "version_name": "1.0.12",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 756109,
+      "upload_time": 1790744601809,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "刷新 9 月 30 日的 WCL 第二赛季推荐，覆盖全部 13 职业、40 专精，共 1819 套大秘境与团本天赋。\r\n更新 694 套原有方案的加点；81 个大秘境默认推荐的记录层数提高。\r\n本次完成 1120 组采样，沿用最近 14 天的观察窗口及现有榜单选择规则；推荐保留对应报告与战斗来源。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.12"
+    },
+    {
+      "file_id": 619511,
+      "version_name": "1.0.11",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 756667,
+      "upload_time": 1790677067932,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "当前使用入门天赋时，自动创建或复用“荔枝天赋”方案并切换，无需手动关闭入门方案。\r\n等待原生方案加载完成后再退出入门模式，避免重置待应用的天赋改动。\r\n修复入门模式下仍记着上次荔枝方案时，误判为已经切换的问题。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.11"
+    },
+    {
+      "file_id": 617884,
+      "version_name": "1.0.10",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 756391,
+      "upload_time": 1790604985110,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "修复部分宏槽位无法读取时，所有天赋方案都无法切换的问题。\r\n无法读取的宏槽位保留原状，其余槽位正常恢复；切换后提示保留的槽位编号。\r\n补齐切换前动作条读取失败的阶段和槽位记录，修正误导性的报错文案。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.10"
+    },
+    {
+      "file_id": 617615,
+      "version_name": "1.0.9",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 755956,
+      "upload_time": 1790592512205,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "图标选择器默认显示常用图标，法术和物品目录按需加载并在本次会话中复用，减少重复打开时的内存分配。\r\n我的方案支持拖动排序，拖到列表边缘可自动滚动，调整后的顺序自动保存。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.9"
+    },
+    {
+      "file_id": 617520,
+      "version_name": "1.0.8",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 754181,
+      "upload_time": 1790585577034,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "宏按原编号恢复，修改名称、正文或在原位置重建后无需重新保存布局。\r\n旧布局的宏失效标记不再拦截切换，移除宏内容比对与同步。\r\n补齐共用动作条自动保存和切换前保存，独立布局互不影响。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.8"
+    },
+    {
+      "file_id": 617067,
+      "version_name": "1.0.7",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 754986,
+      "upload_time": 1790562954725,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "修改宏内容后自动同步各套动作条布局的宏引用，保留各自槽位与同名宏身份。\r\n修复宏正文末尾换行差异导致动作条恢复失败的问题。\r\n修正切换提示计时，应用中至少显示 1.5 秒，再显示荔枝红已应用。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.7"
+    },
+    {
+      "file_id": 616145,
+      "version_name": "1.0.6",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 754199,
+      "upload_time": 1790537711010,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "设置中可导入 Talent EX 当前专精方案，保留名称、字符串和图标，支持已导入和有更新状态。\r\n修复英雄天赋图标缺失，自动排列双侧栏，避免与 Talent EX 重叠。\r\n方案列表改用滚动条，支持拖动和滚轮；收紧设置布局。\r\n行尾显示应用中和已应用，应用中至少保留 1.5 秒；已应用及团本难度选中使用荔枝红，加粗当前方案标记。",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.6"
+    },
+    {
+      "file_id": 615486,
+      "version_name": "1.0.5",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 750929,
+      "upload_time": 1790516453464,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "切换成功后，方案行显示红色高亮动画和已切换提示，两套天赋内容相同时也有反馈。\r\n开启减少动画时使用静态高亮；失败时不显示成功反馈。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.5"
+    },
+    {
+      "file_id": 615483,
+      "version_name": "1.0.4",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 750440,
+      "upload_time": 1790516032080,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "修复恢复动作条时移走其他槽位中重复技能的问题。\r\n修复替代技能 ID 变化导致的恢复误判，无法直接拾取时尝试基础技能。\r\n恢复及回滚后校验完整布局，宏继续严格保留原编号。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.4"
+    },
+    {
+      "file_id": 615456,
+      "version_name": "1.0.3",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 750113,
+      "upload_time": 1790513881068,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "动作条严格保留原宏编号，不再将同名同内容的宏视为可互换。原编号的宏变更或丢失时停止恢复并提示重新保存布局，不自动替换其他宏。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.3"
+    },
+    {
+      "file_id": 615441,
+      "version_name": "1.0.2",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 750107,
+      "upload_time": 1790512695799,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "修复同名宏内容或账号、角色范围不同时阻止天赋切换的问题。读取确切宏编号，恢复时核对内容与归属，支持宏索引重排。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.2"
+    },
+    {
+      "file_id": 615439,
+      "version_name": "1.0.1",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 750120,
+      "upload_time": 1790512201167,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "保存和导入按钮改用红底白字，区分正常、悬停、按下和禁用状态。场景关联页的保存按钮同步调整。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.1"
+    },
+    {
+      "file_id": 615339,
+      "version_name": "1.0.0",
+      "release_type": 1,
+      "release_type_text": "正式版",
+      "file_size": 750157,
+      "upload_time": 1790499158372,
+      "game_versions": [
+        "12.1.0"
+      ],
+      "changelog": "荔枝天赋 1.0.0 首次发布，支持正式服 12.1。\r\n按副本与首领查看 WCL 推荐，双击应用天赋。\r\n支持个人方案、场景关联、独立动作条与到场提醒。\r\n内置 13 职业、40 专精的 1,815 条推荐组合。\r\n",
+      "download_url": "https://cdn8.newbeebox.com/mod_file/27799/1.0.0"
+    }
+  ],
+  "total": 22,
+  "pagenum": 1,
+  "pagesize": 30
+}

@@ -1,0 +1,27 @@
+{
+  "data": {
+    "input_schema": "fupload.v1.dd.plugin.update",
+    "local_files": {
+      "file": {
+        "name": "LycheeTalent-1.1.3.zip",
+        "size": 1341324
+      }
+    },
+    "note": "Remote IDs, permissions, current state, and dynamic choices are checked only during execution.",
+    "present_fields": [
+      "file",
+      "game_versions",
+      "release_type",
+      "sn",
+      "update_desc",
+      "version"
+    ],
+    "remote_validation_performed": false,
+    "schema_valid": true
+  },
+  "dry_run": true,
+  "operation": "plugin.update",
+  "platform": "dd",
+  "schema": "fupload.output.v1",
+  "success": true
+}
