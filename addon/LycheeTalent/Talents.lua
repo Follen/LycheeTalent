@@ -117,10 +117,14 @@ function T:StageEntries(config,entries)
         target.ranks=target.ranks+(entry.ranksPurchased or 0)
         if (entry.ranksPurchased or 0)+(entry.ranksGranted or 0)>0 then target.selection=entry.selectionEntryID end
     end
+    -- Positions are tree metadata; rank/availability reads below remain live.
+    -- Native GetNodeInfo allocates its complete nested table on each call.
+    for _,target in ipairs(order) do
+        local node=C_Traits.GetNodeInfo(config,target.id)
+        target.y=node and node.posY or 0
+    end
     table.sort(order,function(a,b)
-        local na,nb=C_Traits.GetNodeInfo(config,a.id),C_Traits.GetNodeInfo(config,b.id)
-        local ay,by=na and na.posY or 0,nb and nb.posY or 0
-        if ay~=by then return ay<by end
+        if a.y~=b.y then return a.y<b.y end
         return a.id<b.id
     end)
     local budget=512

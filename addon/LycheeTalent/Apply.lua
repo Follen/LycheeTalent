@@ -127,6 +127,7 @@ function X:Finish(ok,key)
     self:InvalidateCurrent()
     if self.timer then self.timer:Cancel();self.timer=nil end
     if self.nextStep then self.nextStep:Cancel();self.nextStep=nil end
+    if self.advanceStep then self.advanceStep:Cancel();self.advanceStep=nil end
     if self.events then self.events:UnregisterAllEvents() end
     self.op=nil;self:ReleaseCreationGuard()
     local char=A.Store.character
@@ -374,6 +375,23 @@ function X:Advance()
         self:Defer(function()self:CompleteWorking()end)
     end
 end
+-- Native commit/config notices can arrive in a burst while active and saved
+-- snapshots settle separately. Reconcile once next frame, always from live data.
+function X:QueueAdvance()
+    local op=self.op
+    -- Native callers advance after returning; do not reenter their mutation.
+    if not op or op.inNativeCall or self.advanceStep then return end
+    self.advanceStep=C_Timer.NewTimer(0,function()
+        self.advanceStep=nil
+        if self.op~=op or not self:CheckContext() then return end
+        local ok,err=pcall(self.Advance,self)
+        if not ok and self.op==op then
+            op.luaError=tostring(err):sub(1,240)
+            if op.recovery then op.recovery.luaError=op.luaError end
+            self:Finish(false,"APPLY_FAILED")
+        end
+    end)
+end
 function X:OnEvent(event,value)
     local op=self.op
     if not op then return end
@@ -384,7 +402,7 @@ function X:OnEvent(event,value)
         and value.name==op.name and not op.before[value.ID] and value.type==Enum.TraitConfigType.Combat then
         op.target=value.ID;op.targetName=value.name
     end
-    self:Advance()
+    self:QueueAdvance()
 end
 function X:Start(build,shared,consent)
     if self.op or self.preparing then return nil,"APPLY_BUSY" end

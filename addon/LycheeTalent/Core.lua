@@ -28,5 +28,6 @@ events:SetScript("OnEvent",function(self,event,loaded)
     A.ActionBars:Init()
     A.Reminders:RefreshSettings()
     A.Dock:Init()
+    if A.Audit then A.Audit:Start(120) end
     self:UnregisterEvent("ADDON_LOADED")
 end)

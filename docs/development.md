@@ -18,6 +18,9 @@ lua tests/ui_smoke.lua hero-controls
 lua tests/hero_selection.lua
 lua tests/current_build_cache.lua
 lua tests/talent_read_entries.lua
+lua tests/talent_stage_order.lua
+lua tests/apply_event_burst.lua
+lua tests/audit_trace.lua
 lua tests/actionbar_spec_ready.lua
 lua tests/persisted_macro_readiness.lua
 lua tests/actionbar_cursor_events.lua
@@ -109,3 +112,5 @@ powershell -File tools/package.ps1
 `actionbar_spec_ready.lua` 与 `persisted_macro_readiness.lua` 通过生产事件入口复现登录早期专精 0／nil、原生宏尚不可读的状态，核对原有 V2 宏引用保留、就绪后恢复以及真实删除不误领替代宏。`actionbar_cursor_events.lua` 检查普通指针变化不再捕获／保存布局，待恢复专精仍等待光标清空，真实槽变和宏编辑继续保存。`single_config.lua` 保留失败恢复信息并核对成功重试不会删除最近失败摘要；UI 回归检查天赋确认后的部分恢复统一显示“已应用”。
 
 `talent_read_entries.lua` 将直接节点读取结果与固定原生导出／解析结果逐字段比较，覆盖 Tiered 等级分摊、赠送节点、非活动英雄系、已保存配置、草稿、异常选择和缺少 helper／格式版本变化的回退。`ui_smoke.lua` 同时检查提醒的拖动、位置保存、隐藏时停止移动，以及主按钮正常、悬停、按下、禁用状态；实际鼠标命中仍需客户端验证。
+
+`talent_stage_order.lua` 约束节点排序的原生元数据读取次数，并核对位置、ID 同位顺序与实际购买结果。`apply_event_burst.lua` 使用生产 Apply 状态机回放活动树先于保存配置更新的连续通知：每帧只核对一次，不提前成功，不轮询，同时覆盖原生加载、即时失败、战斗／专精中断、超时与所有事务计时器释放。该离线时序用例证明重复通知的开销边界，不表示真实客户端每次提交都会产生相同数量的通知。
