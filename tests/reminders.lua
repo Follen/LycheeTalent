@@ -24,14 +24,27 @@ local scenes={{id='11',scene='mythic',mapID=1001,label='Dungeon'},{id='222',scen
 local byID={};for _,s in ipairs(scenes)do byID[s.id]=s end
 local b={id=1,name='Personal',source='user',specID=71,contexts={['11']=true,['222']=true}}
 local current
-local builtin={id='wcl:dungeon',name='WCL dungeon',source='builtin',specIndex=1,scenarioID='11',scene='mythic',kind='highest'}
+local builtin={id='wcl:dungeon',name='WCL dungeon',source='builtin',heroTree=1,specIndex=1,scenarioID='11',scene='mythic',kind='highest'}
 C_SpecializationInfo={GetSpecialization=function()return spec==71 and 1 or 2 end}
 local A={Scenarios=scenes,L={},GetSpec=function()return spec end,
  Catalog={scenarios=byID,builds={},Load=function()loads=loads+1;catalogReady=true end,Localize=function()localizations=localizations+1 end},
  Store={db={remindersEnabled=false},character={modes={}},builds={b},Find=function(_,id)if id==1 then return b end end},
  Apply={CurrentBuildID=function()if type(current)=='string' and not catalogReady then return nil end;return current end,
    Start=function(_,build)assert(build==b);applied=applied+1;current=b.id;return true end},
- UI={ShowReminder=function(self,p)shown=shown+1;self.last=p;self.reminder={Hide=function()end}end}}
+ UI={ShowReminder=function(self,p)
+   shown=shown+1;self.last=p
+   local window={prompt=p,offset=0,shown=true}
+   function window:IsShown()return self.shown end
+   function window:Render()self.rendered={};for i,build in ipairs(self.prompt.builds)do self.rendered[i]={id=build.id,name=build.name} end end
+   function window:Hide()self.shown=false;self.prompt=nil end
+   self.reminder=window;window:Render()
+ end}}
+-- Exercise production catalog filtering with the reminder lifecycle fixture.
+local catalog=A.Catalog
+assert(loadfile("addon/LycheeTalent/Catalog.lua"))("LycheeTalent",A)
+catalog.Query,catalog.Title,catalog.Target=A.Catalog.Query,A.Catalog.Title,A.Catalog.Target
+A.Catalog=catalog;catalog.SelectedHero=function()return 1 end
+A.Store.Query=function(_,_,_,_,_,out)for i=#out,1,-1 do out[i]=nil end end
 assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
 assert(loadfile('addon/LycheeTalent/Reminders.lua'))('LycheeTalent',A)
 local R=A.Reminders
@@ -83,14 +96,14 @@ kind='none';R:Check();kind='party';local total=shown;R:Check();assert(shown==tot
 -- After login the applied ID cannot resolve until the class catalog loads.
 kind='none';R:Check();catalogReady=false;kind='party';total=shown;R:Check()
 assert(shown==total and catalogReady,'already-applied builtin is recognized on first instance check after login')
-local raid={id='wcl:raid',name='Raid',source='builtin',specIndex=1,scenarioID='222',scene='raid',difficulty=4,kind='ranked'}
+local raid={id='wcl:raid',name='Raid',source='builtin',heroTree=1,specIndex=1,scenarioID='222',scene='raid',difficulty=4,kind='ranked'}
 A.Catalog.builds={raid};kind='raid';instance=2002;R:Check();assert(R.visible and R.visible.builds[1]==raid,'raid default WCL matches boss')
 kind='none';R:Check();kind='raid';raidDifficulty=14;R:Check()
 assert(not R.visible,'normal raid does not borrow a heroic WCL recommendation')
 A.Store.builds={b};b.remind=true;R:Check()
 assert(R.visible and R.visible.builds[1]==b,'personal boss association remains available on normal raid')
 A.Store.builds={}
-local mythicRaid={id='wcl:raid-mythic',source='builtin',specIndex=1,scenarioID='222',scene='raid',difficulty=5,kind='ranked'}
+local mythicRaid={id='wcl:raid-mythic',source='builtin',heroTree=1,specIndex=1,scenarioID='222',scene='raid',difficulty=5,kind='ranked'}
 A.Catalog.builds={raid,mythicRaid};kind='none';R:Check();kind='raid';raidDifficulty=16;R:Check()
 assert(R.visible and R.visible.builds[1]==mythicRaid,'mythic raid selects its exact WCL difficulty')
 kind='none';R:Check();kind='raid';raidDifficulty=secret;R:Check()
@@ -98,7 +111,35 @@ assert(not R.visible,'secret raid difficulty is not inspected or mapped to heroi
 raidDifficulty=15
 
 -- The default list hides the popular alternative; it must not become a reminder default.
-local popular={id='wcl:popular',source='builtin',specIndex=1,scenarioID='11',scene='mythic',kind='popular'}
+local popular={id='wcl:popular',source='builtin',heroTree=1,specIndex=1,scenarioID='11',scene='mythic',kind='popular'}
+local foreign={id="other-hero",name="Other hero",source="builtin",heroTree=2,specIndex=1,scenarioID="11",scene="mythic",kind="highest"}
+A.Catalog.builds={builtin,foreign};kind="none";R:Check();kind="party";instance=1001;current=nil
+R:Check();assert(R.visible and R.visible.builds[1]==builtin,"arrival recommendation uses the same selected hero as catalog")
 A.Catalog.builds={popular};kind='none';R:Check();kind='party';instance=1001;current=nil
 local beforePopular=shown;R:Check()
 assert(shown==beforePopular and not R.visible,'hidden popular alternative is not offered as default')
+
+-- Refreshing the same encounter must update or close an already visible prompt.
+kind='none';R:Check();A.Catalog.builds={};current=nil;kind='party';instance=1001
+local promptBuilds={}
+for i=1,5 do promptBuilds[i]={id=100+i,name='Personal '..i,source='user',specID=71,remind=true,contexts={['11']=true}}end
+A.Store.builds=promptBuilds
+R:RefreshSettings()
+local prompt=assert(R.visible,'enabled personal candidates produce a prompt')
+assert(#prompt.builds==5 and A.UI.reminder.prompt==prompt,'UI receives all current candidates')
+A.UI.reminder.offset=3
+local replacement={id=200,name='Replacement',source='user',specID=71,remind=true,contexts={['11']=true}}
+A.Store.builds={replacement};R:RefreshSettings()
+assert(R.visible==prompt and prompt.builds[1]==replacement,'same-encounter refresh replaces candidates after library changes')
+assert(A.UI.reminder.offset==0 and A.UI.reminder.rendered[1].id==replacement.id,'refresh clamps paging and renders the new candidate')
+local refreshCount=shown
+A.Store.builds={};R:RefreshSettings()
+assert(not R.visible and not A.UI.reminder.shown,'removing all candidates closes the visible prompt')
+A.Store.builds={replacement};R:Check()
+assert(not R.visible and shown==refreshCount,'seen encounter remains deduplicated after prompt is closed')
+R.seen={};R.order={};R:Check()
+local dismissed=assert(R.visible,'freshly cleared fixture can display the prompt again')
+local dismissedCount=shown;A.UI.reminder:Hide();replacement.name='Edited'
+R:RefreshSettings()
+assert(not R.visible and not A.UI.reminder.shown and shown==dismissedCount,'a user-dismissed prompt does not reopen when its candidate changes')
+assert(dismissed.builds[1].name=='Edited','prompt candidate reference reflects the stored build edit')

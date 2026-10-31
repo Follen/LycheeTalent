@@ -1,9 +1,12 @@
 """Offline repository contracts: load paths, release notices and maintained docs."""
 import html
+import hashlib
 from html.parser import HTMLParser
+import json
 from pathlib import Path
 import re
 import unittest
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,13 +28,37 @@ class RepositoryTests(unittest.TestCase):
     def test_toc_loads_existing_files_and_covers_lua_sources(self):
         for toc in (ROOT / 'addon').glob('*/*.toc'):
             with self.subTest(toc=toc.name):
-                loaded = {line.strip().replace('\\', '/') for line in toc.read_text(encoding='utf-8').splitlines()
-                          if line.strip() and not line.startswith('#')}
-                for path in loaded:
-                    self.assertTrue((toc.parent / path).is_file(), f'{toc.name}: {path}')
+                loaded = set()
+
+                def visit(path):
+                    path = path.resolve()
+                    self.assertTrue(path.is_relative_to(toc.parent.resolve()), f'{toc.name}: escaped load path')
+                    self.assertTrue(path.is_file(), f'{toc.name}: {path}')
+                    relative = path.relative_to(toc.parent).as_posix()
+                    if relative in loaded:
+                        return
+                    loaded.add(relative)
+                    if path.suffix == '.xml':
+                        for element in ET.parse(path).iter():
+                            if element.tag.rsplit('}', 1)[-1] in ('Script', 'Include') and element.get('file'):
+                                visit(path.parent / element.get('file').replace('\\', '/'))
+
+                for line in toc.read_text(encoding='utf-8').splitlines():
+                    if line.strip() and not line.lstrip().startswith('#'):
+                        visit(toc.parent / line.strip().replace('\\', '/'))
                 sources = {path.relative_to(toc.parent).as_posix()
                            for path in toc.parent.rglob('*.lua')}
                 self.assertEqual(sources, {path for path in loaded if path.endswith('.lua')})
+
+    def test_embedded_lycheeui_matches_its_frozen_manifest(self):
+        library = ROOT / 'addon/LycheeTalent/Libs/LycheeUI'
+        manifest = json.loads((library / '.lock').read_text(encoding='utf-8'))
+        self.assertEqual('LycheeUI', manifest['library'])
+        self.assertEqual('frozen', manifest['status'])
+        expected = {entry['path']: entry['sha256'] for entry in manifest['runtimeFiles']}
+        actual = {path.relative_to(library).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                  for path in library.rglob('*') if path.is_file() and path.name != '.lock'}
+        self.assertEqual(expected, actual)
 
     def test_release_notices_match_root_documents(self):
         for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):

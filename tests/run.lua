@@ -3,7 +3,7 @@ local count=0
 local function check(v,msg) count=count+1; assert(v,msg or ("check "..count)) end
 local function load(name,A) assert(loadfile(root..name))("LycheeTalent",A) end
 time=function() return 1790400000 end; date=os.date; GetLocale=function() return "enUS" end
-local A={}; load("Locales.lua",A); load("Migration.lua",A); load("Storage.lua",A)
+local A={}; load("Locales.lua",A); load("Storage.lua",A)
 A.Store:Init()
 local s=A.Store
 local first=s:Save("Alpha","encoded","mythic","Dungeon",71)
@@ -13,10 +13,10 @@ local out={}; s:Query(71,"mythic","all","",out); check(#out==1 and out[1]==first
 s:Query(71,"mythic","all","boss",out); check(#out==1 and out[1]==second,"search crosses scenarios")
 s:Query(72,"mine","all","",out); check(#out==0,"specialization isolation")
 check(s:Delete(first.id)); check(s:Undo()); check(s:Find(first.id)==first,"undo retains identity")
-first.favorite=true; s:Query(71,"mine","all","",out); check(out[1]==second,"legacy favorites no longer affect ordering")
+s:Query(71,"mine","all","",out); check(out[1]==second,"latest build leads unchanged order")
 s:Update(first.id,"Renamed","other","raid","New boss",71); check(first.name=="Renamed" and first.scene=="raid","edit persists")
 local b,e=s:Save("   ","encoded","raid","",71); check(not b and e=="BAD_NAME")
-LycheeTalentDB={version=99,builds={{id=3}}};s:Init(); check(s.readonly and #s.builds==0,"future schema preserved"); check(LycheeTalentDB.version==99)
+LycheeTalentDB={version=99,builds={{id=3}}};s:Init(); check(#s.builds==0,"unrecognized root starts fresh"); check(LycheeTalentDB.schema=="Lychee.Talent.Schema.V2:" and LycheeTalentDB.version==nil)
 LycheeTalentDB=nil;s:Init()
 
 -- Strict talent stream tests use the pinned Blizzard serializer and parser, not a rewritten oracle.

@@ -2,20 +2,35 @@ local _, A = ...
 local S = {}
 A.Store = S
 local function trim(s) return (s or ""):match("^%s*(.-)%s*$") end
+local schema="Lychee.Talent.Schema.V2:"
 function S:Init()
-    local db,char=A.Migration:Run(LycheeTalentDB,LycheeTalentCharacterDB)
-    self.readonly=not db
-    if self.readonly then
-        self.db=LycheeTalentDB or {};self.character=LycheeTalentCharacterDB or {};self.builds={};return
+    -- Each root has its own lifetime: resetting a different character must
+    -- never discard account builds already created under the current schema.
+    if type(LycheeTalentDB)~="table" or LycheeTalentDB.schema~=schema then
+        LycheeTalentDB={schema=schema,nextID=0,builds={},remindersEnabled=true,reducedMotion=false}
     end
-    -- Publish both migrated roots together. Old tables and legacy fields are
-    -- no longer referenced by SavedVariables after a successful migration.
-    LycheeTalentDB,LycheeTalentCharacterDB=db,char
-    self.db,self.character=db,char
-    self.builds = self.db.builds
+    if type(LycheeTalentCharacterDB)~="table" or LycheeTalentCharacterDB.schema~=schema then
+        LycheeTalentCharacterDB={schema=schema,raidDifficulty=5,heroChoices={},actionBars={version=1,specs={}}}
+    end
+    self.db,self.character=LycheeTalentDB,LycheeTalentCharacterDB
+    self.builds=self.db.builds;self.undo=nil
+end
+function S:GetHero(specID)
+    local choices=self.character and self.character.heroChoices
+    return choices and choices[tostring(specID)]
+end
+function S:SetHero(specID,heroTree)
+    if type(specID)~="number" or specID<=0 or specID%1~=0 then return nil,"HERO_UNKNOWN" end
+    for _,hero in ipairs(A.Catalog:Heroes(specID)) do
+        if hero.id==heroTree then
+            self.character.heroChoices=self.character.heroChoices or {}
+            self.character.heroChoices[tostring(specID)]=heroTree
+            return true
+        end
+    end
+    return nil,"HERO_UNKNOWN"
 end
 function S:Save(name, code, scene, target, specID)
-    if self.readonly then return nil, "SCHEMA" end
     name, target = trim(name), trim(target)
     if name == "" or #name > 160 then return nil, "BAD_NAME" end
     if type(code) ~= "string" or #code > 16384 then return nil, "BAD_CODE" end
@@ -39,7 +54,6 @@ function S:OrderLess(a,b)
     return tostring(a.id)<tostring(b.id)
 end
 function S:Move(id,targetID,after)
-    if self.readonly then return nil,"SCHEMA" end
     local build,target=self:Find(id),self:Find(targetID)
     if not build or not target or build.specID~=target.specID then return nil,"BAD_CODE" end
     if id==targetID then return true end
@@ -58,18 +72,15 @@ function S:Move(id,targetID,after)
     return true
 end
 function S:Delete(id)
-    if self.readonly then return end
     local b,i = self:Find(id)
     if b then self.undo = table.remove(self.builds,i); if A.Reminders then A.Reminders:RefreshSettings() end; return true end
 end
 function S:SetRemindersEnabled(enabled)
-    if self.readonly then return nil,"SCHEMA" end
     self.db.remindersEnabled=enabled==true
     if A.Reminders then A.Reminders:RefreshSettings() end
     return true
 end
 function S:SetContexts(id,contexts,enabled)
-    if self.readonly then return nil,"SCHEMA" end
     local b=self:Find(id)
     if not b or type(contexts)~="table" then return nil,"BAD_CODE" end
     local selected,count={},0
@@ -85,12 +96,11 @@ function S:SetContexts(id,contexts,enabled)
     return true
 end
 function S:Undo()
-    if not self.readonly and self.undo and #self.builds < 1000 then
+    if self.undo and #self.builds < 1000 then
         self.builds[#self.builds+1] = self.undo; self.undo=nil; return true
     end
 end
 function S:Update(id,name,code,scene,target,specID)
-    if self.readonly then return nil,"SCHEMA" end
     local b=self:Find(id); if not b then return nil,"BAD_CODE" end
     name=trim(name); if name=="" or #name>160 then return nil,"BAD_NAME" end
     if type(code)~="string" or #code>16384 or b.specID~=specID then return nil,"BAD_CODE" end

@@ -37,240 +37,142 @@ function M:Named(native,name)
     end
     return found
 end
-function M:Pool()
-    local char=A.Store.character
-    char.macroPool=char.macroPool or {}
-    return char.macroPool
+-- Native references are shared across layouts. Backups never become writes.
+local function scope(index) return index<=M:Limits() end
+local function unique(native,predicate)
+    local found
+    for index,macro in pairs(native) do
+        if predicate(macro,index) then if found then return nil end;found=index end
+    end
+    return found
 end
-function M:Owned(native)
-    local out={}
-    for _,record in ipairs(self:Pool()) do
-        local index=self:Named(native,record.name)
-        if index and self:Same(native[index],record) then out[index]=record end
-    end
-    return out
-end
--- Layout references are local to the snapshot. Native indices are bindings,
--- never the saved macro's identity or the source of its body during restore.
-function M:Pack(snapshot,native)
-    snapshot.version=2;snapshot.macros={};snapshot.bindings={}
-    native=native or self:Scan()
-    for _,entry in ipairs(snapshot.slots) do
-        if entry.kind=="macro" then
-            local index=entry.id;local macro=native[index]
-            if not macro then return nil,"BARS_MACRO_READ" end
-            local ref=tostring(index)
-            snapshot.macros[ref]=copy(macro)
-            snapshot.bindings[ref]={index=index,native=copy(macro)}
-            entry.id=ref;entry.sub=nil
-        end
-    end
-    return snapshot
-end
-function M:Plan(snapshot,protected)
-    local native=self:Scan();local owned=self:Owned(native)
-    local plan={bindings={},existing={},writes={},native=native};local used={}
-    local refs,seen={},{}
-    for _,entry in ipairs(snapshot.slots) do
-        if entry.kind=="macro" and not seen[entry.id] then seen[entry.id]=true;refs[#refs+1]=entry.id end
-    end
-    table.sort(refs)
-    for _,ref in ipairs(refs) do
-        local macro=snapshot.macros[ref];local found
-        local binding=snapshot.bindings and snapshot.bindings[ref]
-        if binding and self:Same(macro,native[binding.index],owned[binding.index]~=nil) then found=binding.index end
-        for index,value in pairs(native) do
-            if not found and self:Same(macro,value,owned[index]~=nil) then found=index end
-        end
-        if found then plan.bindings[ref]=found;plan.existing[ref]=native[found];used[found]=true end
-    end
-    local account,limit=self:Limits();local count=0
-    for index in pairs(native) do if index>account then count=count+1 end end
-    local reserved={};for _,value in pairs(native) do reserved[value.name]=true end
-    for _,ref in ipairs(refs) do
-        if not plan.bindings[ref] then
-            local macro=snapshot.macros[ref];local shared
-            for _,write in ipairs(plan.writes) do if self:Same(macro,write.macro,true) then shared=write;break end end
-            if shared then shared.refs[#shared.refs+1]=ref
-            else
-                local index
-                for candidate in pairs(owned) do
-                    if not used[candidate] and not (protected and protected[candidate]) and (not index or candidate<index) then index=candidate end
-                end
-                local name=index and native[index].name
-                if index then used[index]=true
-                else
-                    if count>=limit then return nil,"BARS_MACRO_CAPACITY" end
-                    count=count+1
-                    local n=1;repeat name=string.format("LTAB%02d",n);n=n+1 until not reserved[name]
-                    reserved[name]=true
-                end
-                plan.writes[#plan.writes+1]={index=index,name=name,macro=macro,refs={ref},record=index and owned[index]}
-            end
-        end
-    end
-    return plan
-end
-local function failure(phase,name,index,reason)
-    return nil,"BARS_MACRO",{phase=phase,macro=name,index=index,reason=reason}
-end
-function M:Execute(plan)
-    plan.undo={}
-    local native=self:Scan()
-    for _,write in ipairs(plan.writes) do
-        -- A preceding native call can renumber macros. Never edit a replacement
-        -- at the planned index or reclaim a managed macro changed elsewhere.
-        local index,ambiguous=self:Named(native,write.name)
-        local phase=write.index and "macro-edit" or "macro-create"
-        if write.index then
-            if not index or not self:Same(native[index],plan.native[write.index]) then
-                return failure(phase,write.name,index,ambiguous or (index and "changed" or "missing"))
-            end
-        elseif index or ambiguous then return failure(phase,write.name,index,"name-in-use") end
-        local undo={name=write.name,before=index and copy(native[index]),record=write.record}
-        plan.undo[#plan.undo+1]=undo
-        local ok,err=pcall(function()
-            if index then return EditMacro(index,write.name,write.macro.icon,write.macro.body) end
-            return CreateMacro(write.name,write.macro.icon,write.macro.body,true)
-        end)
-        native=self:Scan()
-        index,ambiguous=self:Named(native,write.name)
-        if index then
-            undo.after=copy(native[index])
-            -- A native call may mutate and then throw. Track the created macro
-            -- so failed cleanup cannot leave an unregistered execution slot.
-            if not undo.record then
-                undo.record={};self:Pool()[#self:Pool()+1]=undo.record;undo.created=true
-            end
-            for k,v in pairs(native[index]) do undo.record[k]=v end
-        end
-        if not ok or not index or not self:Same(native[index],write.macro,true) then
-            return failure(phase,write.name,index,not ok and tostring(err):sub(1,240) or ambiguous or (index and "content-mismatch" or "missing"))
-        end
-        for _,ref in ipairs(write.refs) do plan.bindings[ref]=index end
-    end
-    -- Creation may renumber native indices. Resolve all bindings again after
-    -- the final write, including unchanged user macros selected by the plan.
-    for ref,expected in pairs(plan.existing) do
-        local index=plan.bindings[ref]
-        if not self:Same(native[index],expected) then
-            index=nil
-            for candidate,value in pairs(native) do
-                if self:Same(value,expected) then index=candidate;break end
-            end
-        end
-        if not index then return failure("macro-bind",expected.name,plan.bindings[ref],"missing") end
-        plan.bindings[ref]=index
-    end
-    for _,write in ipairs(plan.writes) do
-        local index,ambiguous=self:Named(native,write.name)
-        if not index or not self:Same(native[index],write.macro,true) then
-            return failure("macro-bind",write.name,index,ambiguous or (index and "content-mismatch" or "missing"))
-        end
-        for _,ref in ipairs(write.refs) do plan.bindings[ref]=index end
-    end
-    return true
-end
-function M:PreserveNames(snapshot,previous)
-    for ref,binding in pairs(snapshot.bindings or {}) do
-        for oldRef,old in pairs(previous and previous.bindings or {}) do
-            if binding.index==old.index and binding.native.name==old.native.name then
-                snapshot.macros[ref].name=previous.macros[oldRef].name;break
-            end
-        end
-    end
-    return snapshot
-end
-function M:Rollback(plan)
-    local failures={}
-    for n=#(plan.undo or {}),1,-1 do
-        local undo=plan.undo[n]
-        local called,restored,reason=pcall(function()
-            local native=self:Scan();local index,ambiguous=self:Named(native,undo.name)
-            if ambiguous then return nil,ambiguous end
-            if undo.before then
-                if not index then return nil,"missing" end
-                if not self:Same(native[index],undo.before) then
-                    if not self:Same(native[index],undo.after) then return nil,"changed" end
-                    local ok,err=pcall(EditMacro,index,undo.before.name,undo.before.icon,undo.before.body)
-                    native=self:Scan();index,ambiguous=self:Named(native,undo.name)
-                    if not index or not self:Same(native[index],undo.before) then
-                        return nil,not ok and tostring(err):sub(1,240) or ambiguous or "content-mismatch"
-                    end
-                end
-                for k,v in pairs(native[index]) do undo.record[k]=v end
-            elseif index then
-                if not self:Same(native[index],undo.after) then return nil,"changed" end
-                local ok,err=pcall(DeleteMacro,index)
-                index,ambiguous=self:Named(self:Scan(),undo.name)
-                if index or ambiguous then return nil,not ok and tostring(err):sub(1,240) or ambiguous or "not-deleted" end
-            end
-            return true
-        end)
-        if called and restored and undo.created then
-            local pool=self:Pool();for i=#pool,1,-1 do if pool[i]==undo.record then table.remove(pool,i) end end
-        end
-        if not called or not restored then
-            failures[#failures+1]={phase=undo.before and "macro-edit" or "macro-delete",macro=undo.name,
-                reason=called and reason or tostring(restored):sub(1,240)}
-        end
-    end
-    return #failures==0,#failures>0 and failures or nil
-end
-function M:Physical(snapshot,bindings)
-    local out=copy(snapshot)
-    out.version=1;out.macros=nil;out.bindings=nil
-    for _,entry in ipairs(out.slots) do
-        if entry.kind=="macro" then entry.id=bindings[entry.id];entry.sub=nil end
-    end
-    return out
-end
--- UPDATE_MACROS has no index argument. Match unchanged definitions first so a
--- deletion/rename that renumbers the macro table cannot edit an unrelated macro.
-function M:Changes(previous,current)
+function M:Changes(previous,current,exactOnly)
     local mapping,used={},{}
     for index,old in pairs(previous) do
         if self:Same(old,current[index]) then mapping[index]=index;used[index]=true end
     end
     for index,old in pairs(previous) do
         if not mapping[index] then
-            for candidate,value in pairs(current) do
-                if not used[candidate] and self:Same(old,value) then mapping[index]=candidate;used[candidate]=true;break end
-            end
+            local candidate=unique(current,function(value,id)
+                return not used[id] and scope(index)==scope(id) and self:Same(old,value)
+            end)
+            if candidate then mapping[index]=candidate;used[candidate]=true end
         end
     end
-    local account=self:Limits()
-    for _,character in ipairs({false,true}) do
-        local oldLeft,newLeft={},{}
-        for index in pairs(previous) do if (index>account)==character and not mapping[index] then oldLeft[#oldLeft+1]=index end end
-        for index in pairs(current) do if (index>account)==character and not used[index] then newLeft[#newLeft+1]=index end end
-        if #oldLeft==1 and #newLeft==1 then mapping[oldLeft[1]]=newLeft[1]
-        else
-            for _,index in ipairs(oldLeft) do
-                local candidate=self:Named(current,previous[index].name)
-                if candidate and not used[candidate] then mapping[index]=candidate;used[candidate]=true end
+    if not exactOnly then
+        for index,old in pairs(previous) do
+            if not mapping[index] and self:Named(previous,old.name)==index then
+                local candidate=self:Named(current,old.name)
+                if candidate and not used[candidate] and scope(index)==scope(candidate) then
+                    mapping[index]=candidate;used[candidate]=true
+                end
+            end
+        end
+        for index,old in pairs(previous) do
+            if not mapping[index] then
+                local function content(value,id)
+                    return scope(index)==scope(id) and self:Same(old,value,true)
+                end
+                local candidate=unique(current,function(value,id)return not used[id] and content(value,id)end)
+                if candidate and unique(previous,content)==index then mapping[index]=candidate;used[candidate]=true end
             end
         end
     end
     return mapping
 end
-function M:Refresh(snapshot,previous,current)
-    local mapping=self:Changes(previous,current);local owned=self:Owned(previous)
-    for ref,binding in pairs(snapshot.bindings or {}) do
-        local index=mapping[binding.index]
-        if index and self:Same(binding.native,previous[binding.index]) then
-            local macro=current[index];local saved=snapshot.macros[ref]
-            local name=owned[binding.index] and macro.name==binding.native.name and saved.name or macro.name
-            snapshot.macros[ref]={name=name,icon=macro.icon,body=macro.body}
-            snapshot.bindings[ref]={index=index,native=copy(macro)}
+function M:Sync(native,exactOnly)
+    -- Most UPDATE_MACROS notifications carry identical content. Scan native
+    -- scalars every time, but leave stable records and saved layouts in place.
+    local unchanged,count=true,0
+    for _,record in pairs(self.registry.records) do
+        if record.index then
+            local current,old=native[record.index],record.native
+            if not current or not old or current.name~=old.name or current.icon~=old.icon or current.body~=old.body then
+                unchanged=false;break
+            end
+            count=count+1
         end
     end
-    return mapping
+    if unchanged then
+        for _ in pairs(native) do count=count-1 end
+        if count==0 then return false end
+    end
+    local previous={}
+    for _,record in pairs(self.registry.records) do if record.index then previous[record.index]=record.native end end
+    local mapping=self:Changes(previous,native,exactOnly)
+    local assigned={}
+    for _,record in pairs(self.registry.records) do
+        local index=record.index and mapping[record.index]
+        record.index=index
+        if index then record.native=copy(native[index]);assigned[index]=true end
+    end
+    for index,macro in pairs(native) do
+        if not assigned[index] then
+            local id=self.registry.nextID+1;self.registry.nextID=id
+            self.registry.records[tostring(id)]={index=index,native=copy(macro)}
+        end
+    end
+    self.revision=(self.revision or 0)+1
+    return true
 end
-function M:RefreshPool(previous,current,mapping)
-    for index,record in pairs(self:Owned(previous)) do
-        local nextIndex=mapping[index]
-        if nextIndex then for k,v in pairs(current[nextIndex]) do record[k]=v end end
+function M:Initialize()
+    local char=A.Store.character
+    if self.character==char then return end
+    self.character=char
+    char.nativeMacros=char.nativeMacros or {nextID=0,records={}}
+    self.registry=char.nativeMacros
+    -- Across reloads only a complete observed identity can survive.
+    self:Sync(self:Scan(),true)
+end
+function M:Current()
+    self:Initialize()
+    local native=self:Scan();local changed=self:Sync(native)
+    return native,changed
+end
+function M:Pack(snapshot,native)
+    native=native or self:Current()
+    self:Initialize()
+    snapshot.version=2;snapshot.macros={}
+    for _,entry in ipairs(snapshot.slots) do
+        if entry.kind=="macro" then
+            local index=entry.id;local macro=native[index]
+            if not macro then return nil,"BARS_MACRO_READ" end
+            local id
+            for key,record in pairs(self.registry.records) do if record.index==index then id=key;break end end
+            if not id then return nil,"BARS_MACRO_READ" end
+            snapshot.macros[id]=copy(macro);snapshot.macros[id].nativeID=id
+            entry.id=id;entry.sub=nil
+        end
+    end
+    return snapshot
+end
+function M:Resolve(macro,native)
+    self:Initialize()
+    local record=macro.nativeID and self.registry.records[tostring(macro.nativeID)]
+    local index=record and record.index
+    if index and self:Same(native[index],record.native) then return index end
+end
+function M:Physical(snapshot,native)
+    native=native or self:Current()
+    local out=copy(snapshot);out.version=1;out.macros=nil
+    local missing={}
+    for slot,entry in ipairs(out.slots) do
+        if entry.kind=="macro" then
+            local macro=snapshot.macros[entry.id]
+            local index=self:Resolve(macro,native)
+            if index then entry.id=index;entry.sub=nil
+            else missing[slot]=copy(macro);out.slots[slot]={kind="unreadableMacro",id=slot} end
+        end
+    end
+    return out,missing
+end
+function M:Refresh(snapshot)
+    for ref,macro in pairs(snapshot.macros or {}) do
+        local record=macro.nativeID and self.registry.records[tostring(macro.nativeID)]
+        if record and record.index then
+            local updated=copy(record.native);updated.nativeID=macro.nativeID
+            snapshot.macros[ref]=updated
+        end
     end
 end
 M.Copy=copy

@@ -1,6 +1,29 @@
 local _,A=...
-local X={revision="20261015-schema-v1"}
+local X={revision="20261031-native-macros"}
 A.Apply=X
+local function expectedEqual(previous,entries)
+    if not entries then return previous==false end
+    if not previous or previous==false or previous.count~=#entries then return false end
+    for i,entry in ipairs(entries)do
+        local offset=(i-1)*4
+        if previous[offset+1]~=(entry.nodeID or 0) or previous[offset+2]~=(entry.selectionEntryID or 0)
+            or previous[offset+3]~=(entry.ranksPurchased or 0) or previous[offset+4]~=(entry.ranksGranted or 0) then return false end
+    end
+    return true
+end
+local function copyExpected(entries)
+    if not entries then return false end
+    local result={count=#entries}
+    for i,entry in ipairs(entries)do
+        local offset=(i-1)*4
+        result[offset+1]=entry.nodeID or 0;result[offset+2]=entry.selectionEntryID or 0
+        result[offset+3]=entry.ranksPurchased or 0;result[offset+4]=entry.ranksGranted or 0
+    end
+    return result
+end
+local contentEvents={TRAIT_CONFIG_UPDATED=true,TRAIT_CONFIG_LIST_UPDATED=true,TRAIT_CONFIG_CREATED=true,
+    PLAYER_TALENT_UPDATE=true,TRAIT_NODE_CHANGED=true,TRAIT_NODE_CHANGED_PARTIAL=true,
+    SELECTED_LOADOUT_CHANGED=true,ACTIVE_COMBAT_CONFIG_CHANGED=true,CONFIG_COMMIT_FAILED=true,PLAYER_REGEN_ENABLED=true}
 function X:GuardCreation(frame)
     if not frame or not frame.IsEventRegistered then return end
     self.creationGuard={frame=frame,registered=frame:IsEventRegistered("TRAIT_CONFIG_CREATED")}
@@ -76,41 +99,97 @@ function X:ResetPending(active,entries)
     if not ok or not result or C_Traits.ConfigHasStagedChanges(active) then return nil,"ROLLBACK_FAILED" end
     return true
 end
+-- One result for the current active tree. Identity and draft guards remain
+-- live on every read; native talent/lifecycle events invalidate this result.
+function X:InvalidateCurrent(event)
+    if self.current and self.current.token and contentEvents[event] then self.current.dirty=true
+    else self.current=nil end
+    if event=="PLAYER_LEAVING_WORLD" or event=="PLAYER_LOGOUT" then self.currentWorldInactive=true
+    elseif event=="PLAYER_ENTERING_WORLD" then self.currentWorldInactive=nil end
+end
+function X:RememberFailure(record)
+    local char=A.Store.character
+    char.failures=char.failures or {};char.failures[#char.failures+1]=record
+    if #char.failures>8 then table.remove(char.failures,1) end
+end
 function X:CurrentBuildID(allowPendingBars)
+    if self.currentWorldInactive or InCombatLockdown() then return self:InvalidateCurrent() end
     if A.ActionBars.pendingSpec and not allowPendingBars then return end
-    local state=A.ActionBars:Spec(A:GetSpec())
+    local spec=A:GetSpec()
+    local state=A.ActionBars:Spec(spec)
     local saved=state and state.applied
-    if not saved or self.op or saved.spec~=A:GetSpec() then return end
-    if C_ClassTalents.GetStarterBuildActive() then return end
-    local binding,info=A.ActionBars:Working(saved.spec)
-    if not binding or binding.id~=saved.config or info.usesSharedActionBars then return end
+    if state and state.pendingBars and not allowPendingBars then return end
+    if type(saved)~="table" or type(saved.entries)~="table" or type(saved.code)~="string"
+        or self.op or saved.spec~=spec then return self:InvalidateCurrent() end
+    if C_ClassTalents.GetStarterBuildActive() then return self:InvalidateCurrent() end
+    local binding,info=A.ActionBars:Working(spec)
+    if not binding or binding.id~=saved.config or info.usesSharedActionBars then return self:InvalidateCurrent() end
     local build=A.Catalog:Find(saved.id)
-    if not build or A.Talents:Code(build)~=saved.code then return end
+    if not build or A.Talents:Code(build)~=saved.code then return self:InvalidateCurrent() end
     local active=C_ClassTalents.GetActiveConfigID()
-    if active and not C_Traits.ConfigHasStagedChanges(active)
-        and C_ClassTalents.GetLastSelectedSavedConfigID(saved.spec)==binding.id
-        and A.Talents:Matches(active,saved.entries) then return saved.id end
+    if not active or C_Traits.ConfigHasStagedChanges(active)
+        or C_ClassTalents.GetLastSelectedSavedConfigID(spec)~=binding.id then return self:InvalidateCurrent() end
+    if not A.Talents:Frame() then return self:InvalidateCurrent() end
+    local current=self.current
+    if current and current.character==A.Store.character and current.applied==saved and current.entries==saved.entries
+        and current.id==saved.id and current.code==saved.code and current.active==active
+        and current.config==binding.id and current.name==binding.name and current.spec==spec
+        and expectedEqual(current.expected,saved.entries) then
+        if not current.dirty then return current.matches and saved.id or nil end
+        local token=A.Talents.StableConfigToken and A.Talents:StableConfigToken(active)
+        if token and token==current.token then
+            current.dirty=nil
+            return current.matches and saved.id or nil
+        end
+    end
+    local matches,difference=A.Talents:Matches(active,saved.entries)
+    -- Missing native UI/data may become available without a talent mutation.
+    -- Keep retrying that case; actual matching/mismatching content is stable
+    -- until a native event or one of the immediate identity guards changes.
+    if matches or (difference and difference.kind~="unavailable") then
+        self.current={character=A.Store.character,applied=saved,entries=saved.entries,id=saved.id,code=saved.code,
+            active=active,config=binding.id,name=binding.name,spec=spec,matches=matches==true,
+            expected=copyExpected(saved.entries),token=A.Talents.StableConfigToken and A.Talents:StableConfigToken(active)}
+    else self.current=nil end
+    return matches and saved.id or nil
 end
 function X:Finish(ok,key)
     local op=self.op
     if not op then return end
+    self:InvalidateCurrent()
     if self.timer then self.timer:Cancel();self.timer=nil end
     if self.nextStep then self.nextStep:Cancel();self.nextStep=nil end
+    if self.advanceStep then self.advanceStep:Cancel();self.advanceStep=nil end
     if self.events then self.events:UnregisterAllEvents() end
     self.op=nil;self:ReleaseCreationGuard()
     local char=A.Store.character
     char.lastAttempt={revision=self.revision,time=time(),buildID=op.buildID,spec=op.spec,
         shared=op.shared,stage=op.stage,slot=op.failedSlot,luaError=op.luaError,
-        reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED")}
+        reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED"),partial=op.partial,actionBarsReason=op.barsReason}
+    if not ok or op.partial then
+        local detail=op.recovery and char.recovery==op.recovery and char.recovery.actionBars and char.recovery.actionBars.detail
+        if detail then
+            char.lastAttempt.phase=detail.phase
+            if detail.reason then char.lastAttempt.detail=tostring(detail.reason):sub(1,240) end
+            local slots=detail.missingMacros or detail.preservedSlots
+            if slots then char.lastAttempt.slots=table.concat(slots,",") end
+        end
+        -- A later successful retry must not erase the preceding reason. These
+        -- are eight small summaries, never layout, tree or macro-body copies.
+        self:RememberFailure(char.lastAttempt)
+    end
     -- A failed initial capture must not destroy an earlier recovery backup.
     if op.recovery and char.recovery==op.recovery then
-        char.recovery.status=ok and "complete" or "interrupted"
+        char.recovery.status=op.partial and "partial" or ok and "complete" or "interrupted"
         char.recovery.reason=char.lastAttempt.reason
         char.recovery.targetConfig=op.target
         char.recovery.targetName=op.targetName
         char.recovery.stage=op.stage
     end
-    A:Message(char.lastAttempt.reason)
+    if not ok then
+        if A.UI.ShowApplyError then A.UI:ShowApplyError(op.buildID,char.lastAttempt.reason,ok)
+        else A:Message(char.lastAttempt.reason) end
+    end
     if ok and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
     if A.UI.frame and A.UI.frame:IsShown() then
         A.UI:Refresh()
@@ -213,13 +292,38 @@ function X:ActivateWorking()
         self:StageWorking()
     else self:LoadNative(op.target,function()self:StageWorking()end) end
 end
-function X:MatchesWorking(op,active)
-    if not A.Talents:Matches(active,op.entries) then return false end
+function X:MatchesConfigurations(op,active,target,expected)
+    local activeToken,savedToken
+    if A.Talents.StableConfigToken then
+        activeToken=A.Talents:StableConfigToken(active);savedToken=A.Talents:StableConfigToken(target)
+    end
+    local previous=op.failedComparison
+    if activeToken and savedToken and previous and previous.active==active and previous.target==target
+        and previous.spec==op.spec and previous.stage==op.stage and previous.activeToken==activeToken
+        and previous.savedToken==savedToken and expectedEqual(previous.expected,expected) then return false end
+    op.failedComparison=nil
+    local matches,difference,canonical
+    if expected then matches,difference,canonical=A.Talents:Matches(active,expected)
+    else canonical=A.Talents:ReadEntries(active);matches=canonical~=nil end
     -- Server-derived free ranks may be encoded as purchased in imported data,
     -- but omitted by saved configs. Compare the saved config with the verified
     -- active tree's canonical representation, not the imported representation.
-    local canonical=A.Talents:ReadEntries(active)
-    return canonical and A.Talents:Matches(op.target,canonical)
+    if matches then
+        canonical=canonical or A.Talents:ReadEntries(active)
+        if canonical then matches,difference=A.Talents:Matches(target,canonical)
+        else matches=false;difference={kind="unavailable"} end
+    end
+    -- Memoize only a known mismatch, bounded to this one operation. A fresh
+    -- native token is read on every notice; success always takes the full live
+    -- comparison path. Unavailable data and drafts are never memoized.
+    if not matches and difference and difference.kind~="unavailable" and activeToken and savedToken then
+        op.failedComparison={active=active,target=target,spec=op.spec,stage=op.stage,
+            activeToken=activeToken,savedToken=savedToken,expected=copyExpected(expected)}
+    end
+    return matches==true
+end
+function X:MatchesWorking(op,active)
+    return self:MatchesConfigurations(op,active,op.target,op.entries)
 end
 function X:StageWorking()
     local op=self.op
@@ -264,25 +368,33 @@ function X:CompleteWorking()
     local state=A.ActionBars:Spec(op.spec)
     local snapshot=op.targetBars
     op.stage="action-bars"
-    local ok,reason,detail=A.ActionBars:Restore(snapshot)
-    if not ok then
-        op.failedSlot=detail and detail.slot
-        A.Store.character.recovery.actionBars={reason=reason,detail=detail,backup=A.ActionBars.recovery}
-        self:Finish(false,reason);return
-    end
-    local saved,saveReason=A.ActionBars:SaveLayout(op.spec,op.buildID,op.shared,A.ActionBars.verified)
-    if not saved then self:Finish(false,saveReason);return end
+    -- Talents have already been verified. A later action-bar failure must not
+    -- make the previous talent build appear current or overwrite the target.
     state.active={id=op.buildID,shared=op.shared,config=op.target,code=op.code}
     state.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
-    A.ActionBars.pendingSpec=nil
-    A.ActionBars.resumeFailed=nil
-    local preserved=detail and detail.preservedSlots
+    local function pending(reason,detail)
+        op.partial=true;op.barsReason=reason;op.failedSlot=detail and detail.slot
+        state.applied.partial=true;state.applied.barsPending=true
+        state.pendingBars={id=op.buildID,shared=op.shared,code=op.code,snapshot=A.Macros.Copy(snapshot)}
+        A.ActionBars.pendingSpec=op.spec;A.ActionBars.resumeFailed=true
+        A.Store.character.recovery.actionBars={reason=reason,detail=detail,requested=A.Macros.Copy(snapshot),backup=A.ActionBars.recovery}
+        self:Finish(true,"BARS_PENDING")
+    end
+    local called,ok,reason,detail=pcall(A.ActionBars.Restore,A.ActionBars,snapshot)
+    if not called then pending("BARS_RESTORE",{reason=tostring(ok),rolledBack=false});return end
+    if not ok then pending(reason,detail);return end
+    local savedCall,saved,saveReason=pcall(A.ActionBars.SaveLayout,A.ActionBars,op.spec,op.buildID,op.shared,A.ActionBars.verified)
+    if not savedCall then pending("BARS_RESTORE",{phase="save-layout",reason=tostring(saved)});return end
+    if not saved then pending(saveReason);return end
+    state.pendingBars=nil
+    A.ActionBars.pendingSpec=nil;A.ActionBars.resumeFailed=nil
+    local preserved=detail and (detail.missingMacros or detail.preservedSlots)
     if preserved then
+        op.partial=true;op.barsReason="BARS_PARTIAL"
         A.Store.character.recovery.actionBars={reason="BARS_PARTIAL",detail=detail}
     end
-    -- Native macro writes are complete before background observation resumes.
-    self:Finish(true)
-    if preserved then A:Message(string.format(A.L.BARS_PARTIAL,table.concat(preserved,", "))) end
+    state.applied.partial=preserved~=nil
+    self:Finish(true,preserved and "BARS_PENDING" or nil)
 end
 function X:Advance()
     local op=self.op
@@ -301,8 +413,7 @@ function X:Advance()
     elseif op.stage=="creating" and op.target and C_ClassTalents.IsConfigPopulated(op.target) then
         self:Defer(function()self:ConfigureWorking()end)
     elseif op.stage=="native-loading" and not C_Traits.ConfigHasStagedChanges(active) then
-        local entries=A.Talents:ReadEntries(active)
-        if entries and A.Talents:Matches(op.loading,entries) then
+        if self:MatchesConfigurations(op,active,op.loading) then
             op.stage="native-loaded"
             C_ClassTalents.UpdateLastSelectedSavedConfigID(op.spec,op.loading)
             self.nativeReadyAt=GetTime()+1
@@ -320,6 +431,23 @@ function X:Advance()
         self:Defer(function()self:CompleteWorking()end)
     end
 end
+-- Native commit/config notices can arrive in a burst while active and saved
+-- snapshots settle separately. Reconcile once next frame, always from live data.
+function X:QueueAdvance()
+    local op=self.op
+    -- Native callers advance after returning; do not reenter their mutation.
+    if not op or op.inNativeCall or self.advanceStep then return end
+    self.advanceStep=C_Timer.NewTimer(0,function()
+        self.advanceStep=nil
+        if self.op~=op or not self:CheckContext() then return end
+        local ok,err=pcall(self.Advance,self)
+        if not ok and self.op==op then
+            op.luaError=tostring(err):sub(1,240)
+            if op.recovery then op.recovery.luaError=op.luaError end
+            self:Finish(false,"APPLY_FAILED")
+        end
+    end)
+end
 function X:OnEvent(event,value)
     local op=self.op
     if not op then return end
@@ -330,12 +458,11 @@ function X:OnEvent(event,value)
         and value.name==op.name and not op.before[value.ID] and value.type==Enum.TraitConfigType.Combat then
         op.target=value.ID;op.targetName=value.name
     end
-    self:Advance()
+    self:QueueAdvance()
 end
 function X:Start(build,shared,consent)
     if self.op or self.preparing then return nil,"APPLY_BUSY" end
     if InCombatLockdown() then return nil,"COMBAT" end
-    if A.Store.readonly then return nil,"SCHEMA" end
     local code,why=A.Talents:Code(build);if not code then return nil,why end
     local valid,spec=A.Talents:Validate(code);if not valid then return nil,spec end
     local active=C_ClassTalents.GetActiveConfigID()
@@ -364,7 +491,7 @@ function X:Start(build,shared,consent)
     local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="capture-bars",
         originalSaved=selected,originalCode=originalCode,previousBuildID=self:CurrentBuildID(),
         previousApplied=A.ActionBars:Spec(spec).applied,startedAt=GetTime()}
-    self.op=op
+    self.op=op;self:InvalidateCurrent()
     if not self.events then
         self.events=CreateFrame("Frame")
         self.events:SetScript("OnEvent",function(_,event,...)
@@ -378,7 +505,6 @@ function X:Start(build,shared,consent)
     end
     for _,event in ipairs({"TRAIT_CONFIG_CREATED","TRAIT_CONFIG_UPDATED","CONFIG_COMMIT_FAILED","STARTER_BUILD_ACTIVATION_FAILED","PLAYER_REGEN_DISABLED","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","PLAYER_TALENT_UPDATE","SELECTED_LOADOUT_CHANGED"}) do self.events:RegisterEvent(event) end
     self.timer=C_Timer.NewTimer(25,function()if X.op==op then X:Finish(false,"APPLY_TIMEOUT")end end)
-    A:Message("APPLYING")
     if A.UI.frame and A.UI.frame:IsShown() then A.UI:Refresh() end
     -- Yield once so Applying can paint before the first cursor-assisted read.
     self:Defer(function()self:CaptureBeforeApply()end)
@@ -399,13 +525,15 @@ function X:CaptureBeforeApply()
         local saved,why=A.ActionBars:SaveLayout(spec,op.previousBuildID,op.previousApplied.shared,before)
         if not saved then self:Finish(false,why);return end
     end
-    local target,why=A.ActionBars:Get(spec,op.buildID,op.shared)
+    local retained=state.pendingBars
+    local target,why
+    if retained and retained.id==op.buildID and retained.shared==op.shared and retained.code==op.code then
+        target=A.Macros.Copy(retained.snapshot)
+    else target,why=A.ActionBars:Get(spec,op.buildID,op.shared) end
     if not target and not op.shared and why=="BARS_MISSING" then
         target,why=A.ActionBars:Get(spec,nil,true)
     end
     if not target then self:Finish(false,why);return end
-    local plan;plan,why=A.ActionBars:Plan(target,before)
-    if not plan then self:Finish(false,why);return end
     op.targetBars=target
     op.stage="preparing"
     op.recovery={revision=self.revision,status="active",spec=spec,code=op.originalCode,bars=before,

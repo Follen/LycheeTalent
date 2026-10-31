@@ -50,7 +50,7 @@ C_ClassTalents={
  LoadConfig=function(id,auto)assert(id==2 and auto==true);loads=loads+1;activeNodes=state(replay.entries);staging=true;return 3 end,
  CommitConfig=function(id)assert(id==2);commits=commits+1;staging=false;return true end,
 }
-local A={GetSpec=function()return 62 end,Store={character={bindings={['captured:independent']={id=2,name='Lychee 62-3',spec=62,code=replay.target,shared=false}}}},UI={},Message=function(self,k)self.message=k end}
+local A={GetSpec=function()return 62 end,Store={character={}},UI={},Message=function(self,k)self.message=k end}
 assert(loadfile('addon/LycheeTalent/Talents.lua'))('LycheeTalent',A)
 activeNodes=state(A.Talents:Entries(replay.original));savedNodes=activeNodes
 assert(A.Talents:Export()==replay.original,'same-build DB2 fixture reproduces original native export exactly')

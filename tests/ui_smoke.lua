@@ -69,8 +69,35 @@ C_ChallengeMode={GetMapTable=function()return {}end}
 C_AddOns={DoesAddOnExist=function()return true end,LoadAddOn=function()dofile("addon/LycheeTalent_Data_WARRIOR/Data.lua");return true end}
 local timers={}
 C_Timer={NewTimer=function(_,fn)local t={fn=fn,Cancel=function(self)self.cancelled=true end};timers[#timers+1]=t;return t end}
+function methods:GetObjectType()return self.kind end
+function methods:IsVisible()return self:IsShown() end
+function methods:GetLineHeight()return 20 end
+function methods:GetFont()return unpack(self.font or {STANDARD_TEXT_FONT,18,""}) end
+function methods:GetSpacing()return 0 end
+function methods:SetJustifyV()end
+function methods:SetBlendMode()end
+function methods:GetParent()return self.parent end
+function methods:GetNumPoints()return self.point and 1 or 0 end
+function methods:GetScale()return 1 end
+GetTime=GetTime or function()return 0 end
+local libraryPrivate={}
+for name in io.open("addon/LycheeTalent/Libs/LycheeUI/embeds.xml"):read("*a"):gmatch('file="([^"]+%.lua)"') do
+    assert(loadfile("addon/LycheeTalent/Libs/LycheeUI/"..name))("LycheeTalent",libraryPrivate)
+end
+if arg[1]=="hero-controls" then
+    C_AddOns.LoadAddOn=function()
+        local function b(id,hero,scene,difficulty)
+            return {id=id,source="builtin",name=id,scene=scene,scenarioID=scene=="raid" and "3470" or "12993",heroTree=hero,
+                heroName=hero==60 and "Slayer" or "Colossus",specIndex=1,kind=scene=="raid" and "ranked" or "highest",difficulty=difficulty,icon=1,nodes=""}
+        end
+        LycheeTalentData={WARRIOR={heroTrees={[1]={{id=60,name="Slayer"},{id=62,name="Colossus"}},[2]={{id=61,name="Mountain Thane"},{id=62,name="Colossus"}}},
+            builds={b("slayer",60,"mythic"),b("colossus",62,"mythic"),b("slayer-heroic",60,"raid",4),b("slayer-mythic",60,"raid",5),
+            b("colossus-heroic",62,"raid",4),b("colossus-mythic",62,"raid",5)}}}
+        return true
+    end
+end
 local A={}
-for _,name in ipairs({"Locales","Migration","Storage","Scenarios","Catalog","Talents","TalentEx","Macros","ActionBars","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
+for _,name in ipairs({"Locales","Storage","Scenarios","Catalog","Talents","TalentEx","Macros","ActionBars","Apply","Motion","UI","Dock","Core"})do assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)end
 A.Store:Init();A.Store.db.reducedMotion=true
 PlayerSpellsFrame=new("Frame",UIParent);PlayerSpellsFrame:SetSize(1100,820);PlayerSpellsFrame:Hide()
 PlayerSpellsFrame.TalentsFrame=new("Frame",PlayerSpellsFrame)
@@ -97,6 +124,99 @@ PlayerSpellsFrame:SetHeight(900);PlayerSpellsFrame.scripts.OnSizeChanged()
 assert(A.UI.frame:GetHeight()==900 and A.UI.frame.point[5]==0,"native resize preserves aligned edges")
 assert(#objects==beforeResize,"resize reuses row pools")
 PlayerSpellsFrame:SetHeight(820);PlayerSpellsFrame.scripts.OnSizeChanged()
+if arg[1]=="event-filter" then
+    local U=A.UI;local invalidations,refreshes=0,0
+    C_ClassTalents={GetActiveConfigID=function()return 1 end}
+    A.ActionBars:Spec(71).working={id=20,name="owned",spec=71}
+    A.Apply.InvalidateCurrent=function()invalidations=invalidations+1 end
+    U.Refresh=function()refreshes=refreshes+1 end
+    local function flush()
+        local timer=U.stateTimer;if timer then timer.fn();timer.cancelled=true end
+    end
+    for i=1,100 do U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED",10);flush() end
+    assert(invalidations==0 and refreshes==0,"unrelated config notices refresh/invalidate the UI")
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED",1)
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED",20);flush()
+    assert(invalidations==2 and refreshes==1,"active/working notices preserve deferred refresh")
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_NODE_CHANGED",99999);flush()
+    assert(invalidations==3 and refreshes==2,"node payload is a nodeID, never a config filter")
+    U.frame.scripts.OnEvent(U.frame,"PLAYER_SPECIALIZATION_CHANGED","party1");flush()
+    assert(invalidations==3 and refreshes==2)
+    U.frame.scripts.OnEvent(U.frame,"PLAYER_SPECIALIZATION_CHANGED","player");flush()
+    assert(invalidations==4 and refreshes==3)
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED");assert(U.stateTimer)
+    U.frame:Hide();assert(not U.stateTimer,"hide cancels pending UI refresh")
+    local beforeShow=invalidations
+    U.Refresh=function()assert(invalidations>beforeShow,"reopen refresh must invalidate hidden tree changes first");refreshes=refreshes+1 end
+    U.frame:Show()
+    assert(U.frame.events.TRAIT_NODE_CHANGED_PARTIAL,"partial node notices are visible UI changes")
+    local beforePartial=invalidations
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_NODE_CHANGED_PARTIAL",99999);flush()
+    assert(invalidations==beforePartial+1,"partial payload is node identity, not config identity")
+    print("PASS UI event filter: config identity, live node changes, player spec filtering and hide timer cleanup");return
+end
+if arg[1]=="hero-controls" then
+    local U=A.UI;local starts=0
+    A.Apply.Start=function()starts=starts+1;return true end
+    C_ClassTalents={GetActiveConfigID=function()return 42 end,GetActiveHeroTalentSpec=function()return 60 end}
+    local heroReads=0
+    C_Traits={GetSubTreeInfo=function(config,hero)
+        heroReads=heroReads+1
+        assert(config==42 and (hero==60 or hero==62 or hero==61),"localized name requires active config and subtree")
+        return {name=hero==60 and "屠戮者" or hero==62 and "巨神兵" or nil,
+            iconElementID=hero==60 and "talents-heroclass-warrior-slayer" or hero==62 and "talents-heroclass-warrior-colossus" or nil}
+    end}
+    U:Refresh();assert(U.heroSelector:IsShown() and U.heroLabel:IsShown() and not U.difficultyButton:IsShown())
+    assert(U.heroSelector.buttons[1].label:GetText()=="屠戮者" and U.heroSelector.buttons[2].label:GetText()=="巨神兵")
+    local firstChoice=U.heroSelector.buttons[1]
+    assert(firstChoice.heroIcon and firstChoice.heroIcon.atlas=="talents-heroclass-warrior-slayer","native hero atlas is displayed")
+    local beforeHover=#objects
+    firstChoice.scripts.OnEnter(firstChoice)
+    assert(not U.tooltip and #objects==beforeHover,"hero hover keeps its feedback without creating a tooltip")
+    firstChoice.scripts.OnLeave(firstChoice)
+    local resolvedReads=heroReads
+    for i=1,100 do U:Refresh() end
+    assert(heroReads==resolvedReads,"unchanged hero metadata does not repeatedly allocate native subtree info")
+    assert(U.heroSelector.buttons[1].active and U.results[1].id=="slayer")
+    local originalRow=U.rows[1]
+    originalRow.scripts.OnMouseDown(originalRow,"LeftButton");originalRow.scripts.OnClick(originalRow,"LeftButton")
+    local second=U.heroSelector.buttons[2]
+    second.scripts.OnMouseDown(second,"LeftButton");second.scripts.OnClick(second,"LeftButton")
+    originalRow.scripts.OnDoubleClick(originalRow,"LeftButton");assert(starts==0,"filter change invalidates old double click")
+    assert(starts==0 and A.Store:GetHero(71)==62 and U.results[1].id=="colossus","hero selection only changes list")
+    assert(second.active and U.buildList.point[3]==-216,"hero controls reserve space above dense list")
+    U.scene="raid";U:Refresh()
+    assert(U.difficultyButton:IsShown() and U.difficultyLabel:IsShown() and U.heroSelector.buttons[2].active)
+    assert(U.results[1].id=="colossus-mythic" and U.buildList.point[3]==-264)
+    local heroic=U.difficultyChoices[1];heroic.scripts.OnMouseDown(heroic,"LeftButton");heroic.scripts.OnClick(heroic,"LeftButton")
+    assert(U.results[1].id=="colossus-heroic" and A.Store.character.raidDifficulty==4 and starts==0)
+    U.scene="mine";U:Refresh();assert(not U.heroSelector:IsShown() and not U.heroLabel:IsShown() and not U.difficultyButton:IsShown())
+    U.scene="mythic";U:Refresh();assert(U.heroSelector.buttons[2].active and U.results[1].id=="colossus")
+    -- Subsequent native hero changes never move the remembered filter.
+    C_ClassTalents.GetActiveHeroTalentSpec=function()return 60 end;U:Refresh()
+    assert(A.Store:GetHero(71)==62 and U.heroSelector.buttons[2].active)
+    local originalSpec=C_SpecializationInfo.GetSpecialization
+    local originalInfo=C_SpecializationInfo.GetSpecializationInfo
+    second.scripts.OnMouseDown(second,"LeftButton")
+    C_SpecializationInfo.GetSpecialization=function()return 2 end
+    C_SpecializationInfo.GetSpecializationInfo=function()return 72,"狂怒" end
+    U:Refresh();assert(A.Store:GetHero(72)==61 and U.heroSelector.buttons[1].label:GetText()=="Mountain Thane")
+    second.scripts.OnClick(second,"LeftButton")
+    assert(A.Store:GetHero(72)==61,"a press cannot select a rebound specialization")
+    C_SpecializationInfo.GetSpecialization=originalSpec;C_SpecializationInfo.GetSpecializationInfo=originalInfo
+    U:Refresh();assert(U.heroSelector.buttons[2].active,"specialization return retains its own hero")
+    LycheeTalentData.WARRIOR.builds[2].heroTree=60;U:Refresh()
+    assert(#U.results==0 and U.empty:IsShown() and U.emptyHelp:GetText()==A.L.EMPTY_RECOMMENDED_HELP,"missing selected hero remains explicit empty")
+    A.Store.character.heroChoices["71"]=999;U:Refresh()
+    assert(#U.results==0 and U.emptyHelp:GetText()==A.L.HERO_UNKNOWN and not U.heroSelector.buttons[1].active and not U.heroSelector.buttons[2].active)
+    local initial=#objects
+    for i=1,100 do U.scene=i%2==0 and "mythic" or "raid";U:Refresh() end
+    assert(#objects==initial and starts==0,"hero and difficulty controls reuse native objects")
+    U:UpdateBarsPending("colossus",true);assert(not U.applyError,"bar recovery does not replace the confirmed talent result")
+    U:UpdateBarsPending("colossus",false);assert(not U.applyError and not (U.errorText and U.errorText:IsShown()),"bar recovery has no pending warning")
+    print("PASS hero controls: native LycheeUI segments, localization/config arguments, remembered selection, no auto apply, missing data, personal page, fixed objects")
+    return
+end
 if arg[1]=="list-scroll" then
     for i=1,27 do A.Store:Save("Scroll "..i,"scroll-"..i,"mythic","",71) end
     local u=A.UI;u.scene="mine";u:Refresh()
@@ -123,7 +243,7 @@ if arg[1]=="list-scroll" then
     u:Refresh()
     assert(u.offset==0 and not bar:IsShown() and u.rows[1].build==A.Store.builds[1],"shortened lists clamp and hide the scrollbar")
     u.scene="raid";u:Refresh()
-    assert(bar.point[5]==-196,"raid scrollbar clears the difficulty controls")
+    assert(bar.point[5]==-264,"raid scrollbar clears the difficulty controls")
     print("PASS list scrolling: drag, wheel, row identity, resize, page return, short lists, raid layout");return
 end
 if arg[1]=="reorder" then
@@ -166,7 +286,6 @@ if arg[1]=="reorder" then
     assert(not u.drag and not u.dragPreview.scripts.OnUpdate,"combat cancels drag")
     InCombatLockdown=function()return true end;start(1);assert(not u.drag,"combat cannot start sorting")
     InCombatLockdown=function()return false end
-    A.Store.readonly=true;start(1);assert(not u.drag,"read-only cannot start sorting");A.Store.readonly=false
     start(1);u.scene="mythic";u:Refresh();assert(not u.drag,"tab change cancels drag")
     start(1);assert(not u.drag,"builtins cannot be reordered")
     u.scene="mine";u:Refresh()
@@ -334,9 +453,9 @@ assert(not A.UI.footer:IsShown(),"raid page has no import or save-current button
 assert(A.UI.difficultyButton:IsShown(),"raid shows paired difficulty choices")
 local heroic=A.UI.difficultyChoices[1];local mythic=A.UI.difficultyChoices[2]
 heroic.scripts.OnClick(heroic)
-assert(A.UI.difficulty==4 and heroic.selected:IsShown() and not mythic.selected:IsShown(),"heroic is explicit selected choice")
+assert(A.UI.difficulty==4 and heroic.active and not mythic.active,"heroic is explicit selected choice")
 mythic.scripts.OnClick(mythic)
-assert(A.Store.character.raidDifficulty==5 and mythic.selected:IsShown() and not heroic.selected:IsShown(),"mythic selection is remembered")
+assert(A.Store.character.raidDifficulty==5 and mythic.active and not heroic.active,"mythic selection is remembered")
 A.UI.scene="mythic";A.UI:Refresh();assert(not A.UI.difficultyButton:IsShown(),"difficulty hidden outside raid")
 assert(not A.UI.barOption,"no global action bar option")
 local highWater=#objects
@@ -351,6 +470,16 @@ row.scripts.OnMouseDown(row);b.code="changed-fixture";A.UI:Refresh();A.UI.select
 assert(A.UI.selected==nil,"rebound row cannot execute old click")
 A.UI:Dialog(false,{name="Save copy",code="valid-fixture"})
 assert(A.UI.dialog.name.host:IsShown() and A.UI.dialog.code.host:IsShown() and A.UI.dialog.associations:IsShown(),"creating a copy exposes name, string and associations")
+local input=A.UI.dialog.name;local border=input.host._lycheeVisuals[1]
+input.scripts.OnEditFocusGained(input)
+for _,region in ipairs(border.regions) do
+ assert(region.tint[1]==232/255 and region.tint[2]==121/255 and region.tint[3]==131/255,"focus border uses one consistent Panel color")
+end
+input.scripts.OnEditFocusLost(input)
+for _,region in ipairs(border.regions) do
+ assert(region.tint[1]==.19 and region.tint[2]==.18 and region.tint[3]==.19,"resting border keeps center and corners equal")
+end
+
 A.UI.dialog:Hide()
 A.UI:Dialog(true,{name="Export",code="fixture-string"})
 assert(not A.UI.dialog.name.host:IsShown() and A.UI.dialog.code.host:IsShown(),"export displays only the copy field")
@@ -385,7 +514,7 @@ assert(A.UI.dialog.expansion==336 and A.UI.dialog.name.host.point[3]==-440 and A
 assert(A.UI.dialogScroll.child==A.UI.dialog and A.UI.dialogScrollBar:IsShown(),'expanded editor has a scrollable viewport')
 for _,bar in ipairs({picker.scroll,A.UI.dialogScrollBar}) do
     assert(bar:GetWidth()==12 and bar.thumb:GetWidth()==3,'Lychee thin thumb retains a larger drag gutter')
-    assert(bar.thumb.color[1]==.835 and bar.thumb.color[2]==.235 and bar.thumb.color[3]==.285,'both scrollbars use the Lychee accent, never a white block')
+    assert(bar.thumb.color[1]==232/255 and bar.thumb.color[2]==121/255 and bar.thumb.color[3]==131/255,'both scrollbars use the Lychee accent, never a white block')
     assert(bar.thumb:GetHeight()>=24 and bar.thumb:GetHeight()<=48,'thumb uses Lychee length bounds')
 end
 local countIcons=picker.provider.GetNumIcons
@@ -564,10 +693,41 @@ A.Talents.Validate=oldValidate
 local reminderChoice
 A.Reminders={Apply=function(_,id)reminderChoice=id;return true end,Hide=function()A.UI.reminder:Hide()end,RefreshSettings=function()end}
 local prompt={id=contextID,builds={imported}}
+A.Store.character.reminderPosition={point="TOPLEFT",relativePoint="TOPLEFT",x=90,y=-120}
 A.UI:ShowReminder(prompt)
 assert(A.UI.reminder.parent==UIParent,'reminder lives independently of native talent window')
+local reminder=A.UI.reminder
+assert(reminder.point[1]=="TOPLEFT" and reminder.point[2]==UIParent and reminder.point[4]==90 and reminder.point[5]==-120,
+    'reminder restores the saved character anchor')
+local moving,stops=false,0
+reminder.StartMoving=function()moving=true end
+reminder.StopMovingOrSizing=function()moving=false;stops=stops+1 end
+reminder.GetPoint=function()return "BOTTOMRIGHT",UIParent,"BOTTOMRIGHT",-85,135 end
+reminder.scripts.OnMouseDown(reminder,"RightButton");assert(not moving,'only left mouse starts reminder movement')
+reminder.scripts.OnMouseDown(reminder,"LeftButton");assert(moving,'passive reminder surface starts movement')
+reminder.scripts.OnMouseUp(reminder,"LeftButton")
+local savedPosition=A.Store.character.reminderPosition
+assert(not moving and stops==1 and savedPosition.point=="BOTTOMRIGHT" and savedPosition.x==-85 and savedPosition.y==135,
+    'drag release saves the anchor and stops native movement')
+local switch=reminder.rows[1].switch
+local theme=reminder.lycheeContext.Theme
+local function surfaceIs(expected)
+    for i=1,3 do assert(math.abs(switch.fill.color[i]-expected[i])<.00001,'reminder button pointer color') end
+end
+assert(switch.primary and switch:GetWidth()==68 and switch:GetHeight()==32,'reminder uses a compact filled primary button')
+surfaceIs(theme.primary)
+switch.scripts.OnEnter(switch);surfaceIs(theme.primaryHover)
+switch.scripts.OnMouseDown(switch,"LeftButton");surfaceIs(theme.primaryPressed)
+switch.scripts.OnMouseUp(switch,"LeftButton");switch.scripts.OnClick(switch,"LeftButton")
+assert(reminderChoice==imported.id,'primary reminder button applies the same stable build as the row')
+switch.scripts.OnLeave(switch);surfaceIs(theme.primary)
+switch:SetAvailable(false);reminderChoice=nil;switch.scripts.OnClick(switch,"LeftButton")
+assert(not reminderChoice and switch:GetAlpha()==theme.disabledAlpha,'disabled reminder button blocks actions and dims')
+switch:SetAvailable(true)
 A.UI.reminder.rows[1].scripts.OnClick(A.UI.reminder.rows[1]);assert(reminderChoice==imported.id,'reminder dispatches exact stable build ID')
+reminder.scripts.OnMouseDown(reminder,"LeftButton")
 A.UI.reminder:Hide()
+assert(not moving and stops==2,'hiding during a drag stops movement and saves once')
 local overlayObjects=#objects
 for i=1,100 do A.UI:ContextSettings(imported.id);contexts:Hide();A.UI:ShowReminder(prompt);A.UI.reminder:Hide()end
 assert(#objects==overlayObjects,'association and reminder controls reused across 100 openings')
@@ -631,4 +791,23 @@ for _,locale in ipairs({'enUS','deDE','zhTW'})do
  assert(buttons[2].entry.icon==(locale=='zhTW' and 'wechat' or 'x') and buttons[3].entry.icon==(locale=='zhTW' and 'support' or 'paypal'),'regional links must not leak across locales')
 end
 GetLocale=priorLocale;A.UI.social=social
+-- Errors stay beside the controls; normal operation produces no chat output.
+A.UI.scene="mythic";A.UI:Refresh()
+local output=0;local originalPrint=print
+print=function()output=output+1 end
+A:Message("APPLYING");A:Message("APPLY_SUCCESS");assert(output==0)
+local failedID=A.UI.rows[1].build.id
+A.UI:ShowApplyError(failedID,"BARS_PENDING",true);A.UI:Refresh()
+assert(A.UI.rows[1].progress:GetText()==A.L.APPLIED_SHORT and not A.UI.applyError and not (A.UI.errorText and A.UI.errorText:IsShown()),"confirmed talents show Applied during partial bar recovery")
+A:Message("BARS_RESTORE");assert(output==0,"visible errors never spam chat")
+A.UI.frame:Hide();A.UI:ShowApplyError(failedID,"BARS_PENDING",true)
+assert(output==0,"bar recovery does not send a hidden-panel warning")
+A:Message("BARS_RESTORE");assert(output==1,"a failed operation still reports its actual error")
+assert(A.UI.context:IsHiding(),"main context pauses while hidden")
+A.UI:ShowReminder(prompt)
+assert(not A.UI.reminder.lycheeContext:IsHiding(),"reminder owns an independent active context")
+reminderChoice=nil;A.UI.reminder.rows[1].scripts.OnClick(A.UI.reminder.rows[1])
+assert(reminderChoice==imported.id,"reminder buttons work while sidebar context is paused")
+A.UI.reminder:Hide();assert(A.UI.reminder.lycheeContext:IsHiding())
+print=originalPrint
 print("PASS UI lifecycle: 100 open/close cycles, 100 dialog cycles, fixed row pools, stale click rejection, hidden cleanup; objects="..#objects)

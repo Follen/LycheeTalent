@@ -4,7 +4,6 @@ local combat=false
 InCombatLockdown=function()return combat end
 UnitClass=function()return "Mage","MAGE" end
 C_SpecializationInfo={GetSpecialization=function()return 1 end}
-assert(loadfile("addon/LycheeTalent/Migration.lua"))("LycheeTalent",A)
 assert(loadfile("addon/LycheeTalent/Storage.lua"))("LycheeTalent",A)
 assert(loadfile("addon/LycheeTalent/TalentEx.lua"))("LycheeTalent",A)
 A.Store:Init()
@@ -40,7 +39,6 @@ scan=assert(A.TalentEx:Inspect());assert(scan.state=="updates" and #scan.pending
 result=assert(A.TalentEx:Import());assert(result.imported==1)
 combat=true;ok,why=A.TalentEx:Import();assert(not ok and why=="COMBAT");combat=false
 A.Apply.op={};ok,why=A.TalentEx:Import();assert(not ok and why=="APPLY_BUSY");A.Apply.op=nil
-A.Store.readonly=true;ok,why=A.TalentEx:Import();assert(not ok and why=="SCHEMA");A.Store.readonly=false
 TalentLoadoutEx.MAGE[1]={{name="New",text="new"},{name="Next",text="next"}}
 A.Store:Init()
 scan=assert(A.TalentEx:Inspect());assert(scan.state=="updates" and #scan.pending==2,"history survives reinitialization and full source replacement")

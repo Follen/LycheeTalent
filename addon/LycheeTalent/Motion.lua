@@ -81,7 +81,7 @@ end
 function M:StopBrand(region)
     local job=self.brand;if region and job and job.region~=region then return end
     if self.brandDriver then self.brandDriver:SetScript("OnUpdate",nil);self.brandDriver:Hide()end
-    if not job or InCombatLockdown()then return end
+    if not job then return end
     job.region:SetSize(job.size,job.size);job.region:ClearAllPoints();job.region:SetPoint(unpack(job.anchor));self.brand=nil
 end
 function M:Brand(region,size)

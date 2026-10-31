@@ -1,7 +1,7 @@
 local A={}
 time=function()return 100 end
 C_SpecializationInfo={GetSpecialization=function()return 1 end}
-for _,name in ipairs({"Migration","Storage","Catalog"}) do
+for _,name in ipairs({"Storage","Catalog"}) do
     assert(loadfile("addon/LycheeTalent/"..name..".lua"))("LycheeTalent",A)
 end
 A.Store:Init()
@@ -36,6 +36,4 @@ local added=assert(s:Save("New","new","mythic","",71));query()
 assert(out[#out]==added,"newly saved/imported builds append after custom order")
 s:Delete(original[3]);query()
 assert(out[3].id==original[4],"deleting keeps remaining order")
-s.readonly=true
-assert(not s:Move(original[1],original[4],true),"future schema is read-only")
-print("PASS build ordering: up/down, stable IDs, persistence, edits, append, deletion, spec and schema guards")
+print("PASS build ordering: up/down, stable IDs, persistence, edits, append, deletion, specialization guards")

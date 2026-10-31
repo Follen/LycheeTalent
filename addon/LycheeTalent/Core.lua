@@ -2,13 +2,16 @@ local name, A = ...
 A.name = name
 function A:GetSpec()
     local index=C_SpecializationInfo.GetSpecialization()
-    if not index then return nil end
-    return C_SpecializationInfo.GetSpecializationInfo(index)
+    if type(index)~="number" or index<=0 or index%1~=0 then return nil end
+    local spec,name,description,icon,role,primaryStat,pointsSpent,background,previewPointsSpent,isUnlocked=C_SpecializationInfo.GetSpecializationInfo(index)
+    if type(spec)=="number" and spec>0 and spec%1==0 then
+        return spec,name,description,icon,role,primaryStat,pointsSpent,background,previewPointsSpent,isUnlocked
+    end
 end
 function A:Message(key)
-    -- Progress and success are represented by the row; errors remain available
-    -- in chat without adding a persistent explanation block to the sidebar.
-    if key=="APPLYING" or key=="APPLY_SUCCESS" then return end
+    -- Actionable failures stay beside the controls while the panel is open.
+    if key=="APPLYING" or key=="APPLY_SUCCESS" or key=="BARS_PENDING" then return end
+    if self.UI and self.UI.ShowError and self.UI:ShowError(key) then self.UI:Refresh();return end
     local text=self.L[key] or key
     print("|cffd53c49"..self.L.TITLE.."|r: "..text)
 end
