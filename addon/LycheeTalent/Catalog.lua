@@ -61,15 +61,28 @@ function C:SelectedHero(specID)
     end
     return nil,"HERO_MISSING"
 end
-function C:HeroName(hero)
+function C:HeroInfo(hero)
+    local cached=self.heroInfo and self.heroInfo[hero.id]
+    if cached then return cached.name,cached.atlas end
     local active=C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
     if active and C_Traits and C_Traits.GetSubTreeInfo then
         local ok,info=pcall(C_Traits.GetSubTreeInfo,active,hero.id)
         local name=ok and info and info.name
-        if name and not (issecretvalue and issecretvalue(name)) and type(name)=="string" and name~="" then return name end
+        local atlas=ok and info and info.iconElementID
+        if atlas and (issecretvalue and issecretvalue(atlas)) then atlas=nil end
+        if type(atlas)~="string" and type(atlas)~="number" then atlas=nil end
+        if name and not (issecretvalue and issecretvalue(name)) and type(name)=="string" and name~="" then
+            -- Only keep the two display fields, not the native subtree table.
+            -- Incomplete metadata stays retryable when the talent UI is ready.
+            if atlas then
+                self.heroInfo=self.heroInfo or {};self.heroInfo[hero.id]={name=name,atlas=atlas}
+            end
+            return name,atlas
+        end
     end
     return hero.name or tostring(hero.id)
 end
+function C:HeroName(hero) return (self:HeroInfo(hero)) end
 function C:SetHero(specID,heroTree) return A.Store:SetHero(specID,heroTree) end
 function C:Target(b)
     local s=b.scenarioID and self.scenarios[tostring(b.scenarioID)]

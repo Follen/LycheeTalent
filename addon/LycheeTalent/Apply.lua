@@ -76,25 +76,50 @@ function X:ResetPending(active,entries)
     if not ok or not result or C_Traits.ConfigHasStagedChanges(active) then return nil,"ROLLBACK_FAILED" end
     return true
 end
+-- One result for the current active tree. Identity and draft guards remain
+-- live on every read; native talent/lifecycle events invalidate this result.
+function X:InvalidateCurrent(event)
+    self.current=nil
+    if event=="PLAYER_LEAVING_WORLD" or event=="PLAYER_LOGOUT" then self.currentWorldInactive=true
+    elseif event=="PLAYER_ENTERING_WORLD" then self.currentWorldInactive=nil end
+end
 function X:CurrentBuildID(allowPendingBars)
+    if self.currentWorldInactive or InCombatLockdown() then return self:InvalidateCurrent() end
     if A.ActionBars.pendingSpec and not allowPendingBars then return end
-    local state=A.ActionBars:Spec(A:GetSpec())
+    local spec=A:GetSpec()
+    local state=A.ActionBars:Spec(spec)
     local saved=state and state.applied
     if state and state.pendingBars and not allowPendingBars then return end
-    if not saved or self.op or saved.spec~=A:GetSpec() then return end
-    if C_ClassTalents.GetStarterBuildActive() then return end
-    local binding,info=A.ActionBars:Working(saved.spec)
-    if not binding or binding.id~=saved.config or info.usesSharedActionBars then return end
+    if not saved or self.op or saved.spec~=spec then return self:InvalidateCurrent() end
+    if C_ClassTalents.GetStarterBuildActive() then return self:InvalidateCurrent() end
+    local binding,info=A.ActionBars:Working(spec)
+    if not binding or binding.id~=saved.config or info.usesSharedActionBars then return self:InvalidateCurrent() end
     local build=A.Catalog:Find(saved.id)
-    if not build or A.Talents:Code(build)~=saved.code then return end
+    if not build or A.Talents:Code(build)~=saved.code then return self:InvalidateCurrent() end
     local active=C_ClassTalents.GetActiveConfigID()
-    if active and not C_Traits.ConfigHasStagedChanges(active)
-        and C_ClassTalents.GetLastSelectedSavedConfigID(saved.spec)==binding.id
-        and A.Talents:Matches(active,saved.entries) then return saved.id end
+    if not active or C_Traits.ConfigHasStagedChanges(active)
+        or C_ClassTalents.GetLastSelectedSavedConfigID(spec)~=binding.id then return self:InvalidateCurrent() end
+    if not A.Talents:Frame() then return self:InvalidateCurrent() end
+    local current=self.current
+    if current and current.character==A.Store.character and current.applied==saved and current.entries==saved.entries
+        and current.id==saved.id and current.code==saved.code and current.active==active
+        and current.config==binding.id and current.name==binding.name and current.spec==spec then
+        return current.matches and saved.id or nil
+    end
+    local matches,difference=A.Talents:Matches(active,saved.entries)
+    -- Missing native UI/data may become available without a talent mutation.
+    -- Keep retrying that case; actual matching/mismatching content is stable
+    -- until a native event or one of the immediate identity guards changes.
+    if matches or (difference and difference.kind~="unavailable") then
+        self.current={character=A.Store.character,applied=saved,entries=saved.entries,id=saved.id,code=saved.code,
+            active=active,config=binding.id,name=binding.name,spec=spec,matches=matches==true}
+    else self.current=nil end
+    return matches and saved.id or nil
 end
 function X:Finish(ok,key)
     local op=self.op
     if not op then return end
+    self:InvalidateCurrent()
     if self.timer then self.timer:Cancel();self.timer=nil end
     if self.nextStep then self.nextStep:Cancel();self.nextStep=nil end
     if self.events then self.events:UnregisterAllEvents() end
@@ -375,7 +400,7 @@ function X:Start(build,shared,consent)
     local op={buildID=build.id,code=code,entries=entries,spec=spec,shared=shared,stage="capture-bars",
         originalSaved=selected,originalCode=originalCode,previousBuildID=self:CurrentBuildID(),
         previousApplied=A.ActionBars:Spec(spec).applied,startedAt=GetTime()}
-    self.op=op
+    self.op=op;self:InvalidateCurrent()
     if not self.events then
         self.events=CreateFrame("Frame")
         self.events:SetScript("OnEvent",function(_,event,...)

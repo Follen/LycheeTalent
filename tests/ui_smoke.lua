@@ -128,12 +128,24 @@ if arg[1]=="hero-controls" then
     local U=A.UI;local starts=0
     A.Apply.Start=function()starts=starts+1;return true end
     C_ClassTalents={GetActiveConfigID=function()return 42 end,GetActiveHeroTalentSpec=function()return 60 end}
+    local heroReads=0
     C_Traits={GetSubTreeInfo=function(config,hero)
+        heroReads=heroReads+1
         assert(config==42 and (hero==60 or hero==62 or hero==61),"localized name requires active config and subtree")
-        return {name=hero==60 and "屠戮者" or hero==62 and "巨像" or nil}
+        return {name=hero==60 and "屠戮者" or hero==62 and "巨神兵" or nil,
+            iconElementID=hero==60 and "talents-heroclass-warrior-slayer" or hero==62 and "talents-heroclass-warrior-colossus" or nil}
     end}
     U:Refresh();assert(U.heroSelector:IsShown() and U.heroLabel:IsShown() and not U.difficultyButton:IsShown())
-    assert(U.heroSelector.buttons[1].label:GetText()=="屠戮者" and U.heroSelector.buttons[2].label:GetText()=="巨像")
+    assert(U.heroSelector.buttons[1].label:GetText()=="屠戮者" and U.heroSelector.buttons[2].label:GetText()=="巨神兵")
+    local firstChoice=U.heroSelector.buttons[1]
+    assert(firstChoice.heroIcon and firstChoice.heroIcon.atlas=="talents-heroclass-warrior-slayer","native hero atlas is displayed")
+    local beforeHover=#objects
+    firstChoice.scripts.OnEnter(firstChoice)
+    assert(not U.tooltip and #objects==beforeHover,"hero hover keeps its feedback without creating a tooltip")
+    firstChoice.scripts.OnLeave(firstChoice)
+    local resolvedReads=heroReads
+    for i=1,100 do U:Refresh() end
+    assert(heroReads==resolvedReads,"unchanged hero metadata does not repeatedly allocate native subtree info")
     assert(U.heroSelector.buttons[1].active and U.results[1].id=="slayer")
     local originalRow=U.rows[1]
     originalRow.scripts.OnMouseDown(originalRow,"LeftButton");originalRow.scripts.OnClick(originalRow,"LeftButton")

@@ -16,6 +16,7 @@ lua tests/ui_smoke.lua same-build-refresh
 lua tests/ui_smoke.lua pending-prompt
 lua tests/ui_smoke.lua hero-controls
 lua tests/hero_selection.lua
+lua tests/current_build_cache.lua
 lua tests/single_config.lua
 lua tests/native_partial_load.lua
 lua tests/starter_build.lua
@@ -98,3 +99,5 @@ powershell -File tools/package.ps1
 `ui_smoke.lua` 加载真实内嵌库，并使用 Frame 替身验证 Context 生命周期、按钮及文字／面板接入、100 次窗口／对话框开关和固定行池。这个检查不渲染像素，不替代实际客户端的正常、悬停、按下、禁用和缩放验收。
 
 `hero_selection.lua` 覆盖合法英雄组合、首次实际英雄优先、每专精记忆、M+／团本共用筛选、个人方案隔离和缺数据／未知值空态。`ui_smoke.lua hero-controls` 使用小型推荐 fixture 与真实 LycheeUI 分段控件，检查中文 API 双参数、只换列表不自动应用、专精重绑／旧双击失效、空态、100 次复用及待处理反馈清除；其余 UI 入口加载真实职业数据包。
+
+`current_build_cache.lua` 使用生产 Apply／ActionBars、Talents 和固定原生序列化代码，检查反复读取当前方案只进行一次全树导出；原生事件、草稿、身份、专精、世界和原生 UI 可用性改变后必须重新确认，应用事务的直接核对不能命中展示缓存。`ui_smoke.lua hero-controls` 同时核对原生英雄图集、元信息复用和悬停不创建提示框。实机前后测量见 [性能记录](../PERFORMANCE.md)。

@@ -462,7 +462,18 @@ function U:UpdateHeroControls()
         local hero=heroes[i]
         b.targetKey=tostring(spec)..":"..tostring(hero and hero.id or "missing")
         b:SetAvailable(hero~=nil)
-        self.context:SetText(b.label,hero and A.Catalog:HeroName(hero) or L.HERO_UNAVAILABLE)
+        local name,atlas
+        if hero then name,atlas=A.Catalog:HeroInfo(hero) else name=L.HERO_UNAVAILABLE end
+        self.context:SetText(b.label,name)
+        if b.heroAtlas~=atlas then
+            b.heroAtlas=atlas
+            if atlas then b.heroIcon:SetAtlas(atlas) end
+        end
+        b.heroIcon:SetShown(atlas~=nil)
+        if b.heroHasIcon~=(atlas~=nil) then
+            b.heroHasIcon=atlas~=nil
+            b.label:ClearAllPoints();b.label:SetPoint("LEFT",atlas and 31 or 8,0);b.label:SetPoint("RIGHT",-5,0)
+        end
         if hero and hero.id==selected then position=i end
     end
     self.heroSelector:SetValue(position)
@@ -937,14 +948,14 @@ function U:Create()
         if not ok then A:Message(why);return end
         if A.Reminders then A.Reminders:Hide() end
         U:HideTooltip();U.offset=0;U:Refresh()
-    end,{height=34,radius=6,padding=0,gap=0,fontSize=15,lineHeight=20,selectionMotion=false,wordWrap=false})
+    end,{height=36,radius=6,padding=0,gap=4,fontSize=14,lineHeight=18,selectionMotion=false,wordWrap=true})
     self.heroSelector:SetPoint("TOPLEFT",15,-164)
     for _,b in ipairs(self.heroSelector.buttons) do
-        b:HookScript("OnEnter",function(button)
-            local hero=U.heroOptions and U.heroOptions[button.value]
-            if hero then U:ShowTooltip(button,nil,A.Catalog:HeroName(hero)) end
-        end)
-        b:HookScript("OnLeave",function(button)U:HideTooltip(button)end)
+        local icon=b:CreateTexture(nil,"ARTWORK");b.heroIcon=icon
+        icon:SetSize(20,20);icon:SetPoint("LEFT",7,0);icon:Hide()
+        -- The native atlas uses its own colors; the segment reserves its slot.
+        b.icon=icon
+        b.label:SetHeight(36);b.label:SetMaxLines(2);b.label:SetJustifyH("LEFT");b.label:SetJustifyV("MIDDLE")
     end
     self.difficultyLabel=text(f,10,C.muted,L.RAID_DIFFICULTY,0,0)
     self.difficultyLabel:ClearAllPoints();self.difficultyLabel:SetPoint("TOPLEFT",16,-220)
@@ -1051,6 +1062,7 @@ function U:Create()
     end)
     f:SetScript("OnEvent",function(_,event,unit)
         if event=="PLAYER_SPECIALIZATION_CHANGED" and unit and unit~="player" then return end
+        if event~="UI_SCALE_CHANGED" and event~="PLAYER_REGEN_DISABLED" then A.Apply:InvalidateCurrent(event) end
         if event=="PLAYER_REGEN_DISABLED" then U:CancelDrag();A.Motion:Finish(f);A.Motion:StopBrand();U:CloseSocial(); if U.dialog then U.dialog:Hide() end; if U.contextSettings then U.contextSettings:Hide() end; if U.settings then U.settings:Hide() end
         elseif event=="UI_SCALE_CHANGED" then U:Scale(); U:Refresh()
         elseif not U.stateTimer then

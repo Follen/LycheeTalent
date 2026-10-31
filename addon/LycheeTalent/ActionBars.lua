@@ -540,6 +540,10 @@ function B:QueueObservation()
         if self.pendingSpec then self:ResumeSpec() else self:ObserveSlots() end
     end)
 end
+local currentEvents={PLAYER_ENTERING_WORLD=true,PLAYER_LEAVING_WORLD=true,ACTIVE_PLAYER_SPECIALIZATION_CHANGED=true,
+    PLAYER_TALENT_UPDATE=true,SELECTED_LOADOUT_CHANGED=true,ACTIVE_COMBAT_CONFIG_CHANGED=true,
+    TRAIT_CONFIG_UPDATED=true,TRAIT_CONFIG_LIST_UPDATED=true,TRAIT_CONFIG_CREATED=true,CONFIG_COMMIT_FAILED=true,
+    PLAYER_REGEN_ENABLED=true}
 function B:Init()
     if self.events then return end
     A.Macros:Initialize()
@@ -548,8 +552,16 @@ function B:Init()
     local events=CreateFrame("Frame");self.events=events
     for _,event in ipairs({"UPDATE_MACROS","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD",
         "ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","CURSOR_CHANGED","PLAYER_TALENT_UPDATE",
-        "SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","TRAIT_CONFIG_UPDATED"}) do events:RegisterEvent(event) end
+        "SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED",
+        "TRAIT_CONFIG_CREATED","CONFIG_COMMIT_FAILED","PLAYER_LEAVING_WORLD"}) do events:RegisterEvent(event) end
     events:SetScript("OnEvent",function(_,event)
+        if event=="PLAYER_LOGOUT" then
+            if not self.reading and not self.writing and not A.Apply.op then self:ObserveMacros();self:ObserveSlots() end
+            if A.Apply.InvalidateCurrent then A.Apply:InvalidateCurrent(event) end
+            return
+        end
+        if currentEvents[event] and A.Apply.InvalidateCurrent then A.Apply:InvalidateCurrent(event) end
+        if event=="PLAYER_LEAVING_WORLD" then return end
         if (event=="PLAYER_ENTERING_WORLD" or event=="ACTIVE_PLAYER_SPECIALIZATION_CHANGED") and self.observedSpec~=A:GetSpec() then
             self.observedSpec=A:GetSpec();self.pendingSpec=self.observedSpec
             local state=self:Spec(self.observedSpec)
@@ -558,7 +570,6 @@ function B:Init()
         end
         if self.reading or self.writing or A.Apply.op then return end
         if event=="UPDATE_MACROS" then self:ObserveMacros();return end
-        if event=="PLAYER_LOGOUT" then self:ObserveMacros();self:ObserveSlots();return end
         self:QueueObservation()
     end)
 end
