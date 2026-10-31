@@ -1,0 +1,688 @@
+{
+  "build": "12.1.5.70688",
+  "snapshot": "PIN-c798d9ec56072e4e30824290dde53dfc1f36096a36d2d0d149fd5908deb68e7d",
+  "capture": "CAP-4ae2221aa02c512de68fb1b3b667239baa9676aafffef4481e4de9afb5a97a49",
+  "specBinding": "Hero selector node observed in WCL spec-filtered rankings; sibling entries from the pinned DB2 choice node.",
+  "specs": [
+    {
+      "class": "Warrior",
+      "spec": "Arms",
+      "node": 99853,
+      "heroes": [
+        {
+          "entry": 123390,
+          "id": 60,
+          "name": "Slayer"
+        },
+        {
+          "entry": 123393,
+          "id": 62,
+          "name": "Colossus"
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "spec": "Holy",
+      "node": 99839,
+      "heroes": [
+        {
+          "entry": 123359,
+          "id": 49,
+          "name": "Lightsmith"
+        },
+        {
+          "entry": 123362,
+          "id": 50,
+          "name": "Herald of the Sun"
+        }
+      ]
+    },
+    {
+      "class": "Rogue",
+      "spec": "Subtlety",
+      "node": 99842,
+      "heroes": [
+        {
+          "entry": 123370,
+          "id": 51,
+          "name": "Trickster"
+        },
+        {
+          "entry": 123373,
+          "id": 53,
+          "name": "Deathstalker"
+        }
+      ]
+    },
+    {
+      "class": "Death Knight",
+      "spec": "Blood",
+      "node": 99822,
+      "heroes": [
+        {
+          "entry": 123325,
+          "id": 31,
+          "name": "San'layn"
+        },
+        {
+          "entry": 123326,
+          "id": 33,
+          "name": "Deathbringer"
+        }
+      ]
+    },
+    {
+      "class": "Shaman",
+      "spec": "Elemental",
+      "node": 99845,
+      "heroes": [
+        {
+          "entry": 123376,
+          "id": 55,
+          "name": "Stormbringer"
+        },
+        {
+          "entry": 123377,
+          "id": 56,
+          "name": "Farseer"
+        }
+      ]
+    },
+    {
+      "class": "Warrior",
+      "spec": "Fury",
+      "node": 99852,
+      "heroes": [
+        {
+          "entry": 123389,
+          "id": 60,
+          "name": "Slayer"
+        },
+        {
+          "entry": 123392,
+          "id": 61,
+          "name": "Mountain Thane"
+        }
+      ]
+    },
+    {
+      "class": "Warrior",
+      "spec": "Protection",
+      "node": 99851,
+      "heroes": [
+        {
+          "entry": 123388,
+          "id": 61,
+          "name": "Mountain Thane"
+        },
+        {
+          "entry": 123391,
+          "id": 62,
+          "name": "Colossus"
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "spec": "Protection",
+      "node": 99838,
+      "heroes": [
+        {
+          "entry": 123358,
+          "id": 48,
+          "name": "Templar"
+        },
+        {
+          "entry": 123361,
+          "id": 49,
+          "name": "Lightsmith"
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "spec": "Retribution",
+      "node": 99837,
+      "heroes": [
+        {
+          "entry": 123357,
+          "id": 48,
+          "name": "Templar"
+        },
+        {
+          "entry": 123360,
+          "id": 50,
+          "name": "Herald of the Sun"
+        }
+      ]
+    },
+    {
+      "class": "Hunter",
+      "spec": "Beast Mastery",
+      "node": 99832,
+      "heroes": [
+        {
+          "entry": 123347,
+          "id": 43,
+          "name": "Pack Leader"
+        },
+        {
+          "entry": 123348,
+          "id": 44,
+          "name": "Dark Ranger"
+        }
+      ]
+    },
+    {
+      "class": "Hunter",
+      "spec": "Marksmanship",
+      "node": 99831,
+      "heroes": [
+        {
+          "entry": 123345,
+          "id": 42,
+          "name": "Sentinel"
+        },
+        {
+          "entry": 123346,
+          "id": 44,
+          "name": "Dark Ranger"
+        }
+      ]
+    },
+    {
+      "class": "Hunter",
+      "spec": "Survival",
+      "node": 99833,
+      "heroes": [
+        {
+          "entry": 123349,
+          "id": 42,
+          "name": "Sentinel"
+        },
+        {
+          "entry": 123350,
+          "id": 43,
+          "name": "Pack Leader"
+        }
+      ]
+    },
+    {
+      "class": "Rogue",
+      "spec": "Assassination",
+      "node": 99844,
+      "heroes": [
+        {
+          "entry": 123371,
+          "id": 52,
+          "name": "Fatebound"
+        },
+        {
+          "entry": 123375,
+          "id": 53,
+          "name": "Deathstalker"
+        }
+      ]
+    },
+    {
+      "class": "Rogue",
+      "spec": "Outlaw",
+      "node": 99843,
+      "heroes": [
+        {
+          "entry": 123372,
+          "id": 51,
+          "name": "Trickster"
+        },
+        {
+          "entry": 123374,
+          "id": 52,
+          "name": "Fatebound"
+        }
+      ]
+    },
+    {
+      "class": "Priest",
+      "spec": "Discipline",
+      "node": 99801,
+      "heroes": [
+        {
+          "entry": 123288,
+          "id": 18,
+          "name": "Voidweaver"
+        },
+        {
+          "entry": 123290,
+          "id": 20,
+          "name": "Oracle"
+        }
+      ]
+    },
+    {
+      "class": "Priest",
+      "spec": "Holy",
+      "node": 99802,
+      "heroes": [
+        {
+          "entry": 123291,
+          "id": 19,
+          "name": "Archon"
+        },
+        {
+          "entry": 123292,
+          "id": 20,
+          "name": "Oracle"
+        }
+      ]
+    },
+    {
+      "class": "Priest",
+      "spec": "Shadow",
+      "node": 99800,
+      "heroes": [
+        {
+          "entry": 123287,
+          "id": 18,
+          "name": "Voidweaver"
+        },
+        {
+          "entry": 123289,
+          "id": 19,
+          "name": "Archon"
+        }
+      ]
+    },
+    {
+      "class": "Death Knight",
+      "spec": "Frost",
+      "node": 99821,
+      "heroes": [
+        {
+          "entry": 123323,
+          "id": 32,
+          "name": "Rider of the Apocalypse"
+        },
+        {
+          "entry": 123324,
+          "id": 33,
+          "name": "Deathbringer"
+        }
+      ]
+    },
+    {
+      "class": "Death Knight",
+      "spec": "Unholy",
+      "node": 99820,
+      "heroes": [
+        {
+          "entry": 123321,
+          "id": 31,
+          "name": "San'layn"
+        },
+        {
+          "entry": 123322,
+          "id": 32,
+          "name": "Rider of the Apocalypse"
+        }
+      ]
+    },
+    {
+      "class": "Shaman",
+      "spec": "Enhancement",
+      "node": 99847,
+      "heroes": [
+        {
+          "entry": 123379,
+          "id": 54,
+          "name": "Totemic"
+        },
+        {
+          "entry": 123381,
+          "id": 55,
+          "name": "Stormbringer"
+        }
+      ]
+    },
+    {
+      "class": "Shaman",
+      "spec": "Restoration",
+      "node": 99846,
+      "heroes": [
+        {
+          "entry": 123378,
+          "id": 54,
+          "name": "Totemic"
+        },
+        {
+          "entry": 123380,
+          "id": 56,
+          "name": "Farseer"
+        }
+      ]
+    },
+    {
+      "class": "Mage",
+      "spec": "Arcane",
+      "node": 99830,
+      "heroes": [
+        {
+          "entry": 123341,
+          "id": 39,
+          "name": "Sunfury"
+        },
+        {
+          "entry": 123344,
+          "id": 40,
+          "name": "Spellslinger"
+        }
+      ]
+    },
+    {
+      "class": "Mage",
+      "spec": "Fire",
+      "node": 99829,
+      "heroes": [
+        {
+          "entry": 123340,
+          "id": 39,
+          "name": "Sunfury"
+        },
+        {
+          "entry": 123343,
+          "id": 41,
+          "name": "Frostfire"
+        }
+      ]
+    },
+    {
+      "class": "Mage",
+      "spec": "Frost",
+      "node": 99828,
+      "heroes": [
+        {
+          "entry": 123339,
+          "id": 40,
+          "name": "Spellslinger"
+        },
+        {
+          "entry": 123342,
+          "id": 41,
+          "name": "Frostfire"
+        }
+      ]
+    },
+    {
+      "class": "Warlock",
+      "spec": "Affliction",
+      "node": 99850,
+      "heroes": [
+        {
+          "entry": 123384,
+          "id": 57,
+          "name": "Soul Harvester"
+        },
+        {
+          "entry": 123387,
+          "id": 58,
+          "name": "Hellcaller"
+        }
+      ]
+    },
+    {
+      "class": "Warlock",
+      "spec": "Demonology",
+      "node": 99849,
+      "heroes": [
+        {
+          "entry": 123383,
+          "id": 57,
+          "name": "Soul Harvester"
+        },
+        {
+          "entry": 123386,
+          "id": 59,
+          "name": "Diabolist"
+        }
+      ]
+    },
+    {
+      "class": "Warlock",
+      "spec": "Destruction",
+      "node": 99848,
+      "heroes": [
+        {
+          "entry": 123382,
+          "id": 58,
+          "name": "Hellcaller"
+        },
+        {
+          "entry": 123385,
+          "id": 59,
+          "name": "Diabolist"
+        }
+      ]
+    },
+    {
+      "class": "Monk",
+      "spec": "Brewmaster",
+      "node": 101219,
+      "heroes": [
+        {
+          "entry": 125027,
+          "id": 65,
+          "name": "Shado-Pan"
+        },
+        {
+          "entry": 125028,
+          "id": 66,
+          "name": "Master of Harmony"
+        }
+      ]
+    },
+    {
+      "class": "Monk",
+      "spec": "Mistweaver",
+      "node": 101231,
+      "heroes": [
+        {
+          "entry": 125044,
+          "id": 66,
+          "name": "Master of Harmony"
+        },
+        {
+          "entry": 125045,
+          "id": 64,
+          "name": "Conduit of the Celestials"
+        }
+      ]
+    },
+    {
+      "class": "Monk",
+      "spec": "Windwalker",
+      "node": 101232,
+      "heroes": [
+        {
+          "entry": 125046,
+          "id": 65,
+          "name": "Shado-Pan"
+        },
+        {
+          "entry": 125047,
+          "id": 64,
+          "name": "Conduit of the Celestials"
+        }
+      ]
+    },
+    {
+      "class": "Druid",
+      "spec": "Balance",
+      "node": 99808,
+      "heroes": [
+        {
+          "entry": 123300,
+          "id": 23,
+          "name": "Keeper of the Grove"
+        },
+        {
+          "entry": 123302,
+          "id": 24,
+          "name": "Elune's Chosen"
+        }
+      ]
+    },
+    {
+      "class": "Druid",
+      "spec": "Feral",
+      "node": 99805,
+      "heroes": [
+        {
+          "entry": 123296,
+          "id": 22,
+          "name": "Wildstalker"
+        },
+        {
+          "entry": 123297,
+          "id": 21,
+          "name": "Druid of the Claw"
+        }
+      ]
+    },
+    {
+      "class": "Druid",
+      "spec": "Guardian",
+      "node": 99807,
+      "heroes": [
+        {
+          "entry": 123295,
+          "id": 24,
+          "name": "Elune's Chosen"
+        },
+        {
+          "entry": 123301,
+          "id": 21,
+          "name": "Druid of the Claw"
+        }
+      ]
+    },
+    {
+      "class": "Druid",
+      "spec": "Restoration",
+      "node": 99806,
+      "heroes": [
+        {
+          "entry": 123298,
+          "id": 22,
+          "name": "Wildstalker"
+        },
+        {
+          "entry": 123299,
+          "id": 23,
+          "name": "Keeper of the Grove"
+        }
+      ]
+    },
+    {
+      "class": "Demon Hunter",
+      "spec": "Havoc",
+      "node": 99824,
+      "heroes": [
+        {
+          "entry": 123329,
+          "id": 34,
+          "name": "Fel-Scarred"
+        },
+        {
+          "entry": 123330,
+          "id": 35,
+          "name": "Aldrachi Reaver"
+        }
+      ]
+    },
+    {
+      "class": "Demon Hunter",
+      "spec": "Vengeance",
+      "node": 99823,
+      "heroes": [
+        {
+          "entry": 123328,
+          "id": 35,
+          "name": "Aldrachi Reaver"
+        },
+        {
+          "entry": 134253,
+          "id": 124,
+          "name": "Annihilator"
+        }
+      ]
+    },
+    {
+      "class": "Demon Hunter",
+      "spec": "Devourer",
+      "node": 108704,
+      "heroes": [
+        {
+          "entry": 134251,
+          "id": 124,
+          "name": "Annihilator"
+        },
+        {
+          "entry": 136623,
+          "id": 126,
+          "name": "Void-Scarred"
+        }
+      ]
+    },
+    {
+      "class": "Evoker",
+      "spec": "Devastation",
+      "node": 99827,
+      "heroes": [
+        {
+          "entry": 123333,
+          "id": 36,
+          "name": "Scalecommander"
+        },
+        {
+          "entry": 123336,
+          "id": 37,
+          "name": "Flameshaper"
+        }
+      ]
+    },
+    {
+      "class": "Evoker",
+      "spec": "Preservation",
+      "node": 99826,
+      "heroes": [
+        {
+          "entry": 123332,
+          "id": 37,
+          "name": "Flameshaper"
+        },
+        {
+          "entry": 123335,
+          "id": 38,
+          "name": "Chronowarden"
+        }
+      ]
+    },
+    {
+      "class": "Evoker",
+      "spec": "Augmentation",
+      "node": 99825,
+      "heroes": [
+        {
+          "entry": 123331,
+          "id": 36,
+          "name": "Scalecommander"
+        },
+        {
+          "entry": 123334,
+          "id": 38,
+          "name": "Chronowarden"
+        }
+      ]
+    }
+  ]
+}

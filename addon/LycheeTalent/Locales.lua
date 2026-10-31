@@ -10,8 +10,7 @@ local en = {
     REMINDER_TITLE="Talent reminder", REMINDER_SWITCH="Switch", NOT_NOW="Not now", REMINDER_CHANGED="The encounter or build changed.",
     BARS_INVALID="The saved action bar layout is incomplete.", BARS_MISSING="No saved action bar layout is available.",
     BARS_CONTEXT="The active loadout or action bar context changed.", BARS_CURSOR="Place the item on your cursor before switching builds.",
-    BARS_SECRET="Action bar data is unavailable right now.", BARS_MACRO="The saved macro could not be restored. Your previous macro contents were retained where possible.",
-    BARS_MACRO_CAPACITY="There are not enough free character macro slots for this layout. Free some slots and try again.",
+    BARS_SECRET="Action bar data is unavailable right now.", BARS_MACRO="The native macro reference is no longer available. Its action slot was left unchanged.",
     BARS_MACRO_READ="A macro on the current action bars could not be read. The operation was stopped.",
     BARS_PARTIAL="Talents switched. Unreadable macro slots were left unchanged: %s. Other action slots were restored.",
     BARS_UNAVAILABLE="Some actions cannot be restored right now. Your layout records have been kept.",
@@ -79,8 +78,7 @@ local zh = {
     REMINDER_TITLE="天赋提醒", REMINDER_SWITCH="切换", NOT_NOW="暂不切换", REMINDER_CHANGED="场景或方案已发生变化。",
     BARS_INVALID="保存的动作条布局不完整。", BARS_MISSING="没有可用的动作条布局记录。",
     BARS_CONTEXT="当前天赋或动作条状态发生了变化。", BARS_CURSOR="请先放下鼠标上的物品或技能，再切换方案。",
-    BARS_SECRET="当前无法读取动作条信息。", BARS_MACRO="未能恢复保存的宏，已尝试还原切换前的宏内容。",
-    BARS_MACRO_CAPACITY="角色宏空位不足，请腾出一些角色宏位置后再试。",
+    BARS_SECRET="当前无法读取动作条信息。", BARS_MACRO="原生宏引用已失效，对应动作条槽位保留原状。",
     BARS_MACRO_READ="无法读取当前动作条上的宏，本次操作已停止。",
     BARS_PARTIAL="天赋已切换。无法读取的宏槽位保留原状：%s；其他动作条槽位已恢复。",
     BARS_UNAVAILABLE="部分技能或物品暂时无法恢复，已保留布局记录。",
@@ -138,7 +136,7 @@ A.L.APPLYING_SHORT=GetLocale()=="zhCN" and "应用中" or "Applying"
 A.L.EXPORT_HELP=GetLocale()=="zhCN" and "按 Ctrl+C 复制" or "Press Ctrl+C to copy"
 A.L.NO_MATCH_HELP=GetLocale()=="zhCN" and "试试副本、首领或方案名称。" or "Try a dungeon, boss or build name."
 A.L.EMPTY_RECOMMENDED=GetLocale()=="zhCN" and "暂无可用推荐" or "No recommendations available"
-A.L.EMPTY_RECOMMENDED_HELP=GetLocale()=="zhCN" and "当前专精在此场景暂无有效数据。" or "No usable data for this specialization and scenario."
+A.L.EMPTY_RECOMMENDED_HELP=GetLocale()=="zhCN" and "当前英雄天赋在此场景暂无有效推荐，请选择另一系或使用个人方案。" or "No usable recommendations for this hero specialization and scenario. Choose another hero or use a personal build."
 
 A.L.APPLYING=GetLocale()=="zhCN" and "正在应用天赋…" or "Applying talents…"
 A.L.APPLY_SUCCESS=GetLocale()=="zhCN" and "天赋已应用" or "Talents applied"
@@ -177,3 +175,12 @@ A.L.TEX_DONE=zh and "已导入" or "Imported"
 A.L.TEX_UPDATES=zh and "有更新" or "Update"
 A.L.TEX_PENDING=zh and "%s · %d 套待导入" or "%s · %d to import"
 A.L.TEX_NO_BUILDS=zh and "当前专精没有可导入的方案" or "No builds for this spec"
+
+A.L.BARS_PENDING=GetLocale()=="zhCN" and "天赋已切换，动作条仍有待处理项。原布局和恢复记录已保留。" or "Talents switched. Action bars need attention; the requested layout and recovery records were retained."
+A.L.BARS_PENDING_SHORT=GetLocale()=="zhCN" and "动作条待处理" or "Bars pending"
+A.L.APPLY_FAILED_SHORT=GetLocale()=="zhCN" and "未完成" or "Incomplete"
+A.L.HERO_UNKNOWN=GetLocale()=="zhCN" and "所选英雄天赋不可用，请重新选择。" or "The selected hero specialization is unavailable. Choose another specialization."
+A.L.HERO_MISSING=GetLocale()=="zhCN" and "当前专精的英雄天赋信息尚不可用。" or "Hero specialization information is unavailable for this specialization."
+A.L.HERO_TALENTS=GetLocale()=="zhCN" and "英雄天赋" or "Hero talents"
+A.L.RAID_DIFFICULTY=GetLocale()=="zhCN" and "团本难度" or "Difficulty"
+A.L.HERO_UNAVAILABLE=GetLocale()=="zhCN" and "暂无信息" or "Unavailable"

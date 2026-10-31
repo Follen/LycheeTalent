@@ -1,6 +1,7 @@
 * text=auto
 *.lua text eol=lf
 *.toc text eol=lf
+*.xml text eol=lf
 *.md text eol=lf
 *.py text eol=lf
 *.json text eol=lf
@@ -8,3 +9,7 @@
 *.ps1 text eol=crlf
 *.png binary
 *.tga binary
+
+# Keep the frozen vendor snapshot byte-identical, including its final blank line.
+addon/LycheeTalent/Libs/LycheeUI/.lock text eol=lf
+addon/LycheeTalent/Libs/LycheeUI/*.lua whitespace=-blank-at-eof

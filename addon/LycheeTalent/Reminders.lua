@@ -59,18 +59,15 @@ function R:Candidates(context,spec)
     for _,b in ipairs(A.Store.builds) do
         if b.specID==spec and self:Configured(b) and b.contexts[context]==true then builds[#builds+1]=b end
     end
-    local index=C_SpecializationInfo.GetSpecialization()
     local _,_,difficulty=GetInstanceInfo()
     local raidDifficulty=number(difficulty) and (difficulty==16 and 5 or difficulty==15 and 4) or nil
-    local default
-    for _,b in ipairs(A.Catalog.builds) do
-        if b.specIndex==index and tostring(b.scenarioID)==context and
-            (b.scene~="raid" or (raidDifficulty and b.difficulty==raidDifficulty)) then
-            if (b.scene=="mythic" and b.kind=="highest") or (b.scene=="raid" and b.kind=="ranked") then default=b end
-        end
+    local scene=A.Catalog.scenarios[context]
+    local recommendations={}
+    if scene and (scene.scene~="raid" or raidDifficulty) then
+        A.Catalog:Query(spec,scene.scene,"builtin","",context,raidDifficulty,recommendations)
     end
-    -- A single default WCL recommendation; personal associations stay available alongside it.
-    if default then builds[#builds+1]=default end
+    -- Reuse the same hero-filtered default as the main recommendation list.
+    if recommendations[1] then builds[#builds+1]=recommendations[1] end
     return builds
 end
 function R:Check()

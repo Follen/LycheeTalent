@@ -60,6 +60,7 @@ local function run(mode)
  A.Talents.Matches=function(self,id,entries)
   return self:ReadEntries(id)[1].ranksPurchased==(entries[1].ranksPurchased or 0)
  end
+ A.Macros=A.Macros or {Copy=function(value)local out={};for k,v in pairs(value or {})do out[k]=v end;return out end}
  assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
  local target={{nodeID=110174,selectionEntryID=136699,ranksPurchased=1}}
  local timers={}
@@ -73,7 +74,7 @@ local function run(mode)
   local state={default={}}
   if mode=='existing' then state.working={id=2,name=A.L.TITLE,spec=1480}end
   A.ActionBars={Spec=function()return state end,Working=function()return state.working end,
-   Capture=function()return {}end,Get=function()return {}end,Plan=function()return {}end,
+   Capture=function()return {}end,Get=function()return {}end,
    Restore=function()return true end,SaveLayout=function()return true end}
   A.Talents.Code=function()return 'target' end
   A.Talents.Validate=function()return 'target',1480 end
@@ -88,7 +89,7 @@ local function run(mode)
    for _,timer in ipairs(pending)do if not timer.cancelled and timer.delay<25 then timer.fn()end end
    if not A.Apply.op then break end
   end
-  assert(not A.Apply.op and A.message=='APPLY_SUCCESS',tostring(A.message))
+  assert(not A.Apply.op and A.Store.character.lastAttempt.reason=='APPLY_SUCCESS',tostring(A.message))
   assert(creates==(mode=='fresh' and 1 or 0) and state.applied and state.applied.config==2,
    'native creation/reuse must complete under the same requested build')
  else

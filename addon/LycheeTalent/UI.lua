@@ -2,11 +2,26 @@ local _, A = ...
 local L=A.L
 local U={scene="mythic",results={},offset=0,rows={}}
 A.UI=U
-local C={bg={.055,.055,.063},hover={.09,.09,.09},selected={.085,.085,.085},
-    red={.835,.235,.285},hot={.95,.35,.4},text={.94,.932,.91},muted={.71,.705,.69},
+local C={bg={24/255,24/255,24/255},hover={.12,.12,.12},selected={68/255,68/255,68/255},
+    red={232/255,121/255,131/255},hot={.98,.6,.64},text={.94,.932,.91},muted={.71,.705,.69},
     dim={.59,.58,.59},field={.085,.085,.095},border={.19,.18,.19}}
 local media="Interface\\AddOns\\LycheeTalent\\Media\\"
 local ROW_HEIGHT,ROW_STEP,MENU_STEP=58,64,44
+local function newContext()
+    return LycheeUI:CreateContext({parent=UIParent,addon="LycheeTalent",font=STANDARD_TEXT_FONT,
+        reducedMotion=function()return A.Store.db.reducedMotion end,isHiding=function()return U.closing end})
+end
+function U:Context(parent)
+    local owner=parent
+    while owner do
+        if owner.lycheeContext then return owner.lycheeContext end
+        owner=owner:GetParent()
+    end
+    if not self.context then
+        self.context=newContext()
+    end
+    return self.context
+end
 local function color(fs,c) fs:SetTextColor(c[1],c[2],c[3]) end
 -- Talent EX stores hero icons as atlas names; keep the saved value intact.
 local function buildIcon(texture,value,cropped)
@@ -20,27 +35,15 @@ local function buildIcon(texture,value,cropped)
 end
 local function text(parent,size,c,value,x,y,w)
     x=x*280/340; if w then w=w*280/340 end
-    local t=parent:CreateFontString(nil,"OVERLAY")
-    t:SetFont(STANDARD_TEXT_FONT,math.max(16,size+4),""); t:SetShadowOffset(0,0)
-    t:SetPoint("TOPLEFT",x,y); if w then t:SetWidth(w) end
-    t:SetJustifyH("LEFT"); color(t,c); t:SetText(value or "")
+    local t=U:Context(parent).C.Text(parent,value or "",math.max(16,size+4),c,w)
+    t:SetShadowOffset(0,0);t:SetPoint("TOPLEFT",x,y);t:SetJustifyH("LEFT")
     return t
 end
 local function fill(parent,c)
     local t=parent:CreateTexture(nil,"BACKGROUND"); t:SetAllPoints(); t:SetColorTexture(c[1],c[2],c[3],1); return t
 end
 local function rounded(parent,c,r)
-    local parts={}; local mid=parent:CreateTexture(nil,"BACKGROUND"); mid:SetPoint("TOPLEFT",r,0); mid:SetPoint("BOTTOMRIGHT",-r,0)
-    mid:SetColorTexture(c[1],c[2],c[3],1); parts[#parts+1]=mid
-    for _,side in ipairs({"LEFT","RIGHT"}) do
-        local strip=parent:CreateTexture(nil,"BACKGROUND"); strip:SetPoint("TOP"..side,0,-r); strip:SetPoint("BOTTOM"..side,0,r); strip:SetWidth(r)
-        strip:SetColorTexture(c[1],c[2],c[3],1); parts[#parts+1]=strip
-    end
-    for _,v in ipairs({{"TOPLEFT",0,1,0,1},{"TOPRIGHT",1,0,0,1},{"BOTTOMLEFT",0,1,1,0},{"BOTTOMRIGHT",1,0,1,0}}) do
-        local t=parent:CreateTexture(nil,"BACKGROUND"); t:SetSize(r,r); t:SetPoint(v[1]); t:SetTexture(media.."corner.tga")
-        t:SetTexCoord(v[2],v[3],v[4],v[5]); t:SetVertexColor(c[1],c[2],c[3]); parts[#parts+1]=t
-    end
-    return parts
+    return U:Context(parent).C.Panel(parent,c,r).regions
 end
 -- Match Lychee Components: 12px hit gutter, 3px accent thumb, no visible track.
 local function scrollbar(parent)
@@ -58,49 +61,25 @@ local function scrollbar(parent)
 end
 local function button(parent,label,x,y,w,callback,accent)
     x=x*280/340; w=(w or 110)*280/340
-    local b=CreateFrame("Button",nil,parent); b:SetSize(w or 110,30); b:SetPoint("TOPLEFT",x,y)
-    b.label=text(b,14,accent and C.hot or C.text,label,0,0)
-    b.label:ClearAllPoints(); b.label:SetPoint("CENTER")
-    b:SetScript("OnEnter",function(self) if self:IsEnabled() then color(self.label,C.hot) end end)
-    b:SetScript("OnLeave",function(self) color(self.label,self:IsEnabled() and (accent and C.hot or C.text) or C.dim) end)
-    b:SetScript("OnMouseDown",function(self) if self:IsEnabled() then self.label:SetAlpha(.7) end end)
-    b:SetScript("OnMouseUp",function(self) self.label:SetAlpha(1) end)
-    b:SetScript("OnHide",function(self) self.label:SetAlpha(1) end)
-    b.action=callback
-    b:SetScript("OnClick",function(self) if not U.closing then callback(self) end end)
+    local b=U:Context(parent).C.Button(parent,label,w,function(self,mouse)
+        if not U.closing then self.action(self,mouse) end
+    end,{variant="text",height=30,fontSize=18,lineHeight=22,textColor=accent and C.hot or C.text})
+    b:SetPoint("TOPLEFT",x,y);b.action=callback
     return b
 end
 -- Filled primary actions keep white text in every enabled pointer state.
 local function primaryButton(b,radius)
-    local parts=rounded(b,C.red,radius)
-    function b:RefreshStyle()
-        local enabled=self:IsEnabled()
-        local tint=not enabled and C.border or self.pressed and {.70,.17,.22} or self.hovered and C.hot or C.red
-        for i,t in ipairs(parts) do
-            if i<=3 then t:SetColorTexture(tint[1],tint[2],tint[3],1)
-            else t:SetVertexColor(tint[1],tint[2],tint[3]) end
-        end
-        color(self.label,enabled and {1,1,1} or C.dim)
-        self.label:SetAlpha(1)
-    end
-    b:SetScript("OnEnter",function(self) self.hovered=true;self:RefreshStyle() end)
-    b:SetScript("OnLeave",function(self) self.hovered=nil;self.pressed=nil;self:RefreshStyle() end)
-    b:SetScript("OnMouseDown",function(self) self.pressed=self:IsEnabled();self:RefreshStyle() end)
-    b:SetScript("OnMouseUp",function(self) self.pressed=nil;self:RefreshStyle() end)
-    b:SetScript("OnHide",function(self) self.hovered=nil;self.pressed=nil;self:RefreshStyle() end)
-    b:RefreshStyle()
+    local width,height=b:GetWidth(),b:GetHeight()
+    b:SetStyle({variant="primary",radius=radius,fontSize=18,lineHeight=22})
+    b:SetSize(width,height)
 end
 local function field(parent,x,y,w,h,multiline)
     x=x*280/340; w=w*280/340
     local host=CreateFrame("Frame",nil,parent); host:SetSize(w,h); host:SetPoint("TOPLEFT",x,y)
-    local border=rounded(host,C.border,10)
+    local border=U:Context(host).C.Panel(host,C.border,10)
     local inset=CreateFrame("Frame",nil,host); inset:SetPoint("TOPLEFT",1,-1); inset:SetPoint("BOTTOMRIGHT",-1,1)
     rounded(inset,C.field,9)
-    local function tint(c)
-        for i,t in ipairs(border) do
-            if i<=3 then t:SetColorTexture(c[1],c[2],c[3],1) else t:SetVertexColor(c[1],c[2],c[3]) end
-        end
-    end
+    local function tint(c) border:SetColor(c) end
     local scroll=CreateFrame("ScrollFrame",nil,host); scroll:SetPoint("TOPLEFT",10,-8); scroll:SetPoint("BOTTOMRIGHT",-10,8); scroll:SetFrameLevel(inset:GetFrameLevel()+1)
     local edit=CreateFrame("EditBox",nil,scroll); edit:SetWidth(w-20); edit:SetHeight(h-16)
     edit:SetFont(STANDARD_TEXT_FONT,18,""); edit:SetAutoFocus(false); edit:SetMultiLine(multiline==true)
@@ -140,7 +119,7 @@ function U:ShowTooltip(owner,build,title)
             tip.bindingRows[i]=row
         end
         tip:SetScript("OnEvent",function()U:HideTooltip()end)
-        tip:SetScript("OnHide",function()tip:UnregisterAllEvents();tip.owner=nil;tip.bindings=nil end)
+        tip:HookScript("OnHide",function()tip:UnregisterAllEvents();tip.owner=nil;tip.bindings=nil end)
         tip:Hide()
     end
     local tip=self.tooltip;tip.owner=owner;tip.bindings=nil
@@ -204,6 +183,19 @@ function U:ClearApplyFeedback(row)
     row.progress:SetText("")
     if row.more then row.more:Show() end
 end
+function U:ShowError(key)
+    if not self.frame or not self.frame:IsShown() then return false end
+    if not self.errorText then
+        self.errorText=text(self.frame,12,C.hot,"",0,0)
+        self.errorText:SetWidth(248);self.errorText:SetHeight(44);self.errorText:SetMaxLines(2)
+    end
+    self.errorText:SetText(L[key] or key);self.errorText:Show()
+    return true
+end
+function U:ShowApplyError(buildID,key,partial)
+    self.applyError={buildID=buildID,key=key,partial=partial}
+    if not self:ShowError(key) then A:Message(key) else self:Refresh() end
+end
 function U:ShowApplySuccess(buildID,startedAt)
     if not self.frame or not self.frame:IsShown() then return end
     for _,row in ipairs(self.rows) do
@@ -248,9 +240,12 @@ function U:Refresh()
     A.Catalog:Load()
     self.difficulty=self.difficulty or A.Store.character.raidDifficulty or 5
     A.Catalog:Query(spec,self.scene,self.scene=="mine" and "user" or "builtin","",nil,self.difficulty,self.results)
-    for i=#self.results,1,-1 do
-        if self.results[i].kind=="popular" then table.remove(self.results,i) end
+    local bars=A.ActionBars:Spec(spec);local applied=bars and bars.applied
+    if not A.Apply.op and applied and applied.partial and not self.applyError then
+        self.applyError={buildID=applied.id,key="BARS_PENDING",partial=true}
+        self:ShowError("BARS_PENDING")
     end
+    if A.Apply.op and self.errorText then self.errorText:Hide() end
     self:LayoutRows()
     local maximum=math.max(0,#self.results-self.visibleRows)
     self.offset=math.max(0,math.min(self.offset,maximum))
@@ -265,8 +260,9 @@ function U:Refresh()
         local active=b.scene==self.scene
         b.mark:SetShown(active); color(b.label,active and C.text or C.muted)
     end
-    self.currentID=A.Apply:CurrentBuildID()
+    self.currentID=A.Apply:CurrentBuildID(true)
     local applying=A.Apply.op and A.Apply.op.buildID
+    if applying then self.applyError=nil;if self.errorText then self.errorText:Hide() end end
     for i,row in ipairs(self.rows) do
         local b=i<=self.visibleRows and self.results[i+self.offset] or nil
         local id,revision=b and b.id,b and (b.code or b.version)
@@ -282,12 +278,14 @@ function U:Refresh()
         if b then
             row.title:SetText(A.Catalog:Title(b))
             if applying then self:ClearApplyFeedback(row) end
-            row.progress:SetText((b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
-            color(row.progress,(b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and C.muted or row.successRemaining and C.red or C.muted)
-            row.more:SetShown(b.id~=applying and not row.successRemaining)
+            local failure=not applying and self.applyError and self.applyError.buildID==b.id and self.applyError
+            row.progress:SetText(failure and (failure.partial and L.BARS_PENDING_SHORT or L.APPLY_FAILED_SHORT) or
+                (b.id==applying or (row.switchRemaining and row.switchRemaining>0)) and L.APPLYING_SHORT or row.successRemaining and L.APPLIED_SHORT or "")
+            color(row.progress,failure and C.hot or row.successRemaining and C.red or C.muted)
+            row.more:SetShown(b.id~=applying and not row.successRemaining and not failure)
             local linked=b.source=="user" and type(b.contexts)=="table" and next(b.contexts)~=nil
-            row.link:SetShown(linked and not applying and not row.successRemaining)
-            row.title:SetWidth((b.id==applying or row.successRemaining or linked) and 122 or 154)
+            row.link:SetShown(linked and not applying and not row.successRemaining and not failure)
+            row.title:SetWidth((failure or b.id==applying or row.successRemaining or linked) and 122 or 154)
             row:SetEnabled(not applying); row.more:SetEnabled(not applying)
             buildIcon(row.icon,b.icon,true)
             row.mark:SetShown(b.id==self.currentID); row.bg:SetShown(b.id==self.currentID or b.id==self.selected)
@@ -298,14 +296,16 @@ function U:Refresh()
     self.empty:SetShown(empty)
     if empty then
         self.emptyTitle:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED or L.EMPTY)
-        self.emptyHelp:SetText(self.scene~="mine" and L.EMPTY_RECOMMENDED_HELP or L.EMPTY_HELP)
+        local heroReason
+        if self.scene~="mine" then local _;_,heroReason=A.Catalog:SelectedHero(spec) end
+        self.emptyHelp:SetText(self.scene~="mine" and (L[heroReason] or L.EMPTY_RECOMMENDED_HELP) or L.EMPTY_HELP)
     end
     local secondary=(self.dialog and self.dialog:IsShown()) or (self.contextSettings and self.contextSettings:IsShown()) or (self.settings and self.settings:IsShown())
     self.back:SetShown(secondary)
     if self.settingsButton then self.settingsButton:SetShown(not secondary) end
     for _,nav in ipairs(self.nav) do nav:SetShown(not secondary) end
     if secondary then
-        for _,control in ipairs({self.buildList,self.footer,self.difficultyButton,self.listScroll}) do control:Hide() end
+        for _,control in ipairs({self.buildList,self.footer,self.heroSelector,self.heroLabel,self.difficultyButton,self.difficultyLabel,self.listScroll}) do control:Hide() end
     end
 end
 function U:SetShared(shared,id)
@@ -328,15 +328,15 @@ function U:BuildOptions(id,anchor)
             b:SetHeight(MENU_STEP)
             b.label:ClearAllPoints(); b.label:SetPoint("LEFT",12,0); b.label:SetPoint("RIGHT",-12,0)
             b.label:SetJustifyH("LEFT"); b.label:SetWordWrap(false)
-            b:SetScript("OnMouseDown",function(self,mouse)
+            b:HookScript("OnMouseDown",function(self,mouse)
                 self.pressed=(not mouse or mouse=="LeftButton") and menu.revision or nil
                 self.label:SetAlpha(.7)
             end)
-            b:SetScript("OnHide",function(self) self.pressed=nil; self.label:SetAlpha(1) end)
-            b:SetScript("OnClick",function(self)
+            b:HookScript("OnHide",function(self) self.pressed=nil; self.label:SetAlpha(1) end)
+            b.action=function(self)
                 if U.closing or not menu.owner or not menu.owner:IsShown() or self.pressed~=menu.revision then return end
-                self.pressed=nil; self.action(self)
-            end)
+                self.pressed=nil; callback(self)
+            end
             return b
         end
         local option=item(L.INDEPENDENT,function()
@@ -359,8 +359,8 @@ function U:BuildOptions(id,anchor)
             self.bg:SetColorTexture(unpack(self.down and {.175,.115,.125} or C.selected))
         end
         function option:SetChecked(checked) self.checked=checked==true; self:Paint() end
-        option:SetScript("OnEnter",function(self) self.hovered=true; self:Paint() end)
-        option:SetScript("OnLeave",function(self) self.hovered=nil; self.down=nil; self:Paint() end)
+        option:HookScript("OnEnter",function(self) self.hovered=true; self:Paint() end)
+        option:HookScript("OnLeave",function(self) self.hovered=nil; self.down=nil; self:Paint() end)
         option:HookScript("OnMouseDown",function(self) self.down=true; self:Paint() end)
         option:HookScript("OnMouseUp",function(self) self.down=nil; self:Paint() end)
         option:HookScript("OnHide",function(self) self.hovered=nil; self.down=nil; self:Paint() end)
@@ -378,7 +378,7 @@ function U:BuildOptions(id,anchor)
         menu:SetScript("OnEvent",function()
             if not menu:IsMouseOver() and not (menu.owner and menu.owner:IsMouseOver()) then menu:Hide() end
         end)
-        menu:SetScript("OnHide",function()
+        menu:HookScript("OnHide",function()
             menu:UnregisterAllEvents()
             menu.buildID=nil; menu.owner=nil; menu.option.pressed=nil
             for _,b in ipairs(menu.actions) do b.pressed=nil end
@@ -454,12 +454,42 @@ function U:ConfirmPending(ticket,title)
         self.pendingPrompt=nil;A.Apply:CancelPending(ticket);A:Message("PENDING")
     end
 end
+function U:UpdateHeroControls()
+    local spec=A:GetSpec();local heroes=A.Catalog:Heroes(spec)
+    self.heroOptions=heroes
+    local selected=A.Catalog:SelectedHero(spec);local position
+    for i,b in ipairs(self.heroSelector.buttons) do
+        local hero=heroes[i]
+        b.targetKey=tostring(spec)..":"..tostring(hero and hero.id or "missing")
+        b:SetAvailable(hero~=nil)
+        self.context:SetText(b.label,hero and A.Catalog:HeroName(hero) or L.HERO_UNAVAILABLE)
+        if hero and hero.id==selected then position=i end
+    end
+    self.heroSelector:SetValue(position)
+end
+function U:UpdateBarsPending(buildID,pending)
+    if pending then
+        self.applyError={buildID=buildID,key="BARS_PENDING",partial=true}
+        self:ShowError("BARS_PENDING")
+    elseif self.applyError and self.applyError.buildID==buildID and self.applyError.key=="BARS_PENDING" then
+        self.applyError=nil
+        if self.errorText and self.errorText:GetText()==L.BARS_PENDING then self.errorText:Hide() end
+    end
+    if self.frame and self.frame:IsShown() then self:Refresh() end
+end
 function U:LayoutRows()
-    local top=148+(self.scene=="raid" and 48 or 0)
     local personal=self.scene=="mine"
+    local top=personal and 148 or self.scene=="raid" and 264 or 216
+    self.heroLabel:SetShown(not personal);self.heroSelector:SetShown(not personal)
+    if not personal then self:UpdateHeroControls() end
     self.footer:SetShown(personal)
 
-    local room=math.max(56,self.frame:GetHeight()-top-(personal and 68 or 20))
+    local bottom=personal and 68 or 20
+    local feedback=self.errorText and self.errorText:IsShown()
+    if self.errorText then
+        self.errorText:ClearAllPoints();self.errorText:SetPoint("BOTTOMLEFT",16,bottom)
+    end
+    local room=math.max(56,self.frame:GetHeight()-top-bottom-(feedback and 56 or 0))
     -- A full-height sidebar gets breathing room; short windows remain scrollable.
     local step=math.max(56,math.min(68,math.floor(room/9/2)*2))
     self.rowStep=step
@@ -471,12 +501,8 @@ function U:LayoutRows()
     self.buildList:Show()
     self.listScroll:ClearAllPoints();self.listScroll:SetPoint("TOPRIGHT",self.frame,"TOPRIGHT",-2,-top)
     self.listScroll:SetHeight(self.visibleRows*step-6)
-    self.difficultyButton:SetShown(self.scene=="raid")
-    self.difficultyButton:ClearAllPoints(); self.difficultyButton:SetPoint("TOPRIGHT",-15,-142)
-    for _,b in ipairs(self.difficultyChoices) do
-        local active=b.difficulty==self.difficulty
-        b.selected:SetShown(active); color(b.label,active and C.red or C.muted)
-    end
+    self.difficultyButton:SetShown(self.scene=="raid");self.difficultyLabel:SetShown(self.scene=="raid")
+    self.difficultyButton:SetValue(self.difficulty)
 end
 function U:CancelDrag()
     self.drag=nil
@@ -488,7 +514,7 @@ function U:CancelDrag()
 end
 function U:StartDrag(row)
     local build=row.build
-    if self.drag or self.scene~="mine" or not build or build.source~="user" or A.Store.readonly
+    if self.drag or self.scene~="mine" or not build or build.source~="user"
         or self.closing or A.Apply.op or InCombatLockdown() or row.pressed~=row.generation then return end
     self:HideTooltip();if self.options then self.options:Hide() end
     if not self.dragPreview then
@@ -721,10 +747,10 @@ function U:ChooseIcon()
             rounded(b,C.field,7)
             b.mark=fill(b,C.red); b.mark:Hide()
             b.icon=b:CreateTexture(nil,"ARTWORK"); b.icon:SetSize(38,38); b.icon:SetPoint("CENTER"); b.icon:SetTexCoord(.08,.92,.08,.92)
-            b:SetScript("OnEnter",function() b.icon:SetAlpha(.75) end)
-            b:SetScript("OnLeave",function() b.icon:SetAlpha(1) end)
-            b:SetScript("OnMouseDown",function(_,mouse) b.pressed=mouse=="LeftButton" and p.revision or nil end)
-            b:SetScript("OnHide",function() b.pressed=nil; b.icon:SetAlpha(1) end)
+            b:HookScript("OnEnter",function() b.icon:SetAlpha(.75) end)
+            b:HookScript("OnLeave",function() b.icon:SetAlpha(1) end)
+            b:HookScript("OnMouseDown",function(_,mouse) b.pressed=mouse=="LeftButton" and p.revision or nil end)
+            b:HookScript("OnHide",function() b.pressed=nil; b.icon:SetAlpha(1) end)
             b:SetScript("OnClick",function(_,mouse)
                 if mouse~="LeftButton" or not p:IsShown() or not p.expanded or b.pressed~=p.revision or not b.value then return end
                 d.iconValue=b.value; buildIcon(d.iconButton.icon,b.value);U:ExpandIcons(false)
@@ -735,7 +761,7 @@ function U:ChooseIcon()
             if not p.syncing then p:ScrollTo(value) end
         end)
         p.scroll:EnableMouseWheel(true);p.scroll:SetScript("OnMouseWheel",wheel)
-        p:SetScript("OnHide",function()
+        p:HookScript("OnHide",function()
             clip:SetScript("OnUpdate",nil);clip:Hide();p.expanded=false
             U:LayoutDialog(0)
             for _,b in ipairs(p.cells) do b.pressed=nil;b.value=nil;b.icon:SetTexture(nil) end
@@ -778,9 +804,9 @@ function U:CreateDialog()
     d.iconButton:SetSize(44,44); rounded(d.iconButton,C.field,10)
     d.iconButton.icon=d.iconButton:CreateTexture(nil,"ARTWORK"); d.iconButton.icon:SetSize(36,36); d.iconButton.icon:SetPoint("CENTER"); d.iconButton.icon:SetTexCoord(.08,.92,.08,.92)
     d.iconButton.label:Hide()
-    d.iconButton:SetScript("OnEnter",function(b) b.icon:SetAlpha(.7); U:ShowTooltip(b,nil,L.CHOOSE_ICON) end)
-    d.iconButton:SetScript("OnLeave",function(b) b.icon:SetAlpha(1); U:HideTooltip(b) end)
-    d.iconButton:SetScript("OnHide",function(b) b.icon:SetAlpha(1); U:HideTooltip(b) end)
+    d.iconButton:HookScript("OnEnter",function(b) b.icon:SetAlpha(.7); U:ShowTooltip(b,nil,L.CHOOSE_ICON) end)
+    d.iconButton:HookScript("OnLeave",function(b) b.icon:SetAlpha(1); U:HideTooltip(b) end)
+    d.iconButton:HookScript("OnHide",function(b) b.icon:SetAlpha(1); U:HideTooltip(b) end)
     d.codeLabel=text(d,12,C.muted,L.CODE,18,-66)
     d.code=field(d,18,-92,304,142,true)
     d.code:SetScript("OnTextChanged",function(edit,user)
@@ -837,7 +863,7 @@ function U:CreateDialog()
     end,true)
     d.save:SetSize(250,42); primaryButton(d.save,10)
     for _,edit in ipairs({d.code,d.name}) do edit:SetScript("OnEscapePressed",function()U:Back()end) end
-    d:SetScript("OnHide",function()
+    d:HookScript("OnHide",function()
         if A.Motion.frame==d then A.Motion:Finish(d)end
         if U.iconPicker then U.iconPicker:Hide() end
         if d.suspended then cover:Hide();return end
@@ -848,11 +874,12 @@ function U:CreateDialog()
 end
 function U:Create()
     local f=CreateFrame("Frame","LycheeTalentFrame",A.Dock.host); self.frame=f
+    f.lycheeContext=self:Context();f.lycheeContext:SetWindow(f)
     f:SetSize(280,700); f:SetPoint("TOPLEFT",PlayerSpellsFrame,"TOPRIGHT",8,0); f:SetFrameLevel(A.Dock.host:GetFrameLevel()+10); f:SetClampedToScreen(false)
     f:EnableMouse(true); rounded(f,C.bg,10); f:Hide()
     local escape=CreateFrame("Frame","LycheeTalentEscape",f); escape:SetSize(1,1)
     table.insert(UISpecialFrames,"LycheeTalentEscape")
-    escape:SetScript("OnHide",function()
+    escape:HookScript("OnHide",function()
         if not f:IsShown() or U.closing then return end
         if U.drag then U:CancelDrag();escape:Show()
         elseif U.tooltip and U.tooltip:IsShown() then U:HideTooltip(); escape:Show()
@@ -865,8 +892,8 @@ function U:Create()
     -- while sizing the visible fruit to ~32x35, rather than a tiny padded icon.
     local logoHolder=CreateFrame("Frame",nil,f);logoHolder:SetSize(54,54);logoHolder:SetPoint("TOPLEFT",8,-14);logoHolder:EnableMouse(true)
     local logo=logoHolder:CreateTexture(nil,"ARTWORK");self.logo=logo;logo:SetSize(54,54);logo:SetPoint("CENTER",logoHolder,"CENTER",0,0);logo:SetTexture(media.."logo.tga")
-    logoHolder:SetScript("OnEnter",function()A.Motion:Brand(logo,54)end)
-    logoHolder:SetScript("OnHide",function()A.Motion:StopBrand(logo)end)
+    logoHolder:HookScript("OnEnter",function()A.Motion:Brand(logo,54)end)
+    logoHolder:HookScript("OnHide",function()A.Motion:StopBrand(logo)end)
     local brand=text(f,20,C.text,L.TITLE,0,0)
     self.brand=brand
     brand:ClearAllPoints(); brand:SetPoint("LEFT",logoHolder,"RIGHT",2,0); brand:SetWidth(158); brand:SetWordWrap(false)
@@ -879,11 +906,11 @@ function U:Create()
             b.icon:SetVertexColor(unpack(hover and C.hot or C.text));b.icon:SetAlpha(pressed and .7 or 1)
         end
         paint(false)
-        b:SetScript("OnEnter",function()b.hovered=true;paint(true)end)
-        b:SetScript("OnLeave",function()b.hovered=nil;paint(false)end)
-        b:SetScript("OnMouseDown",function()paint(true,true)end)
-        b:SetScript("OnMouseUp",function()paint(b.hovered)end)
-        b:SetScript("OnHide",function()b.hovered=nil;paint(false)end)
+        b:HookScript("OnEnter",function()b.hovered=true;paint(true)end)
+        b:HookScript("OnLeave",function()b.hovered=nil;paint(false)end)
+        b:HookScript("OnMouseDown",function()paint(true,true)end)
+        b:HookScript("OnMouseUp",function()paint(b.hovered)end)
+        b:HookScript("OnHide",function()b.hovered=nil;paint(false)end)
         b:SetScript("OnClick",onClick)
         return b
     end
@@ -901,21 +928,33 @@ function U:Create()
         b.mark=b:CreateTexture(nil,"ARTWORK"); b.mark:SetSize(22,2); b.mark:SetPoint("BOTTOM",0,-1); b.mark:SetColorTexture(unpack(C.red))
         self.nav[i]=b
     end
-    local difficulty=CreateFrame("Frame",nil,f); self.difficultyButton=difficulty
-    difficulty:SetSize(250,36); rounded(difficulty,C.field,6)
-    self.difficultyChoices={}
-    for i,v in ipairs({{4,L.HEROIC_RAID},{5,L.MYTHIC_RAID}}) do
-        local choice=button(difficulty,v[2],0,-3,145,function(btn)
-            if U.difficulty==btn.difficulty then return end
-            U.difficulty=btn.difficulty; A.Store.character.raidDifficulty=U.difficulty; U.offset=0; U:Refresh()
+    self.heroLabel=text(f,10,C.muted,L.HERO_TALENTS,0,0)
+    self.heroLabel:ClearAllPoints();self.heroLabel:SetPoint("TOPLEFT",16,-140)
+    self.heroSelector=self.context.C.Segmented(f,250,{{value=1,label=""},{value=2,label=""}},function(position)
+        local hero=U.heroOptions and U.heroOptions[position]
+        if not hero then return end
+        local ok,why=A.Catalog:SetHero(A:GetSpec(),hero.id)
+        if not ok then A:Message(why);return end
+        if A.Reminders then A.Reminders:Hide() end
+        U:HideTooltip();U.offset=0;U:Refresh()
+    end,{height=34,radius=6,padding=0,gap=0,fontSize=15,lineHeight=20,selectionMotion=false,wordWrap=false})
+    self.heroSelector:SetPoint("TOPLEFT",15,-164)
+    for _,b in ipairs(self.heroSelector.buttons) do
+        b:HookScript("OnEnter",function(button)
+            local hero=U.heroOptions and U.heroOptions[button.value]
+            if hero then U:ShowTooltip(button,nil,A.Catalog:HeroName(hero)) end
         end)
-        choice.difficulty=v[1]; choice:SetSize(121,30); choice:ClearAllPoints(); choice:SetPoint("TOPLEFT",4+(i-1)*121,-3)
-        choice.selected=CreateFrame("Frame",nil,choice); choice.selected:SetAllPoints(); choice.selected:SetFrameLevel(math.max(0,choice:GetFrameLevel()-1))
-        rounded(choice.selected,{.175,.115,.125},4)
-        choice.label:SetDrawLayer("OVERLAY")
-        choice:SetScript("OnLeave",function(btn) color(btn.label,btn.difficulty==U.difficulty and C.red or C.muted) end)
-        self.difficultyChoices[i]=choice
+        b:HookScript("OnLeave",function(button)U:HideTooltip(button)end)
     end
+    self.difficultyLabel=text(f,10,C.muted,L.RAID_DIFFICULTY,0,0)
+    self.difficultyLabel:ClearAllPoints();self.difficultyLabel:SetPoint("TOPLEFT",16,-220)
+    self.difficultyLabel:SetWidth(70);self.difficultyLabel:SetWordWrap(false);self.difficultyLabel:SetMaxLines(1)
+    self.difficultyButton=self.context.C.Segmented(f,174,{{value=4,label=L.HEROIC_RAID},{value=5,label=L.MYTHIC_RAID}},function(value)
+        if U.difficulty==value then return end
+        U.difficulty=value;A.Store.character.raidDifficulty=value;U.offset=0;U:Refresh()
+    end,{height=34,radius=6,padding=0,gap=0,fontSize=15,lineHeight=20,selectionMotion=false})
+    self.difficultyButton:SetPoint("TOPRIGHT",-15,-212)
+    self.difficultyChoices=self.difficultyButton.buttons
     local footer=CreateFrame("Frame",nil,f); self.footer=footer
     footer:SetPoint("BOTTOMLEFT",0,16); footer:SetSize(280,36)
     button(footer,L.IMPORT,18,0,140,function() U:Dialog(false) end,true)
@@ -930,7 +969,7 @@ function U:Create()
         if offset~=U.offset then U.offset=offset;U:Refresh() end
     end
     list:SetScript("OnMouseWheel",scrollList)
-    list:SetScript("OnHide",function()if U.drag then U:CancelDrag() end end)
+    list:HookScript("OnHide",function()if U.drag then U:CancelDrag() end end)
     self.listScroll=scrollbar(f);self.listScroll:EnableMouseWheel(true)
     self.listScroll:SetScript("OnMouseWheel",scrollList)
     self.listScroll:SetScript("OnValueChanged",function(bar,value)
@@ -944,12 +983,12 @@ function U:Create()
         row.icon=row:CreateTexture(nil,"ARTWORK"); row.icon:SetTexCoord(.08,.92,.08,.92); row.icon:SetSize(32,32); row.icon:SetPoint("LEFT",10,0)
         row.title=text(row,15,C.text,"",0,0); row.title:ClearAllPoints(); row.title:SetPoint("LEFT",54,0); row.title:SetWordWrap(false)
         row.progress=text(row,10,C.muted,"",0,0,66); row.progress:ClearAllPoints(); row.progress:SetPoint("RIGHT",-8,0);row.progress:SetJustifyH("RIGHT")
-        row:SetScript("OnEnter",function(r)
+        row:HookScript("OnEnter",function(r)
             if not r.build then return end
             r.bg:Show(); U:ShowTooltip(r,r.build)
         end)
-        row:SetScript("OnLeave",function(r) r.bg:SetShown(r.build and (r.build.id==U.currentID or r.build.id==U.selected)); U:HideTooltip(r) end)
-        row:SetScript("OnMouseDown",function(r,mouse) r.pressed=(not mouse or mouse=="LeftButton") and r.generation or nil end)
+        row:HookScript("OnLeave",function(r) r.bg:SetShown(r.build and (r.build.id==U.currentID or r.build.id==U.selected)); U:HideTooltip(r) end)
+        row:HookScript("OnMouseDown",function(r,mouse) r.pressed=(not mouse or mouse=="LeftButton") and r.generation or nil end)
         row:RegisterForDrag("LeftButton")
         row:SetScript("OnDragStart",function(r)U:StartDrag(r)end)
         row:SetScript("OnDragStop",function()U:FinishDrag()end)
@@ -975,17 +1014,17 @@ function U:Create()
                 else A:Message(err) end
             end
         end)
-        row:SetScript("OnHide",function(r) U:ClearApplyFeedback(r); r.pressed=nil; r.lastClickID=nil; r.lastClickGeneration=nil; r.build=nil; if U.options and U.options.owner==r.more then U.options:Hide() end; U:HideTooltip(r) end)
+        row:HookScript("OnHide",function(r) U:ClearApplyFeedback(r); r.pressed=nil; r.lastClickID=nil; r.lastClickGeneration=nil; r.build=nil; if U.options and U.options.owner==r.more then U.options:Hide() end; U:HideTooltip(r) end)
         row.link=button(row,"",0,0,32,function()if row.build then U:Action("edit",row.build.id)end end)
         row.link:ClearAllPoints();row.link:SetPoint("RIGHT",-34,0);row.link:SetSize(32,32)
         row.link.label:Hide()
         row.link.icon=row.link:CreateTexture(nil,"ARTWORK");row.link.icon:SetSize(22,22);row.link.icon:SetPoint("CENTER")
         row.link.icon:SetTexture(media.."linked.tga");row.link.icon:SetVertexColor(unpack(C.muted))
-        row.link:SetScript("OnEnter",function(btn)if row.build then btn.icon:SetVertexColor(unpack(C.hot));U:ShowTooltip(btn,row.build)end end)
-        row.link:SetScript("OnLeave",function(btn)btn.icon:SetVertexColor(unpack(C.muted));U:HideTooltip(btn)end)
-        row.link:SetScript("OnMouseDown",function(btn)btn.icon:SetAlpha(.7)end)
-        row.link:SetScript("OnMouseUp",function(btn)btn.icon:SetAlpha(1)end)
-        row.link:SetScript("OnHide",function(btn)btn.icon:SetAlpha(1);btn.icon:SetVertexColor(unpack(C.muted));U:HideTooltip(btn)end)
+        row.link:HookScript("OnEnter",function(btn)if row.build then btn.icon:SetVertexColor(unpack(C.hot));U:ShowTooltip(btn,row.build)end end)
+        row.link:HookScript("OnLeave",function(btn)btn.icon:SetVertexColor(unpack(C.muted));U:HideTooltip(btn)end)
+        row.link:HookScript("OnMouseDown",function(btn)btn.icon:SetAlpha(.7)end)
+        row.link:HookScript("OnMouseUp",function(btn)btn.icon:SetAlpha(1)end)
+        row.link:HookScript("OnHide",function(btn)btn.icon:SetAlpha(1);btn.icon:SetVertexColor(unpack(C.muted));U:HideTooltip(btn)end)
         row.more=button(row,"",260,-7,42,function(btn)
             if not A.Apply.op and row.build then U:BuildOptions(row.build.id,btn) end
         end)
@@ -993,18 +1032,19 @@ function U:Create()
         row.more.label:Hide()
         row.more.icon=row.more:CreateTexture(nil,"ARTWORK");row.more.icon:SetSize(20,20);row.more.icon:SetPoint("CENTER")
         row.more.icon:SetTexture(media.."more.tga");row.more.icon:SetVertexColor(unpack(C.text))
-        row.more:SetScript("OnEnter",function(btn)if btn:IsEnabled() then btn.icon:SetVertexColor(unpack(C.hot))end end)
-        row.more:SetScript("OnLeave",function(btn)btn.icon:SetVertexColor(unpack(btn:IsEnabled() and C.text or C.dim))end)
-        row.more:SetScript("OnMouseDown",function(btn)if btn:IsEnabled() then btn.icon:SetAlpha(.7)end end)
-        row.more:SetScript("OnMouseUp",function(btn)btn.icon:SetAlpha(1)end)
-        row.more:SetScript("OnHide",function(btn)btn.icon:SetAlpha(1);btn.icon:SetVertexColor(unpack(C.text))end)
+        row.more:HookScript("OnEnter",function(btn)if btn:IsEnabled() then btn.icon:SetVertexColor(unpack(C.hot))end end)
+        row.more:HookScript("OnLeave",function(btn)btn.icon:SetVertexColor(unpack(btn:IsEnabled() and C.text or C.dim))end)
+        row.more:HookScript("OnMouseDown",function(btn)if btn:IsEnabled() then btn.icon:SetAlpha(.7)end end)
+        row.more:HookScript("OnMouseUp",function(btn)btn.icon:SetAlpha(1)end)
+        row.more:HookScript("OnHide",function(btn)btn.icon:SetAlpha(1);btn.icon:SetVertexColor(unpack(C.text))end)
         self.rows[i]=row
     end
     self.empty=CreateFrame("Frame",nil,list); self.empty:SetAllPoints()
     self.emptyTitle=text(self.empty,16,C.text,L.EMPTY,12,-70,280)
     self.emptyHelp=text(self.empty,12,C.muted,L.EMPTY_HELP,12,-124,280); self.emptyHelp:SetSpacing(5)
-    f:SetScript("OnMouseDown",function() if U.options then U.options:Hide() end end)
+    f:HookScript("OnMouseDown",function() if U.options then U.options:Hide() end end)
     f:SetScript("OnShow",function()
+        U.context:Resume()
         for _,event in ipairs({"TRAIT_NODE_CHANGED","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED","SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED"}) do f:RegisterEvent(event) end
         f:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED"); f:RegisterEvent("UI_SCALE_CHANGED"); f:RegisterEvent("PLAYER_REGEN_DISABLED")
         U.escape:Show(); U:Scale(); U:Refresh();A.Motion:Brand(U.logo,54)
@@ -1017,7 +1057,8 @@ function U:Create()
             U.stateTimer=C_Timer.NewTimer(0,function() U.stateTimer=nil; if f:IsShown() then U:Refresh() end end)
         end
     end)
-    f:SetScript("OnHide",function()
+    f:HookScript("OnHide",function()
+        U.context:Hide()
         U:CancelDrag()
         if U.pendingPrompt then
             A.Apply:CancelPending(U.pendingPrompt);U.pendingPrompt=nil
@@ -1104,9 +1145,9 @@ function U:Settings()
             if p.importScan and p.importScan.invalid>0 then GameTooltip:AddLine(L.TEX_INVALID:format(p.importScan.invalid),.71,.705,.69,true) end
             GameTooltip:Show()
         end
-        card:SetScript("OnEnter",importHelp)
-        card:SetScript("OnLeave",function()GameTooltip:Hide()end)
-        card:SetScript("OnHide",function()if GameTooltip:IsOwned(card)then GameTooltip:Hide()end end)
+        card:HookScript("OnEnter",importHelp)
+        card:HookScript("OnLeave",function()GameTooltip:Hide()end)
+        card:HookScript("OnHide",function()if GameTooltip:IsOwned(card)then GameTooltip:Hide()end end)
         local title=text(card,14,C.text,"Talent EX",0,0)
         title:ClearAllPoints();title:SetPoint("TOPLEFT",14,-12);title:SetFont(STANDARD_TEXT_FONT,16,"")
         p.importSummary=text(card,12,C.muted,"",0,0)
@@ -1130,7 +1171,7 @@ function U:Settings()
             self.mark:SetTexCoord(state/4,(state+1)/4,0,1)
             local scan,why=A.TalentEx:Inspect()
             self.importScan=scan
-            self.importWhy=A.Store.readonly and "SCHEMA" or A.Apply.op and "APPLY_BUSY" or why
+            self.importWhy=A.Apply.op and "APPLY_BUSY" or why
             local _,name=A:GetSpec()
             local labels={ready=L.TEX_ACTION,updates=L.TEX_UPDATES,imported=L.TEX_DONE,empty=L.TEX_ACTION}
             self.importEX.label:SetText(labels[scan and scan.state or "empty"])
@@ -1141,7 +1182,7 @@ function U:Settings()
             self.importEX:RefreshStyle()
             self.importResult:SetText(issue or "");self.importResult:SetShown(issue~=nil)
         end
-        p:SetScript("OnHide",function()U:CloseSocial();U:ClosePage(p)end);p:Hide()
+        p:HookScript("OnHide",function()U:CloseSocial();U:ClosePage(p)end);p:Hide()
     end
     self.settings:Render();self:OpenPage(self.settings)
 end
@@ -1161,7 +1202,7 @@ function U:OpenSocial(entry)
         backdrop:SetAllPoints(UIParent);backdrop:SetFrameStrata("DIALOG");backdrop:SetFrameLevel(self.frame:GetFrameLevel()+40)
         local shade=backdrop:CreateTexture(nil,"BACKGROUND");shade:SetAllPoints();shade:SetColorTexture(0,0,0,.2)
         backdrop:SetScript("OnClick",function()U:CloseSocial()end)
-        backdrop:SetScript("OnHide",function()s.input:ClearFocus();s.active=nil;s.code:SetTexture(nil);if A.Motion.frame==s.popup then A.Motion:Finish(s.popup)end end)
+        backdrop:HookScript("OnHide",function()s.input:ClearFocus();s.active=nil;s.code:SetTexture(nil);if A.Motion.frame==s.popup then A.Motion:Finish(s.popup)end end)
         table.insert(UISpecialFrames,"LycheeTalentSocial")
         local popup=CreateFrame("Frame",nil,backdrop);s.popup=popup
         popup:EnableMouse(true);popup:SetClampedToScreen(true);rounded(popup,C.bg,10)
@@ -1170,11 +1211,11 @@ function U:OpenSocial(entry)
         local close=CreateFrame("Button",nil,popup);close:SetSize(32,32);close:SetPoint("TOPRIGHT",-8,-8)
         local back=close:CreateTexture(nil,"ARTWORK");back:SetSize(22,22);back:SetPoint("CENTER");back:SetTexture(media.."back-search.tga")
         close:SetScript("OnClick",function()U:CloseSocial()end)
-        close:SetScript("OnEnter",function()back:SetVertexColor(unpack(C.hot))end)
-        close:SetScript("OnLeave",function()back:SetVertexColor(unpack(C.text))end)
+        close:HookScript("OnEnter",function()back:SetVertexColor(unpack(C.hot))end)
+        close:HookScript("OnLeave",function()back:SetVertexColor(unpack(C.text))end)
         s.input=field(popup,20,-54,260,60,true);s.input:SetFont(STANDARD_TEXT_FONT,14,"")
         s.input:SetScript("OnTextChanged",function(edit,user)if user and s.active and s.active.url then edit:SetText(s.active.url);edit:HighlightText()end end)
-        s.input:SetScript("OnMouseUp",function(edit)edit:HighlightText()end)
+        s.input:HookScript("OnMouseUp",function(edit)edit:HighlightText()end)
         s.input:SetScript("OnEscapePressed",function()U:CloseSocial()end)
         s.code=popup:CreateTexture(nil,"ARTWORK");s.code:SetSize(208,208);s.code:SetPoint("TOP",0,-50)
         s.hint=text(popup,10,C.muted,"",0,0);s.hint:ClearAllPoints();s.hint:SetPoint("BOTTOM",0,12);s.hint:SetFont(STANDARD_TEXT_FONT,13,"")
@@ -1208,9 +1249,9 @@ function U:CreateAbout(parent)
         b:SetSize(40,40);b:SetPoint("TOPLEFT",(i-1)*44,-16)
         local icon=b:CreateTexture(nil,"ARTWORK");icon:SetSize(20,20);icon:SetPoint("CENTER");icon:SetTexture(media.."About\\"..entry.icon..".tga");icon:SetVertexColor(unpack(C.muted))
         b:SetScript("OnClick",function()U:OpenSocial(entry)end)
-        b:SetScript("OnEnter",function()icon:SetVertexColor(unpack(C.text))end)
-        b:SetScript("OnLeave",function()icon:SetVertexColor(unpack(C.muted))end)
-        b:SetScript("OnHide",function()icon:SetVertexColor(unpack(C.muted))end)
+        b:HookScript("OnEnter",function()icon:SetVertexColor(unpack(C.text))end)
+        b:HookScript("OnLeave",function()icon:SetVertexColor(unpack(C.muted))end)
+        b:HookScript("OnHide",function()icon:SetVertexColor(unpack(C.muted))end)
     end
 end
 function U:ContextSettings(id,draft)
@@ -1282,7 +1323,7 @@ function U:ContextSettings(id,draft)
             end
         end,true)
         p.save:ClearAllPoints();p.save:SetPoint("BOTTOMLEFT",18,6);primaryButton(p.save,7);p.save:SetHeight(34)
-        p:SetScript("OnHide",function()
+        p:HookScript("OnHide",function()
             local fromForm=p.formDraft;p.formDraft=nil;p.draft=nil;p.buildID=nil
             if fromForm and U.frame:IsShown() and not U.closing then
                 U.dialog:RefreshAssociations();U.dialogCover:Show();U.dialog:Show()
@@ -1302,6 +1343,7 @@ function U:ShowReminder(prompt)
     if InCombatLockdown() then return end
     if not self.reminder then
         local p=CreateFrame("Frame","LycheeTalentReminder",UIParent);self.reminder=p
+        p.lycheeContext=newContext();p.lycheeContext:SetWindow(p)
         p:SetWidth(380);p:SetPoint("CENTER",UIParent,"CENTER",0,150);p:SetFrameStrata("DIALOG");p:SetClampedToScreen(true);p:EnableMouse(true)
         rounded(p,C.bg,10)
         p.logo=p:CreateTexture(nil,"ARTWORK");p.logo:SetSize(44,44);p.logo:SetPoint("TOPLEFT",10,-9);p.logo:SetTexture(media.."logo.tga")
@@ -1320,9 +1362,9 @@ function U:ShowReminder(prompt)
             local action=CreateFrame("Frame",nil,row);action:SetSize(68,32);action:SetPoint("RIGHT");rounded(action,C.red,6)
             row.actionLabel=text(action,10,C.text,L.REMINDER_SWITCH,0,0)
             row.actionLabel:ClearAllPoints();row.actionLabel:SetPoint("CENTER");row.actionLabel:SetFont(STANDARD_TEXT_FONT,14,"")
-            row:SetScript("OnEnter",function()action:SetAlpha(.8)end)
-            row:SetScript("OnLeave",function()action:SetAlpha(1)end)
-            row:SetScript("OnHide",function()action:SetAlpha(1);row.label:SetAlpha(1)end)
+            row:HookScript("OnEnter",function()action:SetAlpha(.8)end)
+            row:HookScript("OnLeave",function()action:SetAlpha(1)end)
+            row:HookScript("OnHide",function()action:SetAlpha(1);row.label:SetAlpha(1)end)
             p.rows[i]=row
         end
         function p:Render()
@@ -1347,12 +1389,12 @@ function U:ShowReminder(prompt)
         p.dismiss:SetSize(88,32);p.dismiss:ClearAllPoints();p.dismiss:SetPoint("TOPRIGHT",-16,-15)
         p.dismiss.label:ClearAllPoints();p.dismiss.label:SetPoint("RIGHT",-4,0)
         p.dismiss.label:SetFont(STANDARD_TEXT_FONT,14,"");color(p.dismiss.label,C.muted)
-        p.dismiss:SetScript("OnLeave",function(b)color(b.label,C.muted)end)
-        p:SetScript("OnHide",function()p.prompt=nil;for _,row in ipairs(p.rows)do row.buildID=nil end end)
+        p.dismiss:HookScript("OnLeave",function(b)color(b.label,C.muted)end)
+        p:HookScript("OnHide",function()p.lycheeContext:Hide();p.prompt=nil;for _,row in ipairs(p.rows)do row.buildID=nil end end)
         UISpecialFrames=UISpecialFrames or {};UISpecialFrames[#UISpecialFrames+1]="LycheeTalentReminder"
     end
     local p=self.reminder;p.prompt=prompt;p.offset=0
     local context=A.Catalog.scenarios[prompt.id]
     p.context:SetText(context and context.label or "")
-    p:Render();p:Show()
+    p.lycheeContext:Resume();p:Render();p:Show()
 end

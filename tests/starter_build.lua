@@ -90,6 +90,7 @@ local function run(mode)
   StageEntries=function(_,_,entries)assert(not starter,'do not stage while the starter flag is active');staged=entries.code;return true end}
  assert(loadfile('addon/LycheeTalent/Macros.lua'))('LycheeTalent',A)
 assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
+ A.Macros=A.Macros or {Copy=function(value)local out={};for k,v in pairs(value or {})do out[k]=v end;return out end}
  assert(loadfile('addon/LycheeTalent/Apply.lua'))('LycheeTalent',A)
  -- A remembered native config cannot identify a plugin build while Starter is active.
  if mode=='remembered' then
@@ -121,7 +122,7 @@ assert(loadfile('addon/LycheeTalent/ActionBars.lua'))('LycheeTalent',A)
   assert(starter,'unsuccessful handoff must not clear Starter early')
   if mode=='full' or mode=='create-failure' or mode=='load-failure' then assert(unflags==0)end
  else
-  assert(not A.Apply.op and A.message=='APPLY_SUCCESS' and not starter and active=='desired',mode..': '..tostring(A.message))
+  assert(not A.Apply.op and A.Store.character.lastAttempt.reason=='APPLY_SUCCESS' and not starter and active=='desired',mode..': '..tostring(A.message))
   assert(creates==(existing and 0 or 1) and loads==1,'create at most once; always load out of Starter')
   assert(unflags==(mode=='auto-unflag' and 0 or 1),'unflag exactly once when needed')
   assert(nodes[selected].name==A.L.TITLE and not nodes[selected].usesSharedActionBars)

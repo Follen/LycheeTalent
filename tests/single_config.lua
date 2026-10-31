@@ -87,13 +87,14 @@ assert(A.Apply:Start(builds.a,false));assert(A.Apply.op and A.Apply.op.stage=='c
 assert(painted and barReads==readsBefore,'Applying paints before cursor work starts')
 panelShown=false -- closing the panel must leave the independent transaction alive
 settle()
-assert(not A.Apply.op and A.message=='APPLY_SUCCESS',tostring(A.message))
+assert(not A.Apply.op and char.lastAttempt.reason=='APPLY_SUCCESS',tostring(A.message))
+assert(A.message==nil,'progress and normal success do not produce chat messages')
 assert(activeCode=='alpha' and nodes[20].code=='alpha' and nodes[20].name=='荔枝天赋','one localized working config')
 assert(slots[1].id==200 and A.Apply:CurrentBuildID()=='a','independent layout restored')
 assert(not A.Apply.nextStep and not A.Apply.timer,'successful hidden-panel apply leaves no operation timers')
 slots[1].id=201
 assert(A.Apply:Start(builds.b,true));settle()
-assert(not A.Apply.op and A.message=='APPLY_SUCCESS')
+assert(not A.Apply.op and char.lastAttempt.reason=='APPLY_SUCCESS')
 assert(slots[1].id==100,'switching back to default restores original default')
 assert(B:Get(testSpec,'a',false).slots[1].id==201,'leaving independent saves user edits')
 assert(A.Apply:Start(builds.a,false));settle()
@@ -115,13 +116,13 @@ A.Talents.Matches=function(self,id,entries)
  return baseMatches(self,id,entries)
 end
 assert(A.Apply:Start(builds.a,false));settle()
-assert(not A.Apply.op and A.message=='APPLY_SUCCESS','server-derived hero grant must not cause a false timeout')
+assert(not A.Apply.op and char.lastAttempt.reason=='APPLY_SUCCESS','server-derived hero grant must not cause a false timeout')
 A.Talents.Entries=baseEntries;A.Talents.Matches=baseMatches
 print('PASS native canonicalization: effective active talents and canonical saved config both verified')
 
 -- Fresh install: one creation, then reuse, even while starting on a user config.
 char={};A.Store.character=char
-nodes={[10]={ID=10,name='User config',type=1,usesSharedActionBars=false,code='personal'}}
+nodes={[10]={ID=10,name=A.L.TITLE,type=1,usesSharedActionBars=false,code='personal'}}
 selected=10;activeCode='personal';slots[1]={kind='spell',id=900,sub='spell'}
 C_ClassTalents.CanCreateNewConfig=function()return true end
 C_ClassTalents.ImportLoadout=function(_,entries,name)
@@ -132,8 +133,9 @@ end
 assert(not B:Get(testSpec,nil,true),'first use waits for Applying before capturing the native layout')
 assert(A.Apply:Start(builds.a,false));settle()
 assert(B:Get(testSpec,nil,true).slots[1].id==900,'first application captures the current native default')
-assert(not A.Apply.op and A.message=='APPLY_SUCCESS',tostring(A.message))
+assert(not A.Apply.op and char.lastAttempt.reason=='APPLY_SUCCESS',tostring(A.message))
 assert(creates==1 and B:Working(testSpec).id==50 and not nodes[50].usesSharedActionBars,'create one isolated localized config')
+assert(nodes[10].name==A.L.TITLE and nodes[10].code=='personal','fresh initialization cannot adopt an existing same-name native config')
 assert(A.Apply:Start(builds.b,true));settle()
 assert(creates==1 and nodes[10].code=='personal' and slots[1].id==900,'subsequent default build reuses config and original default')
 staged='manual draft'
@@ -166,7 +168,7 @@ assert(A.Apply:Start(builds.a,false))
 A.Apply.timer.fn();settle()
 assert(not A.Apply.op and A.message=='APPLY_TIMEOUT' and commits==beforeInterrupt,'timeout prevents deferred mutation')
 assert(A.Apply:Start(builds.a,false));settle()
-assert(A.message=='APPLY_SUCCESS' and creates==1,'recovery reuses the same config after failures')
+assert(char.lastAttempt.reason=='APPLY_SUCCESS' and creates==1,'recovery reuses the same config after failures')
 print('PASS failures: rejected/event-failed commits, combat, timeout, safe retry without another config')
 
 -- Shared bars observe passive edits and capture again at the switch boundary.
@@ -189,18 +191,19 @@ assert(B:Get(testSpec,'a',false).slots[1].id==independentBefore,'shared save doe
 
 print('PASS shared pre-switch save after reload preserves independent layouts')
 
--- Missing character macro space must fail before committing target talents.
+-- Native macro capacity does not block talents; missing references stay local.
 local capacity=assert(B:Capture(testSpec))
-capacity.macros.full={name='Saved macro',icon=1,body='/cast Saved'}
+capacity.macros.full={nativeID='deleted-native-reference',name='Saved macro',icon=1,body='/cast Saved'}
 capacity.slots[9]={kind='macro',id='full'}
 builds.capacity={id='capacity',code='capacity'}
 assert(B:SaveIndependent(testSpec,'capacity',capacity))
 Constants={MacroConsts={MAX_ACCOUNT_MACROS=120,MAX_CHARACTER_MACROS=0}}
 local commitsBefore=commits
 assert(A.Apply:Start(builds.capacity,false));settle()
-assert(char.lastAttempt.reason=='BARS_MACRO_CAPACITY' and commits==commitsBefore and not A.Apply.op)
+assert(char.lastAttempt.reason=='BARS_PENDING' and commits>commitsBefore and not A.Apply.op)
+assert(B:Get(testSpec,'capacity',false).pendingMacros[9].macro.body=='/cast Saved')
 Constants=nil
-print('PASS macro capacity rejects before native talent writes')
+print('PASS missing native macro preserves backup without blocking talent commit')
 
 -- A broken target must fail before talents change, without silently choosing
 -- the shared layout when an independent layout already exists.
@@ -228,8 +231,8 @@ PickupAction=function(i,keep)
  return copiedPickup(i,keep)
 end
 assert(A.Apply:Start(builds.b,true));settle()
-assert(activeCode=='beta' and not A.Apply.op and char.lastAttempt.reason=='APPLY_SUCCESS','talent switch completes')
-assert(A.message=='Preserved macro slots: 77, 78, 113, 114','partial action restore is visible, not silent success')
+assert(activeCode=='beta' and not A.Apply.op and char.lastAttempt.reason=='BARS_PENDING','talent switch completes')
+assert(A.message=='BARS_PENDING','partial action restore is visible, not silent success')
 assert(char.recovery.actionBars.reason=='BARS_PARTIAL','partial restore is retained in diagnostics')
 for _,i in ipairs({77,78,113,114})do assert(slots[i].unreadable)end
 assert(slots[1].id==902,'readable actions still restore')
@@ -269,3 +272,39 @@ assert(A.Apply:Start(builds.b,true));settle()
 assert(char.lastAttempt.reason=='APPLY_SUCCESS' and slots[1].id==retryTarget)
 assert(B:Get(testSpec,nil,true).slots[1].id==retryTarget and not B.pendingSpec and not B.resumeFailed)
 print('PASS explicit recovery keeps the saved target across pre-switch capture')
+
+-- Actual production Restore failures after a successful talent commit remain
+-- a mixed outcome, regardless of whether its slot rollback was complete.
+for _,completeRollback in ipairs({true,false}) do
+ local id=completeRollback and "bars-rollback-complete" or "bars-rollback-incomplete"
+ builds[id]={id=id,code=id}
+ local target=assert(B:Capture(testSpec));target.slots[1]={kind="spell",id=7001,sub="spell"};target.slots[2]={kind="spell",id=7002,sub="spell"}
+ assert(B:SaveIndependent(testSpec,id,target))
+ slots[1]={kind="spell",id=6001,sub="spell"};slots[2]={kind="spell",id=6002,sub="spell"}
+ local place=PlaceAction;local injected=false
+ PlaceAction=function(slot)
+  if slot==2 and (not completeRollback or not injected) then injected=true;error("native action placement failed")end
+  return place(slot)
+ end
+ assert(A.Apply:Start(builds[id],false));settle()
+ local state=B:Spec(testSpec)
+ assert(activeCode==id and state.applied.id==id and state.applied.partial and state.applied.barsPending)
+ assert(char.lastAttempt.reason=="BARS_PENDING" and char.lastAttempt.partial and char.lastAttempt.actionBarsReason=="BARS_RESTORE")
+ assert(char.recovery.status=="partial" and char.recovery.actionBars.detail.rolledBack==completeRollback)
+ assert(state.pendingBars.snapshot.slots[1].id==7001 and B:Get(testSpec,id,false).slots[1].id==7001)
+ assert(B.pendingSpec==testSpec and B.resumeFailed and not B:Owner() and not A.Apply:CurrentBuildID())
+ assert(A.Apply:CurrentBuildID(true)==id,"visible current talent marker records the committed target")
+ slots[1]={kind="spell",id=9001,sub="spell"};emit("ACTIONBAR_SLOT_CHANGED",1);settle()
+ assert(B:Get(testSpec,id,false).slots[1].id==7001,"background events cannot save rolled-back bars into target")
+ B.pendingSpec=nil;B.resumeFailed=nil;B.observedSpec=nil
+ assert(not B:Owner() and not A.Apply:CurrentBuildID(),"persisted pending target protects the reload boundary")
+ emit("PLAYER_ENTERING_WORLD");settle()
+ assert(state.pendingBars and B.resumeFailed,"login does not silently retry a failed action-bar write")
+ PlaceAction=place
+ local beforeRetryCommits,beforeRetryLoads=commits,loads
+ assert(A.Apply:Start(builds[id],false));settle()
+ assert(commits==beforeRetryCommits and loads==beforeRetryLoads,"explicit retry only restores bars when talents already match")
+ assert(slots[1].id==7001 and slots[2].id==7002 and not state.pendingBars and not B.pendingSpec and not B.resumeFailed)
+ assert(char.lastAttempt.reason=="APPLY_SUCCESS" and char.recovery.status=="complete" and not state.applied.partial)
+end
+print("PASS committed talents plus failed bars: complete/incomplete rollback, durable target, paused autosave/login, bars-only explicit retry")

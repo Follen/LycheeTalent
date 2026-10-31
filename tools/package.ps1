@@ -8,6 +8,21 @@ $version=($toc | Where-Object { $_ -match '^## Version: ' }) -replace '^## Versi
 $version=$version.Trim()
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid addon version.' }
 $packages=@(Get-ChildItem -LiteralPath $sourceRoot -Directory | Where-Object Name -Match '^LycheeTalent(_Data_[A-Z]+)?$')
+$libraryRoot=Join-Path $sourceRoot 'LycheeTalent\Libs\LycheeUI'
+$libraryLockPath=Join-Path $libraryRoot '.lock'
+if (-not (Test-Path -LiteralPath $libraryLockPath -PathType Leaf)) { throw 'Missing embedded LycheeUI manifest.' }
+$libraryLock=Get-Content -LiteralPath $libraryLockPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if ($libraryLock.library -ne 'LycheeUI' -or $libraryLock.status -ne 'frozen') { throw 'Embedded LycheeUI must have a frozen manifest.' }
+$runtimePaths=@($libraryLock.runtimeFiles | ForEach-Object { $_.path.Replace('\','/') })
+$libraryFiles=@(Get-ChildItem -LiteralPath $libraryRoot -File -Recurse | Where-Object FullName -NE $libraryLockPath | ForEach-Object {
+    $_.FullName.Substring($libraryRoot.Length+1).Replace('\','/')
+})
+if ($runtimePaths.Count -ne $libraryFiles.Count -or (Compare-Object $runtimePaths $libraryFiles)) { throw 'Embedded LycheeUI file set differs from its manifest.' }
+foreach ($entry in $libraryLock.runtimeFiles) {
+    $runtimePath=[IO.Path]::GetFullPath((Join-Path $libraryRoot $entry.path))
+    if (-not $runtimePath.StartsWith($libraryRoot.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)) { throw 'LycheeUI manifest path escaped library.' }
+    if ((Get-FileHash -LiteralPath $runtimePath -Algorithm SHA256).Hash -ne $entry.sha256) { throw "Embedded LycheeUI file changed: $($entry.path)" }
+}
 $expected=@{}
 foreach ($package in $packages) {
     $packageToc=Join-Path $package.FullName ($package.Name+'.toc')
@@ -15,7 +30,8 @@ foreach ($package in $packages) {
     if ($packageVersion -ne $version) { throw "Package version mismatch: $($package.Name)" }
     foreach ($file in Get-ChildItem -LiteralPath $package.FullName -Recurse -File) {
         $isNotice=$package.Name -eq 'LycheeTalent' -and $file.DirectoryName -eq $package.FullName -and $file.Name -in @('LICENSE','THIRD_PARTY_NOTICES.md')
-        if ($file.Extension -notin @('.lua','.toc','.tga') -and -not $isNotice) { throw "Unexpected release file: $($file.Name)" }
+        $isLibraryLock=$file.FullName -eq $libraryLockPath
+        if ($file.Extension -notin @('.lua','.toc','.tga','.xml') -and -not $isNotice -and -not $isLibraryLock) { throw "Unexpected release file: $($file.Name)" }
         $relative=$file.FullName.Substring($sourceRoot.Length+1).Replace('\','/')
         $expected[$relative]=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
     }

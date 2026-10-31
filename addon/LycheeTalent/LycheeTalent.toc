@@ -11,8 +11,8 @@
 ## SavedVariables: LycheeTalentDB
 ## SavedVariablesPerCharacter: LycheeTalentCharacterDB
 ## IconTexture: Interface\AddOns\LycheeTalent\Media\talent-icon.tga
+Libs/LycheeUI/embeds.xml
 Locales.lua
-Migration.lua
 Storage.lua
 Scenarios.lua
 Catalog.lua

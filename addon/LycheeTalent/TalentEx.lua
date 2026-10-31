@@ -65,7 +65,6 @@ end
 function I:Import()
     if InCombatLockdown() then return nil,"COMBAT" end
     if A.Apply.op then return nil,"APPLY_BUSY" end
-    if A.Store.readonly then return nil,"SCHEMA" end
     -- Reinspect on click: the source or destination can change while settings is open.
     local scan,why=self:Inspect()
     if not scan then return nil,why end

@@ -4,7 +4,7 @@ A.ActionBars=B
 -- Each specialization has one default and independent profiles per build.
 function B:Spec(spec)
     local char=A.Store.character
-    if not char or A.Store.readonly or type(spec)~="number" or spec<=0 or spec%1~=0 then return nil end
+    if not char or type(spec)~="number" or spec<=0 or spec%1~=0 then return nil end
     char.actionBars=char.actionBars or {version=1,specs={}}
     if type(char.actionBars)~="table" or char.actionBars.version~=1 or type(char.actionBars.specs)~="table" then return nil end
     local specs=char.actionBars.specs
@@ -40,7 +40,8 @@ function B:Valid(snapshot,spec)
             (type(entry.id)~="number" and type(entry.id)~="string")) then return false end
         if entry.kind=="macro" then
             local macro=snapshot.macros and snapshot.macros[entry.id]
-            if type(macro)~="table" or type(macro.name)~="string" or type(macro.body)~="string" then return false end
+            if type(macro)~="table" or type(macro.name)~="string" or type(macro.body)~="string"
+                or type(macro.nativeID)~="string" or macro.nativeID=="" then return false end
         end
     end
     return true
@@ -48,7 +49,7 @@ end
 function B:SeedDefault(spec,snapshot,source)
     local state=self:Spec(spec)
     if not state then return nil,"SCHEMA" end
-    if state.default then return true end -- upgrades never replace an existing default
+    if state.default then return true end -- never replace a captured default
     if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
     state.default=clone(snapshot);state.defaultSource=source
     return true
@@ -155,7 +156,7 @@ function B:Capture(spec,passive)
     local packed,reason=A.Macros:Pack(snapshot);if not packed then return nil,reason end
     local state=self:Spec(spec);local applied=state and state.applied
     local previous=applied and self:Get(spec,applied.id,applied.shared)
-    return self:PreserveDeferred(A.Macros:PreserveNames(packed,previous),previous)
+    return self:PreservePending(self:PreserveDeferred(packed,previous),previous)
 end
 local function baseSpell(id)
     if C_Spell and C_Spell.GetBaseSpell then
@@ -179,13 +180,43 @@ function B:PreserveDeferred(snapshot,previous)
         local actual,old=snapshot.slots[slot],previous.slots[slot]
         local unchanged=same(actual,old)
         if actual.kind=="macro" and old.kind=="macro" then
-            unchanged=A.Macros:Same(snapshot.macros[actual.id],previous.macros[old.id])
+            unchanged=snapshot.macros[actual.id].nativeID==previous.macros[old.id].nativeID
         end
         -- Keep unavailable talent spells until the user changes this slot.
         -- Passive reads and switching away must not turn them into deletions.
         if unchanged then
             snapshot.deferredSpells=snapshot.deferredSpells or {}
             snapshot.deferredSpells[slot]=clone(entry)
+        end
+    end
+    return snapshot
+end
+function B:PreservePending(snapshot,previous)
+    if not previous then return snapshot end
+    local function unchanged(slot,observed,macro)
+        local actual=snapshot.slots[slot]
+        if actual.kind=="macro" and observed.kind=="macro" then
+            return macro and snapshot.macros[actual.id].nativeID==macro.nativeID
+        end
+        return same(actual,observed)
+    end
+    for slot,pending in pairs(previous.pendingMacros or {}) do
+        if unchanged(slot,pending.observed,pending.observedMacro) then
+            snapshot.pendingMacros=snapshot.pendingMacros or {}
+            snapshot.pendingMacros[slot]=clone(pending)
+        end
+    end
+    -- Native deletion clears its action buttons. Keep the missing reference
+    -- instead of letting a passive observation erase its only backup.
+    local native
+    for slot,entry in ipairs(previous.slots) do
+        if entry.kind=="macro" and not snapshot.slots[slot].kind then
+            native=native or A.Macros:Current()
+            local macro=previous.macros[entry.id]
+            if not A.Macros:Resolve(macro,native) then
+                snapshot.pendingMacros=snapshot.pendingMacros or {}
+                snapshot.pendingMacros[slot]={macro=clone(macro),observed={}}
+            end
         end
     end
     return snapshot
@@ -258,7 +289,7 @@ function B:RestorePhysical(snapshot,validate)
     local target=clone(snapshot)
     local changes,preserve,preservedSlots={},{},{}
     for slot=1,self.slotCount do
-        -- Old partial snapshots have no identity to restore. Adopt the current
+        -- Unresolved slots have no identity to restore. Adopt the current
         -- action once it is readable so the placeholder does not survive forever.
         if target.slots[slot].kind=="unreadableMacro" then target.slots[slot]=clone(before.slots[slot]) end
         if before.slots[slot].kind=="unreadableMacro" then
@@ -371,17 +402,7 @@ function B:RestorePhysical(snapshot,validate)
     if #preservedSlots>0 then return true,nil,{preservedSlots=preservedSlots} end
     return true
 end
-function B:Plan(snapshot,before)
-    local target=clone(snapshot);local protected={};local unknown=false
-    for slot,entry in ipairs(before.slots) do
-        if entry.kind=="unreadableMacro" then target.slots[slot]=clone(entry);unknown=true end
-    end
-    if unknown then
-        for index in pairs(A.Macros:Owned(A.Macros:Scan())) do protected[index]=true end
-    end
-    local plan,why=A.Macros:Plan(target,protected)
-    return plan,why,target
-end
+-- Missing native references preserve their physical slot and original backup.
 function B:Restore(snapshot)
     local spec=A:GetSpec()
     if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
@@ -390,40 +411,57 @@ function B:Restore(snapshot)
     local target=clone(snapshot)
     for slot,entry in pairs(target.deferredSpells or {}) do target.slots[slot]=clone(entry) end
     target.deferredSpells=nil
+    target.macros=target.macros or {}
+    for slot,pending in pairs(target.pendingMacros or {}) do
+        local ref="pending:"..slot
+        target.macros[ref]=clone(pending.macro);target.slots[slot]={kind="macro",id=ref}
+    end
+    target.pendingMacros=nil
     local before,why=self:Capture(spec);if not before then return nil,why end
-    local plan;plan,why,target=self:Plan(target,before);if not plan then return nil,why end
+    local physical,missing=A.Macros:Physical(target)
+    for slot,entry in ipairs(before.slots) do
+        if entry.kind=="unreadableMacro" and target.slots[slot].kind=="macro" then
+            missing[slot]=clone(target.macros[target.slots[slot].id])
+            physical.slots[slot]=clone(entry)
+        end
+    end
     self.writing=true;self.verified=nil
+    local verified
     local ok,result,reason,detail=pcall(function()
-        local written,err,writeDetail=A.Macros:Execute(plan)
-        if not written then return nil,err,writeDetail end
-        local verified
-        local restored,restoreWhy,restoreDetail=self:RestorePhysical(A.Macros:Physical(target,plan.bindings),function(physical)
+        local restored,err,info=self:RestorePhysical(physical,function(actual)
             local why
-            verified,why=A.Macros:Pack(clone(physical))
-            if not verified then return nil,why,{phase="macro-verify"} end
-            -- Validate content while action-slot rollback is still available.
-            -- Never save a different native macro as the requested SV content.
+            verified,why=A.Macros:Pack(clone(actual))
+            if not verified then return nil,why,{phase="macro-reference"} end
             for slot,entry in ipairs(target.slots) do
-                if entry.kind=="macro" then
-                    local actual=verified.slots[slot]
-                    if actual.kind~="macro" or not A.Macros:Same(target.macros[entry.id],verified.macros[actual.id],true) then
-                        return nil,"BARS_MACRO",{phase="macro-verify",slot=slot,macro=target.macros[entry.id].name,reason="content-mismatch"}
+                if entry.kind=="macro" and not missing[slot] then
+                    local found=verified.slots[slot]
+                    if found.kind~="macro" or verified.macros[found.id].nativeID~=target.macros[entry.id].nativeID then
+                        return nil,"BARS_MACRO",{phase="macro-reference",slot=slot}
                     end
-                    verified.macros[actual.id]=clone(target.macros[entry.id])
                 end
             end
             return true
         end)
-        if not restored then return nil,restoreWhy,restoreDetail end
+        if not restored then
+            info=info or {};if info.rolledBack==nil then info.rolledBack=true end
+            return nil,err,info
+        end
         verified.deferredSpells=self.verified.deferredSpells
+        local missingSlots={}
+        for slot,macro in pairs(missing) do
+            verified.pendingMacros=verified.pendingMacros or {}
+            local actual=verified.slots[slot]
+            verified.pendingMacros[slot]={macro=clone(macro),observed=clone(actual),
+                observedMacro=actual.kind=="macro" and clone(verified.macros[actual.id]) or nil}
+            missingSlots[#missingSlots+1]=slot
+        end
+        table.sort(missingSlots)
         self.verified=verified
-        return true,nil,restoreDetail
+        info=info or {};info.missingMacros=#missingSlots>0 and missingSlots or nil
+        return true,nil,info
     end)
     if not ok or not result then
-        local rolledBack,macroRollback=A.Macros:Rollback(plan)
-        detail=type(detail)=="table" and detail or {}
-        detail.rolledBack=rolledBack and detail.rolledBack~=false
-        detail.macroRollback=macroRollback
+        detail=type(detail)=="table" and detail or {rolledBack=false,reason=tostring(result)}
         self.verified=nil
         self.recovery={before=before,requested=target,rolledBack=detail.rolledBack,detail=detail}
         if not detail.rolledBack then self.pendingSpec=spec;self.resumeFailed=true end
@@ -431,7 +469,7 @@ function B:Restore(snapshot)
     elseif self.pendingSpec==spec and self.resumeFailed then
         self.pendingSpec=nil;self.resumeFailed=nil
     end
-    self.writing=nil;self.macroBaseline=A.Macros:Scan()
+    self.writing=nil
     if not ok or not result then return nil,reason,detail end
     return true,nil,detail
 end
@@ -439,23 +477,20 @@ function B:Owner()
     local spec=A:GetSpec();local state=self:Spec(spec)
     if self.observedSpec and self.observedSpec~=spec then return end
     local applied=state and state.applied
-    if self.pendingSpec or not applied or not A.Apply:CurrentBuildID() then return end
+    if self.pendingSpec or state.pendingBars or not applied or not A.Apply:CurrentBuildID() then return end
     return spec,applied
 end
 function B:ObserveMacros()
-    local current=A.Macros:Scan();local previous=self.macroBaseline or current
-    self.macroBaseline=current
+    A.Macros:Current()
     if self.writing or self.reading or A.Apply.op then return end
-    local mapping=A.Macros:Changes(previous,current)
     local spec,applied=self:Owner()
     if applied then
         local snapshot=self:Get(spec,applied.id,applied.shared)
         if snapshot then
-            A.Macros:Refresh(snapshot,previous,current)
+            A.Macros:Refresh(snapshot)
             self:SaveLayout(spec,applied.id,applied.shared,snapshot)
         end
     end
-    A.Macros:RefreshPool(previous,current,mapping)
 end
 function B:ObserveSlots()
     if self.reading or self.writing or A.Apply.op then return end
@@ -468,25 +503,35 @@ function B:ObserveSlots()
         for slot,entry in ipairs(snapshot.slots) do
             local old=previous.slots[slot]
             if entry.kind=="unreadableMacro" and old.kind=="macro" then
-                local binding=previous.bindings and previous.bindings[old.id]
-                local ref="kept:"..tostring(binding and binding.index or slot)
+                local ref=old.id
                 snapshot.slots[slot]={kind="macro",id=ref}
-                snapshot.macros[ref]=clone(previous.macros[old.id])
-                if previous.bindings and previous.bindings[old.id] then snapshot.bindings[ref]=clone(previous.bindings[old.id]) end
+                snapshot.macros[ref]=snapshot.macros[ref] or clone(previous.macros[old.id])
             end
         end
     end
     self:SaveLayout(spec,applied.id,applied.shared,snapshot)
+    local pending=next(snapshot.pendingMacros or {})~=nil
+    for _,entry in ipairs(snapshot.slots) do if entry.kind=="unreadableMacro" then pending=true;break end end
+    if pending~=(applied.partial==true) then
+        applied.partial=pending
+        if A.UI and A.UI.UpdateBarsPending then A.UI:UpdateBarsPending(applied.id,pending) end
+    end
 end
 function B:ResumeSpec()
     if not self.pendingSpec or self.resumeFailed or A.Apply.op or InCombatLockdown() or GetCursorInfo() then return end
     local spec=A:GetSpec();local state=self:Spec(spec);local applied=state and state.applied
     if not applied or not A.Apply:CurrentBuildID(true) then return end
+    if state.pendingBars then self.resumeFailed=true;return end
     local snapshot=self:Get(spec,applied.id,applied.shared);if not snapshot then return end
-    local ok,why=self:Restore(snapshot)
+    local ok,why,detail=self:Restore(snapshot)
     if not ok then self.resumeFailed=true;if A.Message then A:Message(why) end;return end
     self.pendingSpec=nil
     self:SaveLayout(spec,applied.id,applied.shared,self.verified)
+    applied.partial=detail and (detail.missingMacros~=nil or detail.preservedSlots~=nil) or false
+    if applied.partial then
+        if A.UI and A.UI.ShowApplyError then A.UI:ShowApplyError(applied.id,"BARS_PENDING",true)
+        elseif A.Message then A:Message("BARS_PENDING") end
+    end
 end
 function B:QueueObservation()
     if self.queued then return end
@@ -496,15 +541,19 @@ function B:QueueObservation()
     end)
 end
 function B:Init()
-    if self.events or A.Store.readonly then return end
-    self.macroBaseline=A.Macros:Scan()
+    if self.events then return end
+    A.Macros:Initialize()
+    local current=self:Spec(A:GetSpec())
+    if current and current.pendingBars then self.pendingSpec=A:GetSpec();self.resumeFailed=true end
     local events=CreateFrame("Frame");self.events=events
     for _,event in ipairs({"UPDATE_MACROS","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD",
         "ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","CURSOR_CHANGED","PLAYER_TALENT_UPDATE",
         "SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","TRAIT_CONFIG_UPDATED"}) do events:RegisterEvent(event) end
     events:SetScript("OnEvent",function(_,event)
         if (event=="PLAYER_ENTERING_WORLD" or event=="ACTIVE_PLAYER_SPECIALIZATION_CHANGED") and self.observedSpec~=A:GetSpec() then
-            self.observedSpec=A:GetSpec();self.pendingSpec=self.observedSpec;self.resumeFailed=nil
+            self.observedSpec=A:GetSpec();self.pendingSpec=self.observedSpec
+            local state=self:Spec(self.observedSpec)
+            self.resumeFailed=state and state.pendingBars and true or nil
             self:QueueObservation()
         end
         if self.reading or self.writing or A.Apply.op then return end

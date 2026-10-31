@@ -1,5 +1,5 @@
 local _,A=...
-local X={revision="20261015-schema-v1"}
+local X={revision="20261031-native-macros"}
 A.Apply=X
 function X:GuardCreation(frame)
     if not frame or not frame.IsEventRegistered then return end
@@ -80,6 +80,7 @@ function X:CurrentBuildID(allowPendingBars)
     if A.ActionBars.pendingSpec and not allowPendingBars then return end
     local state=A.ActionBars:Spec(A:GetSpec())
     local saved=state and state.applied
+    if state and state.pendingBars and not allowPendingBars then return end
     if not saved or self.op or saved.spec~=A:GetSpec() then return end
     if C_ClassTalents.GetStarterBuildActive() then return end
     local binding,info=A.ActionBars:Working(saved.spec)
@@ -101,20 +102,23 @@ function X:Finish(ok,key)
     local char=A.Store.character
     char.lastAttempt={revision=self.revision,time=time(),buildID=op.buildID,spec=op.spec,
         shared=op.shared,stage=op.stage,slot=op.failedSlot,luaError=op.luaError,
-        reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED")}
+        reason=key or (ok and "APPLY_SUCCESS" or "APPLY_FAILED"),partial=op.partial,actionBarsReason=op.barsReason}
     -- A failed initial capture must not destroy an earlier recovery backup.
     if op.recovery and char.recovery==op.recovery then
-        char.recovery.status=ok and "complete" or "interrupted"
+        char.recovery.status=op.partial and "partial" or ok and "complete" or "interrupted"
         char.recovery.reason=char.lastAttempt.reason
         char.recovery.targetConfig=op.target
         char.recovery.targetName=op.targetName
         char.recovery.stage=op.stage
     end
-    A:Message(char.lastAttempt.reason)
-    if ok and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
+    if not ok or key then
+        if A.UI.ShowApplyError then A.UI:ShowApplyError(op.buildID,char.lastAttempt.reason,ok)
+        else A:Message(char.lastAttempt.reason) end
+    end
+    if ok and not op.partial and A.Reminders and A.Reminders.enabled then A.Reminders:Check() end
     if A.UI.frame and A.UI.frame:IsShown() then
         A.UI:Refresh()
-        if ok and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID,op.startedAt) end
+        if ok and not key and A.UI.ShowApplySuccess then A.UI:ShowApplySuccess(op.buildID,op.startedAt) end
     end
 end
 function X:CheckContext()
@@ -264,25 +268,33 @@ function X:CompleteWorking()
     local state=A.ActionBars:Spec(op.spec)
     local snapshot=op.targetBars
     op.stage="action-bars"
-    local ok,reason,detail=A.ActionBars:Restore(snapshot)
-    if not ok then
-        op.failedSlot=detail and detail.slot
-        A.Store.character.recovery.actionBars={reason=reason,detail=detail,backup=A.ActionBars.recovery}
-        self:Finish(false,reason);return
-    end
-    local saved,saveReason=A.ActionBars:SaveLayout(op.spec,op.buildID,op.shared,A.ActionBars.verified)
-    if not saved then self:Finish(false,saveReason);return end
+    -- Talents have already been verified. A later action-bar failure must not
+    -- make the previous talent build appear current or overwrite the target.
     state.active={id=op.buildID,shared=op.shared,config=op.target,code=op.code}
     state.applied={id=op.buildID,code=op.code,spec=op.spec,config=op.target,shared=op.shared,entries=op.entries}
-    A.ActionBars.pendingSpec=nil
-    A.ActionBars.resumeFailed=nil
-    local preserved=detail and detail.preservedSlots
+    local function pending(reason,detail)
+        op.partial=true;op.barsReason=reason;op.failedSlot=detail and detail.slot
+        state.applied.partial=true;state.applied.barsPending=true
+        state.pendingBars={id=op.buildID,shared=op.shared,code=op.code,snapshot=A.Macros.Copy(snapshot)}
+        A.ActionBars.pendingSpec=op.spec;A.ActionBars.resumeFailed=true
+        A.Store.character.recovery.actionBars={reason=reason,detail=detail,requested=A.Macros.Copy(snapshot),backup=A.ActionBars.recovery}
+        self:Finish(true,"BARS_PENDING")
+    end
+    local called,ok,reason,detail=pcall(A.ActionBars.Restore,A.ActionBars,snapshot)
+    if not called then pending("BARS_RESTORE",{reason=tostring(ok),rolledBack=false});return end
+    if not ok then pending(reason,detail);return end
+    local savedCall,saved,saveReason=pcall(A.ActionBars.SaveLayout,A.ActionBars,op.spec,op.buildID,op.shared,A.ActionBars.verified)
+    if not savedCall then pending("BARS_RESTORE",{phase="save-layout",reason=tostring(saved)});return end
+    if not saved then pending(saveReason);return end
+    state.pendingBars=nil
+    A.ActionBars.pendingSpec=nil;A.ActionBars.resumeFailed=nil
+    local preserved=detail and (detail.missingMacros or detail.preservedSlots)
     if preserved then
+        op.partial=true;op.barsReason="BARS_PARTIAL"
         A.Store.character.recovery.actionBars={reason="BARS_PARTIAL",detail=detail}
     end
-    -- Native macro writes are complete before background observation resumes.
-    self:Finish(true)
-    if preserved then A:Message(string.format(A.L.BARS_PARTIAL,table.concat(preserved,", "))) end
+    state.applied.partial=preserved~=nil
+    self:Finish(true,preserved and "BARS_PENDING" or nil)
 end
 function X:Advance()
     local op=self.op
@@ -335,7 +347,6 @@ end
 function X:Start(build,shared,consent)
     if self.op or self.preparing then return nil,"APPLY_BUSY" end
     if InCombatLockdown() then return nil,"COMBAT" end
-    if A.Store.readonly then return nil,"SCHEMA" end
     local code,why=A.Talents:Code(build);if not code then return nil,why end
     local valid,spec=A.Talents:Validate(code);if not valid then return nil,spec end
     local active=C_ClassTalents.GetActiveConfigID()
@@ -378,7 +389,6 @@ function X:Start(build,shared,consent)
     end
     for _,event in ipairs({"TRAIT_CONFIG_CREATED","TRAIT_CONFIG_UPDATED","CONFIG_COMMIT_FAILED","STARTER_BUILD_ACTIVATION_FAILED","PLAYER_REGEN_DISABLED","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","PLAYER_TALENT_UPDATE","SELECTED_LOADOUT_CHANGED"}) do self.events:RegisterEvent(event) end
     self.timer=C_Timer.NewTimer(25,function()if X.op==op then X:Finish(false,"APPLY_TIMEOUT")end end)
-    A:Message("APPLYING")
     if A.UI.frame and A.UI.frame:IsShown() then A.UI:Refresh() end
     -- Yield once so Applying can paint before the first cursor-assisted read.
     self:Defer(function()self:CaptureBeforeApply()end)
@@ -399,13 +409,15 @@ function X:CaptureBeforeApply()
         local saved,why=A.ActionBars:SaveLayout(spec,op.previousBuildID,op.previousApplied.shared,before)
         if not saved then self:Finish(false,why);return end
     end
-    local target,why=A.ActionBars:Get(spec,op.buildID,op.shared)
+    local retained=state.pendingBars
+    local target,why
+    if retained and retained.id==op.buildID and retained.shared==op.shared and retained.code==op.code then
+        target=A.Macros.Copy(retained.snapshot)
+    else target,why=A.ActionBars:Get(spec,op.buildID,op.shared) end
     if not target and not op.shared and why=="BARS_MISSING" then
         target,why=A.ActionBars:Get(spec,nil,true)
     end
     if not target then self:Finish(false,why);return end
-    local plan;plan,why=A.ActionBars:Plan(target,before)
-    if not plan then self:Finish(false,why);return end
     op.targetBars=target
     op.stage="preparing"
     op.recovery={revision=self.revision,status="active",spec=spec,code=op.originalCode,bars=before,

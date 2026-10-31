@@ -10,7 +10,7 @@ assert(not B:Spec(0) and not B:Spec(-1),'uninitialized specialization creates no
 local function snapshot(spec,id)
  local slots={};for i=1,180 do slots[i]={} end
  slots[1]={kind='spell',id=id}
- return {version=2,spec=spec,slots=slots,macros={},bindings={}}
+ return {version=2,spec=spec,slots=slots,macros={}}
 end
 assert(B:SaveIndependent(65,'independent',snapshot(65,99)))
 assert(not B:Get(65,'independent',true),'missing shared default must never fall back to independent')

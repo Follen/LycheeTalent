@@ -1,8 +1,10 @@
 """Small WCL v2 client. Secrets stay in process memory, never in output/cache."""
 import argparse
+import concurrent.futures
 import json
 import os
 import time
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -10,6 +12,9 @@ from pathlib import Path
 
 class WCL:
     def __init__(self, credential_file=None):
+        self._combatants = {}
+        self._combatant_summaries = {}
+        self._combatants_lock = threading.Lock()
         values = dict(os.environ)
         if credential_file:
             for line in Path(credential_file).read_text(encoding="utf-8-sig").splitlines():
@@ -24,6 +29,53 @@ class WCL:
         request = urllib.request.Request("https://www.warcraftlogs.com/oauth/token", data=body)
         with urllib.request.urlopen(request, timeout=30) as response:
             self.token = json.load(response)["access_token"]
+
+    def combatants(self, code, fight):
+        """Share one complete fight's original actor/talent events across ranking jobs."""
+        key = (code, fight)
+        with self._combatants_lock:
+            pending = self._combatants.get(key)
+            owner = pending is None
+            if owner:
+                pending = concurrent.futures.Future()
+                self._combatants[key] = pending
+        if not owner:
+            return pending.result()
+        try:
+            prefix = '{reportData{report(code:' + json.dumps(code) + '){'
+            args = 'fightIDs:[' + str(fight) + '],dataType:CombatantInfo,limit:10000'
+            report = self.query(prefix + 'playerDetails(fightIDs:[' + str(fight) + '])events(' + args + '){data nextPageTimestamp}}}}')['reportData']['report']
+            pages = [report['events']]
+            while pages[-1]['nextPageTimestamp'] is not None:
+                cursor = pages[-1]['nextPageTimestamp']
+                page = self.query(prefix + 'events(' + args + ',startTime:' + str(cursor) + '){data nextPageTimestamp}}}}')['reportData']['report']['events']
+                pages.append(page)
+            result = {'playerDetails':report['playerDetails'], 'pages':pages}
+            pending.set_result(result)
+            return result
+        except Exception as exc:
+            pending.set_exception(exc)
+            raise
+
+    def combatant_summary(self, code, fight):
+        """Share the Summary fallback's original per-actor data for this fight."""
+        key = (code, fight)
+        with self._combatants_lock:
+            pending = self._combatant_summaries.get(key)
+            owner = pending is None
+            if owner:
+                pending = concurrent.futures.Future()
+                self._combatant_summaries[key] = pending
+        if not owner:
+            return pending.result()
+        try:
+            query = '{reportData{report(code:' + json.dumps(code) + '){table(fightIDs:[' + str(fight) + '],dataType:Summary)}}}'
+            result = self.query(query)['reportData']['report']['table']['data']
+            pending.set_result(result)
+            return result
+        except Exception as exc:
+            pending.set_exception(exc)
+            raise
 
     def query(self, query, variables=None):
         body = json.dumps({"query":query,"variables":variables or {}}).encode()
@@ -52,5 +104,5 @@ if __name__ == "__main__":
     data = WCL(args.credentials).query(Path(args.query_file).read_text(encoding="utf-8-sig"))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    output.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
     print(json.dumps({"saved":str(output),"fields":list(data)}))

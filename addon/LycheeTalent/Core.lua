@@ -6,9 +6,9 @@ function A:GetSpec()
     return C_SpecializationInfo.GetSpecializationInfo(index)
 end
 function A:Message(key)
-    -- Progress and success are represented by the row; errors remain available
-    -- in chat without adding a persistent explanation block to the sidebar.
+    -- Actionable failures stay beside the controls while the panel is open.
     if key=="APPLYING" or key=="APPLY_SUCCESS" then return end
+    if self.UI and self.UI.ShowError and self.UI:ShowError(key) then self.UI:Refresh();return end
     local text=self.L[key] or key
     print("|cffd53c49"..self.L.TITLE.."|r: "..text)
 end

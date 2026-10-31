@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "library": "LycheeUI",
+  "status": "frozen",
+  "version": "1.0.1",
+  "note": "V1.0.1 开发候选，未发布标签；修复声明样式、颜色渐变和原生细边框尺寸舍入，并减少默认反馈分配。已验证受影响的通用合同，运行文本使用 LF，当前内容由 SHA-256 固定。",
+  "runtimeFiles": [
+    {
+      "path": "Components.lua",
+      "sha256": "ec71e2fdc636d5f6f126201dd6b95ca757a2d5e2931cc15d6bda80403723d442"
+    },
+    {
+      "path": "Core.lua",
+      "sha256": "a1a7283b2ee2b5321ec8529c034fea45f939525ec7577198839033548de6a3c2"
+    },
+    {
+      "path": "Elements.lua",
+      "sha256": "1a2cf204d76e0dc538b0a77e7f33df81dfa291b8a246151aa4c2ab0e62f987e9"
+    },
+    {
+      "path": "embeds.xml",
+      "sha256": "1a36c42e52eb13bd4785ba483dcb1f2e519b1276d9a097b33684b73551c5e7c3"
+    },
+    {
+      "path": "Layouts.lua",
+      "sha256": "3f81c614fa264999b49bed2b1e3520486d05fe0921407e361742f3dc0603a1e3"
+    },
+    {
+      "path": "Media/arrow.tga",
+      "sha256": "93786301129ed889270d2a02f5643d4416e82697785f143fa10bb7ae54998727"
+    },
+    {
+      "path": "Media/bell.tga",
+      "sha256": "d64179d1877cb926fff238a148f060f00184f2d40e140693391223211e62c8cc"
+    },
+    {
+      "path": "Media/book.tga",
+      "sha256": "ac017a1a6244bb94fb175efdb64d4c56b58c72e71a47fbc96305f618ec56c385"
+    },
+    {
+      "path": "Media/caution.tga",
+      "sha256": "6bdad242ba25891acd890ae9b4ce1e87002ec295d835bd76ec0972834820d953"
+    },
+    {
+      "path": "Media/chevron.tga",
+      "sha256": "d88346a13d505bc3aac4f58e292952f98490b5f0c03348a192e95c6fbda89780"
+    },
+    {
+      "path": "Media/circle.tga",
+      "sha256": "ee3d0ece0a31e76edc81cda3ea666c637bcf28724466222948e2ab235216b293"
+    },
+    {
+      "path": "Media/close.tga",
+      "sha256": "756dd35d3c7c393d6acc4c6109439f02ff0ba342dd82b1451d93ae3bc7a1424e"
+    },
+    {
+      "path": "Media/decline.tga",
+      "sha256": "a2b846a146af2ad86c904dad55446c7da3a01c38bf2f7217faaa18af3d00c06d"
+    },
+    {
+      "path": "Media/heart.tga",
+      "sha256": "d6be15a5e4bd895a85da6cea324d6ff8aa0a5134bbdfc645979cebe796302873"
+    },
+    {
+      "path": "Media/history.tga",
+      "sha256": "60ee8e76f8acede358987f77a5bb96d60879e21cb19b4a56ba90f8e4256900c8"
+    },
+    {
+      "path": "Media/icon-mask.tga",
+      "sha256": "3842cf0e05c57441da86894559b30b17bf97055b301cd076003b119da5f8a5b5"
+    },
+    {
+      "path": "Media/plus.tga",
+      "sha256": "07311c36e089b733d8e4dbb5ae5a2b68cc3e746e9a047be4a434e8dafa5e9fb6"
+    },
+    {
+      "path": "Media/refresh.tga",
+      "sha256": "1d4ea9510b9ee540a485dbf37b379ec6b7467707a409809ed5d012c922fec71e"
+    },
+    {
+      "path": "Media/rounded-corner.tga",
+      "sha256": "6c5203e7c6caede452ff5a34e6a356f2e7caef376cd3d1a4ac40353e340b9e5a"
+    },
+    {
+      "path": "Media/search.tga",
+      "sha256": "fc6308be9daccbc766db4942a9ddde797d57902a128c229e69f389f342d6fba7"
+    },
+    {
+      "path": "Media/settings.tga",
+      "sha256": "f326928897d118c63e16d2b3a0e15894b3064319063ae3e449125ce646b77c30"
+    },
+    {
+      "path": "Media/shadow-12.tga",
+      "sha256": "4b114a802ec77994eb266a970de8e7d1dece24883ae9cb0bfb926ae337615978"
+    },
+    {
+      "path": "Media/shadow-16.tga",
+      "sha256": "64d76fdbf085b2f28381cfdc4a2e6390b71c07c9bd6f1d911f3ab56180edc926"
+    },
+    {
+      "path": "Media/shadow-24.tga",
+      "sha256": "a7d36e795f94ce43e658898ecbcc6415fa72301104581590e318aa6e59107276"
+    },
+    {
+      "path": "Media/shadow-28.tga",
+      "sha256": "356c7b119618c92d25d747992cc1aa7cb1c9187ff18166393db36a967b296e34"
+    },
+    {
+      "path": "Menu.lua",
+      "sha256": "ba45194d9841a22f10e8ce0aea87a6cc52bbd0b18abfcf2d199133deba1d147a"
+    },
+    {
+      "path": "Motion.lua",
+      "sha256": "15fc4809e69077de512ba0ec480fb6a1c58023a1b249a38d2cb6562625f74afc"
+    },
+    {
+      "path": "Native.lua",
+      "sha256": "1e52ad3545188dcf943f475e384d3791967bb791d578fc054c226ebce9b3328a"
+    },
+    {
+      "path": "Responsive.lua",
+      "sha256": "f711ce79c6568c70f55aa9f3b5dc1bc6a49f5f60a08db7e56f396081af592891"
+    },
+    {
+      "path": "Styles.lua",
+      "sha256": "97b2b9c14c84fcb10b17fd4dcee6bef8c794176bd528370747d2fee90636b051"
+    },
+    {
+      "path": "Theme.lua",
+      "sha256": "ef3da514cd40133823f37e2d9d9d2fef84603ee7f2e0122bc22c3e0969e9d0ab"
+    }
+  ],
+  "frozenOn": "2026-10-27",
+  "maintenance": {
+    "scope": "冻结 runtimeFiles 列出的运行源码、加载清单与通用素材；公开 API 和组件行为以当前 API.md 合同为准。",
+    "consumerBoundary": "产品页面、业务数据、品牌图形与轨迹、产品默认样式由消费方维护；消费方开发不得顺带修改或升级共享库。",
+    "changeConditions": "用户明确要求修改 LycheeUI，或明确要求解决必须修改该库的问题时，在该授权范围内维护；已有授权无需逐次确认。",
+    "sourceOfTruth": "先修改独立源库，再通过消费方同步脚本更新内置副本；不得直接修补内置副本或反向覆盖源库。",
+    "validation": "运行文件变化后执行受影响的通用合同验证，核对消费方接入；验证完成后为新版本更新实际文件清单与 SHA-256，并重新冻结。文档修改不改变运行版本；已发布标签和运行内容不原位覆盖。",
+    "integrity": "同步前核对冻结清单和哈希；存在差异时定位来源，不通过重写哈希掩盖未经确认的源码变化。运行文本保持 LF。"
+  },
+  "loadVersion": 10001,
+  "repository": "https://github.com/Follen/LycheeUI",
+  "tag": null,
+  "baseTag": "v1.0.0"
+}

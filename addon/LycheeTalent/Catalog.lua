@@ -13,7 +13,7 @@ function C:Load()
         self.loaded[class]=true
         local pack=LycheeTalentData and LycheeTalentData[class]
         if pack and type(pack.builds)=="table" then
-            self.builds=pack.builds
+            self.builds=pack.builds;self.heroTrees=pack.heroTrees or {}
             for _,b in ipairs(self.builds) do self.byID[b.id]=b end
         end
     end
@@ -38,6 +38,39 @@ function C:Localize()
         s.label=s.label or s.name; self.scenarios[s.id]=s
     end
 end
+-- Hero choices come from the shipped specialization pair, never popularity.
+function C:Heroes(specID)
+    if A.GetSpec and specID~=A:GetSpec() then return {} end
+    local index=C_SpecializationInfo.GetSpecialization()
+    return self.heroTrees and self.heroTrees[index] or {}
+end
+function C:SelectedHero(specID)
+    local heroes=self:Heroes(specID)
+    local selected=A.Store:GetHero(specID)
+    if selected~=nil then
+        for _,hero in ipairs(heroes) do if hero.id==selected then return selected end end
+        return nil,"HERO_UNKNOWN"
+    end
+    if heroes[1] then
+        local active=C_ClassTalents and C_ClassTalents.GetActiveHeroTalentSpec and C_ClassTalents.GetActiveHeroTalentSpec()
+        if issecretvalue and issecretvalue(active) then active=nil end
+        local initial=heroes[1].id
+        for _,hero in ipairs(heroes) do if hero.id==active then initial=active;break end end
+        A.Store:SetHero(specID,initial)
+        return initial
+    end
+    return nil,"HERO_MISSING"
+end
+function C:HeroName(hero)
+    local active=C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
+    if active and C_Traits and C_Traits.GetSubTreeInfo then
+        local ok,info=pcall(C_Traits.GetSubTreeInfo,active,hero.id)
+        local name=ok and info and info.name
+        if name and not (issecretvalue and issecretvalue(name)) and type(name)=="string" and name~="" then return name end
+    end
+    return hero.name or tostring(hero.id)
+end
+function C:SetHero(specID,heroTree) return A.Store:SetHero(specID,heroTree) end
 function C:Target(b)
     local s=b.scenarioID and self.scenarios[tostring(b.scenarioID)]
     return s and s.label or b.target or ""
@@ -51,9 +84,15 @@ function C:Query(specID,scene,source,query,target,difficulty,out)
     local specIndex=C_SpecializationInfo.GetSpecialization()
     local q=(query or ""):lower()
     if source~="user" and scene~="mine" then
+        local hero=self:SelectedHero(specID)
+        local seen={}
         for _,b in ipairs(self.builds) do
             local match=q=="" or b.name:lower():find(q,1,true) or self:Target(b):lower():find(q,1,true) or self:Title(b):lower():find(q,1,true)
-            if b.specIndex==specIndex and match and (q~="" or scene==b.scene) then out[#out+1]=b end
+            local kind=(b.scene=="mythic" and b.kind=="highest") or (b.scene=="raid" and b.kind=="ranked")
+            local key=b.scene..":"..tostring(b.scenarioID)..":"..tostring(b.difficulty or 0)
+            if hero and b.heroTree==hero and kind and b.specIndex==specIndex and match and (q~="" or scene==b.scene) and not seen[key] then
+                out[#out+1]=b;seen[key]=true
+            end
         end
     end
     for i=#out,1,-1 do

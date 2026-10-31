@@ -1,10 +1,48 @@
 {
   "completed": 1120,
   "failed": 0,
-  "builds": 1971,
-  "collected": 1792240476,
+  "builds": 1795,
+  "collected": 1793442269,
   "zones": [
     55,
     53
-  ]
+  ],
+  "patch": "12.1.5",
+  "partitions": {
+    "55": 1,
+    "53": 2
+  },
+  "observationDays": 14,
+  "collectionStarted": 1793440963,
+  "collectionFinished": 1793442269,
+  "heroExpected": 2240,
+  "heroFound": 1795,
+  "missingHeroBuilds": 445,
+  "heroMapping": {
+    "build": "12.1.5.70688",
+    "snapshot": "PIN-c798d9ec56072e4e30824290dde53dfc1f36096a36d2d0d149fd5908deb68e7d",
+    "capture": "CAP-4ae2221aa02c512de68fb1b3b667239baa9676aafffef4481e4de9afb5a97a49"
+  },
+  "pageLimits": {
+    "focusMythic": 10,
+    "other": 3
+  },
+  "pages": 2345,
+  "scanned": 230411,
+  "sourceRecovery": {
+    "checkedAt": "2026-10-31T11:13:27Z",
+    "candidateRows": 1394,
+    "uniqueFights": 793,
+    "queriedRows": 1394,
+    "queriedFights": 793,
+    "missingTalentTreeRows": 1196,
+    "actorNotUniquelyMatchedRows": 198,
+    "anonymousMissingServerRows": 17,
+    "previouslyAttemptedRows": 100,
+    "recoveredCompleteRows": 0,
+    "changedBuilds": 0,
+    "failedFightQueries": 0,
+    "eventPaginationComplete": true,
+    "method": "CombatantInfo events with shared fight Summary fallback"
+  }
 }
