@@ -2,8 +2,11 @@ local name, A = ...
 A.name = name
 function A:GetSpec()
     local index=C_SpecializationInfo.GetSpecialization()
-    if not index then return nil end
-    return C_SpecializationInfo.GetSpecializationInfo(index)
+    if type(index)~="number" or index<=0 or index%1~=0 then return nil end
+    local spec,name,description,icon,role,primaryStat,pointsSpent,background,previewPointsSpent,isUnlocked=C_SpecializationInfo.GetSpecializationInfo(index)
+    if type(spec)=="number" and spec>0 and spec%1==0 then
+        return spec,name,description,icon,role,primaryStat,pointsSpent,background,previewPointsSpent,isUnlocked
+    end
 end
 function A:Message(key)
     -- Actionable failures stay beside the controls while the panel is open.
@@ -28,6 +31,5 @@ events:SetScript("OnEvent",function(self,event,loaded)
     A.ActionBars:Init()
     A.Reminders:RefreshSettings()
     A.Dock:Init()
-    if A.Audit then A.Audit:Start(120) end
     self:UnregisterEvent("ADDON_LOADED")
 end)

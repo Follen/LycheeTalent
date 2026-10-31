@@ -129,3 +129,62 @@ snapshots[1]=mage(replay.entries);snapshots[2]=mage({})
 snapshots[2]=mage(A.Talents:Entries(replay.original,2))
 differential(1,'real-mage-active');differential(2,'real-mage-saved')
 print('PASS native-helper entries: active/saved, free/inactive grants, Tiered 1/2/1 and partial/granted ranks, choice bounds, empty/partial drafts, fallback')
+
+-- A full semantic match reuses only metadata from this exact native read.
+-- It must not fetch each selected node again, nor retain ranks across calls.
+local expected=A.Talents:ReadEntries(1)
+nodeReads,treeReads=0,0
+local matches,difference,canonical=A.Talents:Matches(1,expected)
+assert(matches)
+assert(canonical,'Matches must return its verified native canonical entries')
+same(expected,canonical)
+assert(nodeReads==#order and treeReads==1,'semantic match rereads native metadata: '..nodeReads)
+local changed=expected[1].nodeID;local prior=snapshots[1][changed].ranksPurchased
+snapshots[1][changed].ranksPurchased=prior+1;snapshots[1][changed].activeRank=snapshots[1][changed].activeRank+1
+assert(not A.Talents:Matches(1,expected),'later match must observe fresh ranks')
+snapshots[1][changed].ranksPurchased=prior;snapshots[1][changed].activeRank=snapshots[1][changed].activeRank-1
+-- Native codec fallback still matches even when it cannot supply compact metadata.
+PlayerSpellsFrame.TalentsFrame=fallback
+assert(A.Talents:Matches(1,expected));PlayerSpellsFrame.TalentsFrame=frame
+print('PASS single-scan match: canonical return, native metadata reuse, live mutations and native fallback')
+
+-- The native fast API is only an opaque token for settled v2 configurations.
+-- Its header must bind the current specialization and exact tree definition.
+local function encode(config,spec,treeHash)
+ local s=ExportUtil.MakeExportDataStream()
+ frame:WriteLoadoutHeader(s,2,spec or 62,treeHash or C_Traits.GetTreeHash(658))
+ frame:WriteLoadoutContent(s,config,658)
+ return s:GetExportString()
+end
+local token=encode(1)
+local staged,tokenCalls=false,0
+C_Traits.ConfigHasStagedChanges=function()return staged end
+C_Traits.GenerateImportString=function()tokenCalls=tokenCalls+1;return token end
+nodeReads=0
+assert(A.Talents:StableConfigToken(1)==token and nodeReads==0,'native token should not construct node tables')
+staged=true;local callsBefore=tokenCalls
+assert(A.Talents:StableConfigToken(1)==nil and tokenCalls==callsBefore,'draft token semantics must remain unused')
+staged=false
+local correct=token;token=encode(1,63)
+assert(not A.Talents:StableConfigToken(1),'wrong specialization token accepted')
+local wrongHash={};for i=1,16 do wrongHash[i]=255 end
+token=encode(1,62,wrongHash)
+assert(not A.Talents:StableConfigToken(1),'wrong tree definition accepted')
+local emptyHash={};for i=1,16 do emptyHash[i]=0 end
+token=encode(1,62,emptyHash)
+assert(not A.Talents:StableConfigToken(1),'unbound tree hash accepted')
+token=correct
+local version=C_Traits.GetLoadoutSerializationVersion
+C_Traits.GetLoadoutSerializationVersion=function()return 3 end
+assert(not A.Talents:StableConfigToken(1));C_Traits.GetLoadoutSerializationVersion=version
+for _,bad in ipairs({'',string.rep('!',80),string.rep('A',16385)})do
+ token=bad;assert(not A.Talents:StableConfigToken(1),'invalid native token accepted')
+end
+token=correct
+issecretvalue=function(value)return value==token end
+assert(not A.Talents:StableConfigToken(1));issecretvalue=nil
+C_Traits.GenerateImportString=function()error('native unavailable')end
+assert(not A.Talents:StableConfigToken(1))
+C_Traits.GenerateImportString=nil
+assert(not A.Talents:StableConfigToken(1))
+print('PASS native settled tokens: zero node reads, draft/version/spec/hash/secret/errors/missing API fallback')

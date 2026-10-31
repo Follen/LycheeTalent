@@ -2,7 +2,27 @@ local _, A = ...
 local T = {}
 A.Talents = T
 T.cache={}; T.order={}
-function T:ReadEntries(config)
+-- Only a change token for settled configurations. Draft export semantics are
+-- deliberately left to the live node reader and the existing native codec.
+function T:StableConfigToken(config)
+    if not C_Traits or type(C_Traits.GenerateImportString)~="function" then return end
+    local ok,code=pcall(function()
+        local active=C_ClassTalents.GetActiveConfigID()
+        if not active or C_Traits.ConfigHasStagedChanges(active) or C_Traits.GetLoadoutSerializationVersion()~=2 then return end
+        local value=C_Traits.GenerateImportString(config)
+        if issecretvalue and issecretvalue(value) then return end
+        if type(value)~="string" or #value<24 or #value>16384 or value:find("[^A-Za-z0-9+/=]") then return end
+        local f=self:Frame();if not f then return end
+        local stream=ExportUtil.MakeImportDataStream(value)
+        local valid,version,spec,hash=f:ReadLoadoutHeader(stream)
+        if not valid or version~=2 or spec~=A:GetSpec() or f:IsHashEmpty(hash) then return end
+        local tree=C_ClassTalents.GetTraitTreeForSpec(spec)
+        if not tree or not f:HashEquals(hash,C_Traits.GetTreeHash(tree)) then return end
+        return value
+    end)
+    if ok then return code end
+end
+function T:ReadEntries(config,withMetadata)
     local f=self:Frame(); if not f then return nil end
     local tree=C_ClassTalents.GetTraitTreeForSpec(A:GetSpec())
     -- These flags match serialization v2; newer formats keep the native codec.
@@ -16,9 +36,11 @@ function T:ReadEntries(config)
         local nodes=C_Traits.GetTreeNodes(tree)
         if not nodes then return nil end
         local results={}
+        local metadata=withMetadata and {types={},subtrees={}} or nil
         for _,id in ipairs(nodes) do
             local node=C_Traits.GetNodeInfo(config,id)
             if not node then return nil end -- never return a partial tree as complete
+            if metadata then metadata.types[id]=node.type;metadata.subtrees[id]=node.subTreeID end
             local purchased=node.ranksPurchased>0
             local selected=node.activeRank-node.ranksPurchased>0 or purchased
             if selected then
@@ -41,7 +63,7 @@ function T:ReadEntries(config)
                 else f:CreateImportLoadoutEntryInfoFromSingleNode(results,config,node,indexInfo) end
             end
         end
-        return results
+        return results,metadata
     end
     -- Older/custom native frames can keep their existing roundtrip contract.
     local stream=ExportUtil.MakeExportDataStream()
@@ -58,7 +80,7 @@ function T:Entries(code,config)
     return f:ConvertToImportLoadoutEntryInfo(config or C_ClassTalents.GetActiveConfigID(),tree,content)
 end
 function T:Matches(config,expected)
-    local actual=self:ReadEntries(config)
+    local actual,metadata=self:ReadEntries(config,true)
     if not actual then return false,{kind="unavailable",config=config} end
     -- Saved loadouts store purchased choices. Derived granted ranks can be absent
     -- until activated; do not reject an otherwise identical saved loadout for that.
@@ -66,14 +88,17 @@ function T:Matches(config,expected)
     local saved=config~=C_ClassTalents.GetActiveConfigID()
     local nodes={}
     local function node(id)
+        -- Only metadata from this call's full native scan; never cached ranks.
+        if metadata and metadata.types[id]~=nil then return metadata.types[id],metadata.subtrees[id] end
         if not nodes[id] then nodes[id]=C_Traits.GetNodeInfo(config,id) end
-        return nodes[id]
+        local info=nodes[id]
+        if info then return info.type,info.subTreeID end
     end
     local function effective(entries)
         local subtrees={}; local hasSelection=false
         for _,e in ipairs(entries) do
-            local n=node(e.nodeID)
-            if n and n.type==Enum.TraitNodeType.SubTreeSelection and (e.ranksPurchased or 0)+(e.ranksGranted or 0)>0 then
+            local kind=node(e.nodeID)
+            if kind==Enum.TraitNodeType.SubTreeSelection and (e.ranksPurchased or 0)+(e.ranksGranted or 0)>0 then
                 local info=C_Traits.GetEntryInfo(config,e.selectionEntryID)
                 if info and info.subTreeID then subtrees[info.subTreeID]=true;hasSelection=true end
             end
@@ -82,11 +107,11 @@ function T:Matches(config,expected)
         for _,e in ipairs(entries) do
             local purchased=e.ranksPurchased or 0
             local granted=not saved and (e.ranksGranted or 0) or 0
-            local n=node(e.nodeID)
+            local _,subtree=node(e.nodeID)
             -- Native exports can contain a free root from the OTHER hero tree.
             -- Resolve the selected subtree from this snapshot's choice entries,
             -- not the current UI preview. It is not an effective talent mismatch.
-            if purchased==0 and granted>0 and hasSelection and n and n.subTreeID and not subtrees[n.subTreeID] then granted=0 end
+            if purchased==0 and granted>0 and hasSelection and subtree and not subtrees[subtree] then granted=0 end
             if purchased+granted>0 then map[e.nodeID..":"..e.selectionEntryID]=purchased+granted end
         end
         return map
@@ -101,7 +126,7 @@ function T:Matches(config,expected)
     end
     local missing,ranks=next(map)
     if missing then return false,{kind="missing",key=missing,expected=ranks,actual=0} end
-    return true
+    return true,nil,actual
 end
 -- Stage a replacement in the working tree without creating another saved loadout.
 -- Caller owns the transaction and must roll back a failed/partial stage.

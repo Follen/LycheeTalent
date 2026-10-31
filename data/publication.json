@@ -1,7 +1,7 @@
 {
   "completed": 1120,
   "failed": 0,
-  "builds": 1795,
+  "builds": 1909,
   "collected": 1793442269,
   "zones": [
     55,
@@ -16,8 +16,8 @@
   "collectionStarted": 1793440963,
   "collectionFinished": 1793442269,
   "heroExpected": 2240,
-  "heroFound": 1795,
-  "missingHeroBuilds": 445,
+  "heroFound": 1909,
+  "missingHeroBuilds": 331,
   "heroMapping": {
     "build": "12.1.5.70688",
     "snapshot": "PIN-c798d9ec56072e4e30824290dde53dfc1f36096a36d2d0d149fd5908deb68e7d",
@@ -44,5 +44,299 @@
     "failedFightQueries": 0,
     "eventPaginationComplete": true,
     "method": "CombatantInfo events with shared fight Summary fallback"
+  },
+  "class_collected": {
+    "PALADIN": 1793454672,
+    "PRIEST": 1793453014,
+    "DEATHKNIGHT": 1793453014,
+    "SHAMAN": 1793453014,
+    "MAGE": 1793454672,
+    "EVOKER": 1793454672,
+    "ROGUE": 1793454672,
+    "WARLOCK": 1793451856,
+    "DRUID": 1793454937,
+    "HUNTER": 1793453014
+  },
+  "coverage": {
+    "mythic": {
+      "expected": 640,
+      "found": 578,
+      "missing": 62
+    },
+    "heroic": {
+      "expected": 800,
+      "found": 689,
+      "missing": 111
+    },
+    "mythicRaid": {
+      "expected": 800,
+      "found": 642,
+      "missing": 158
+    }
+  },
+  "partialFill": {
+    "addedBuilds": 114,
+    "runs": [
+      {
+        "started": 1793447764,
+        "finished": 1793448664,
+        "scene": "mythic",
+        "jobs": 89,
+        "rankingPages": 243,
+        "addedBuilds": 16,
+        "status": "wave_complete"
+      },
+      {
+        "started": 1793449003,
+        "finished": 1793449707,
+        "scene": "heroic",
+        "jobs": 155,
+        "rankingPages": 427,
+        "addedBuilds": 38,
+        "status": "wave_complete"
+      },
+      {
+        "started": 1793449810,
+        "finished": 1793451856,
+        "scene": "mythic",
+        "jobs": 30,
+        "rankingPages": 356,
+        "addedBuilds": 8,
+        "improvedBuilds": 0,
+        "status": "interrupted_recovered",
+        "window": "partition-lifetime"
+      },
+      {
+        "started": 1793451864,
+        "finished": 1793451894,
+        "scene": "heroic",
+        "jobs": 117,
+        "rankingPages": 693,
+        "addedBuilds": 6,
+        "improvedBuilds": 0,
+        "status": "wave_complete",
+        "window": "partition-lifetime"
+      },
+      {
+        "started": 1793452694,
+        "finished": 1793453014,
+        "scene": "mythic-raid",
+        "jobs": 110,
+        "rankingPages": 474,
+        "addedBuilds": 43,
+        "improvedBuilds": 0,
+        "status": "wave_complete",
+        "window": "partition-lifetime"
+      },
+      {
+        "started": 1793453076,
+        "finished": 1793454672,
+        "scene": "mythic",
+        "jobs": 57,
+        "rankingPages": 581,
+        "addedBuilds": 3,
+        "improvedBuilds": 1,
+        "status": "job_errors",
+        "window": "partition-lifetime"
+      },
+      {
+        "started": 1793454929,
+        "finished": 1793454937,
+        "scene": "heroic",
+        "jobs": 38,
+        "rankingPages": 188,
+        "addedBuilds": 0,
+        "improvedBuilds": 1,
+        "status": "wave_complete",
+        "window": "partition-lifetime"
+      },
+      {
+        "started": 1793454988,
+        "finished": 1793455043,
+        "scene": "mythic",
+        "jobs": 2,
+        "rankingPages": 26,
+        "addedBuilds": 0,
+        "improvedBuilds": 0,
+        "status": "wave_complete",
+        "window": "partition-lifetime"
+      }
+    ],
+    "improvedBuilds": 2
+  },
+  "gapFill": {
+    "window": "partition-lifetime",
+    "addedBuilds": 60,
+    "runs": [
+      {
+        "started": 1793449810,
+        "finished": 1793451856,
+        "scene": "mythic",
+        "jobs": 30,
+        "rankingPages": 356,
+        "addedBuilds": 8,
+        "improvedBuilds": 0,
+        "status": "interrupted_recovered"
+      },
+      {
+        "started": 1793451864,
+        "finished": 1793451894,
+        "scene": "heroic",
+        "jobs": 117,
+        "rankingPages": 693,
+        "addedBuilds": 6,
+        "improvedBuilds": 0,
+        "status": "wave_complete"
+      },
+      {
+        "started": 1793452694,
+        "finished": 1793453014,
+        "scene": "mythic-raid",
+        "jobs": 110,
+        "rankingPages": 474,
+        "addedBuilds": 43,
+        "improvedBuilds": 0,
+        "status": "wave_complete"
+      },
+      {
+        "started": 1793453076,
+        "finished": 1793454672,
+        "scene": "mythic",
+        "jobs": 57,
+        "rankingPages": 581,
+        "addedBuilds": 3,
+        "improvedBuilds": 1,
+        "status": "job_errors"
+      },
+      {
+        "started": 1793454929,
+        "finished": 1793454937,
+        "scene": "heroic",
+        "jobs": 38,
+        "rankingPages": 188,
+        "addedBuilds": 0,
+        "improvedBuilds": 1,
+        "status": "wave_complete"
+      },
+      {
+        "started": 1793454988,
+        "finished": 1793455043,
+        "scene": "mythic",
+        "jobs": 2,
+        "rankingPages": 26,
+        "addedBuilds": 0,
+        "improvedBuilds": 0,
+        "status": "wave_complete"
+      }
+    ],
+    "targetCompatibilityBuild": "12.1.5.70688",
+    "baselineObservationDays": 14,
+    "baselineRevision": "11bcd5a677a144316a220cac58557d7f0c58bdb1",
+    "improvedBuilds": 2,
+    "completenessProfile": {
+      "build": "12.1.5.70688",
+      "referencePublication": "11bcd5a677a144316a220cac58557d7f0c58bdb1",
+      "referenceBuilds": 1795,
+      "classSelectedPoints": {
+        "WARRIOR": 85,
+        "PALADIN": 86,
+        "HUNTER": 84,
+        "ROGUE": 84,
+        "PRIEST": 85,
+        "DEATHKNIGHT": 84,
+        "SHAMAN": 84,
+        "MAGE": 84,
+        "WARLOCK": 84,
+        "MONK": 85,
+        "DRUID": 86,
+        "DEMONHUNTER": 84,
+        "EVOKER": 85
+      },
+      "basis": "Exact per-class selected-rank totals in the fixed-build complete reference trees, not a minimum threshold",
+      "partialRecovery": "Unique original actor CombatantInfo with Summary fallback; validate entry IDs, rank limits and legal hero selector"
+    },
+    "sourceAudit": {
+      "baseline": 1795,
+      "baselineChanged": 0,
+      "newBuilds": 114,
+      "newExactSources": {
+        "rankings-full": 114
+      },
+      "provenanceFailures": 0,
+      "higherUnresolvedRows": 3126,
+      "higherUnresolvedUniqueSources": 2307,
+      "higherUnresolvedReasons": {
+        "no-complete-original": 3039,
+        "identity-unavailable": 21,
+        "actor-not-unique": 66
+      },
+      "affectedNewBuilds": 54,
+      "betterCompleteCandidates": 0,
+      "scopeStatus": {
+        "mythic": {
+          "found": 27,
+          "pending": 62
+        },
+        "heroic": {
+          "found": 44,
+          "pending": 111
+        },
+        "mythicRaid": {
+          "pending": 106,
+          "found": 43,
+          "exhausted": 52
+        }
+      },
+      "checkedAt": "2026-10-31T14:05:01.637474Z",
+      "permissionDeniedQueries": 2,
+      "unqueriedHigherSourceRows": 0,
+      "identityBinding": "Exact scenario/difficulty, report/fight, actor when original recovery is needed, metric, duration and record time; exact selected-entry/rank pairs",
+      "partialCandidateWithheld": {
+        "count": 1,
+        "nodes": 31,
+        "points": 31,
+        "originalActorPoints": 31,
+        "heroTree": 55,
+        "reason": "Original actor also lacks the fixed-build complete 84-point profile; no other actor was substituted"
+      }
+    },
+    "pageCaps": {
+      "mythic": 13,
+      "heroic": 6,
+      "mythicRaid": 6
+    },
+    "scopeAudit": {
+      "mythic": {
+        "originalGapTargets": 89,
+        "status": {
+          "found": 27,
+          "pending": 62
+        },
+        "pendingNextPages": {
+          "14": 62
+        }
+      },
+      "heroic": {
+        "originalGapTargets": 155,
+        "status": {
+          "found": 44,
+          "pending": 111
+        },
+        "pendingNextPages": {
+          "7": 111
+        }
+      },
+      "mythicRaid": {
+        "originalGapTargets": 201,
+        "status": {
+          "pending": 106,
+          "found": 43,
+          "exhausted": 52
+        },
+        "pendingNextPages": {
+          "7": 106
+        }
+      }
+    }
   }
 }

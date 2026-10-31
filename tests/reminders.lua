@@ -31,7 +31,14 @@ local A={Scenarios=scenes,L={},GetSpec=function()return spec end,
  Store={db={remindersEnabled=false},character={modes={}},builds={b},Find=function(_,id)if id==1 then return b end end},
  Apply={CurrentBuildID=function()if type(current)=='string' and not catalogReady then return nil end;return current end,
    Start=function(_,build)assert(build==b);applied=applied+1;current=b.id;return true end},
- UI={ShowReminder=function(self,p)shown=shown+1;self.last=p;self.reminder={Hide=function()end}end}}
+ UI={ShowReminder=function(self,p)
+   shown=shown+1;self.last=p
+   local window={prompt=p,offset=0,shown=true}
+   function window:IsShown()return self.shown end
+   function window:Render()self.rendered={};for i,build in ipairs(self.prompt.builds)do self.rendered[i]={id=build.id,name=build.name} end end
+   function window:Hide()self.shown=false;self.prompt=nil end
+   self.reminder=window;window:Render()
+ end}}
 -- Exercise production catalog filtering with the reminder lifecycle fixture.
 local catalog=A.Catalog
 assert(loadfile("addon/LycheeTalent/Catalog.lua"))("LycheeTalent",A)
@@ -111,3 +118,28 @@ R:Check();assert(R.visible and R.visible.builds[1]==builtin,"arrival recommendat
 A.Catalog.builds={popular};kind='none';R:Check();kind='party';instance=1001;current=nil
 local beforePopular=shown;R:Check()
 assert(shown==beforePopular and not R.visible,'hidden popular alternative is not offered as default')
+
+-- Refreshing the same encounter must update or close an already visible prompt.
+kind='none';R:Check();A.Catalog.builds={};current=nil;kind='party';instance=1001
+local promptBuilds={}
+for i=1,5 do promptBuilds[i]={id=100+i,name='Personal '..i,source='user',specID=71,remind=true,contexts={['11']=true}}end
+A.Store.builds=promptBuilds
+R:RefreshSettings()
+local prompt=assert(R.visible,'enabled personal candidates produce a prompt')
+assert(#prompt.builds==5 and A.UI.reminder.prompt==prompt,'UI receives all current candidates')
+A.UI.reminder.offset=3
+local replacement={id=200,name='Replacement',source='user',specID=71,remind=true,contexts={['11']=true}}
+A.Store.builds={replacement};R:RefreshSettings()
+assert(R.visible==prompt and prompt.builds[1]==replacement,'same-encounter refresh replaces candidates after library changes')
+assert(A.UI.reminder.offset==0 and A.UI.reminder.rendered[1].id==replacement.id,'refresh clamps paging and renders the new candidate')
+local refreshCount=shown
+A.Store.builds={};R:RefreshSettings()
+assert(not R.visible and not A.UI.reminder.shown,'removing all candidates closes the visible prompt')
+A.Store.builds={replacement};R:Check()
+assert(not R.visible and shown==refreshCount,'seen encounter remains deduplicated after prompt is closed')
+R.seen={};R.order={};R:Check()
+local dismissed=assert(R.visible,'freshly cleared fixture can display the prompt again')
+local dismissedCount=shown;A.UI.reminder:Hide();replacement.name='Edited'
+R:RefreshSettings()
+assert(not R.visible and not A.UI.reminder.shown and shown==dismissedCount,'a user-dismissed prompt does not reopen when its candidate changes')
+assert(dismissed.builds[1].name=='Edited','prompt candidate reference reflects the stored build edit')

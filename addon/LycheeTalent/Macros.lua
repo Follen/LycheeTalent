@@ -81,6 +81,22 @@ function M:Changes(previous,current,exactOnly)
     return mapping
 end
 function M:Sync(native,exactOnly)
+    -- Most UPDATE_MACROS notifications carry identical content. Scan native
+    -- scalars every time, but leave stable records and saved layouts in place.
+    local unchanged,count=true,0
+    for _,record in pairs(self.registry.records) do
+        if record.index then
+            local current,old=native[record.index],record.native
+            if not current or not old or current.name~=old.name or current.icon~=old.icon or current.body~=old.body then
+                unchanged=false;break
+            end
+            count=count+1
+        end
+    end
+    if unchanged then
+        for _ in pairs(native) do count=count-1 end
+        if count==0 then return false end
+    end
     local previous={}
     for _,record in pairs(self.registry.records) do if record.index then previous[record.index]=record.native end end
     local mapping=self:Changes(previous,native,exactOnly)
@@ -96,6 +112,8 @@ function M:Sync(native,exactOnly)
             self.registry.records[tostring(id)]={index=index,native=copy(macro)}
         end
     end
+    self.revision=(self.revision or 0)+1
+    return true
 end
 function M:Initialize()
     local char=A.Store.character
@@ -108,8 +126,8 @@ function M:Initialize()
 end
 function M:Current()
     self:Initialize()
-    local native=self:Scan();self:Sync(native)
-    return native
+    local native=self:Scan();local changed=self:Sync(native)
+    return native,changed
 end
 function M:Pack(snapshot,native)
     native=native or self:Current()

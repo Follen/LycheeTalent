@@ -70,7 +70,25 @@ function R:Candidates(context,spec)
     if recommendations[1] then builds[#builds+1]=recommendations[1] end
     return builds
 end
-function R:Check()
+function R:RefreshVisible(builds,force)
+    local prompt=self.visible
+    if not prompt then return end
+    local previous,changed=prompt.builds,force==true
+    if #previous~=#builds then changed=true end
+    for i,build in ipairs(builds) do
+        local old=previous[i]
+        if old~=build or old.name~=build.name or old.icon~=build.icon or old.source~=build.source then changed=true end
+    end
+    prompt.builds=builds
+    local window=A.UI.reminder
+    if window and not window:IsShown() then self.visible=nil;return end
+    if not changed then return end
+    if window and window.prompt==prompt and window.Render then
+        window.offset=math.min(window.offset or 0,math.max(0,#builds-1));window:Render();return
+    end
+    A.UI:ShowReminder(prompt)
+end
+function R:Check(refreshVisible)
     if not self.enabled then return end
     self:UpdateMovementEvent()
     if InCombatLockdown() then self:Hide();return end
@@ -85,13 +103,11 @@ function R:Check()
     if A.Apply.op then self:Hide();return end
     A.Catalog:Load()
     local current=A.Apply:CurrentBuildID(true)
-    if self.visible then
-        for _,build in ipairs(self.visible.builds) do if build.id==current then self:Hide();return end end
-    end
-    if self.seen[key] then return end
     local builds=self:Candidates(context,spec)
     for _,b in ipairs(builds) do if current==b.id then self:Remember(key);self:Hide();return end end
     if #builds==0 then self:Hide();return end
+    if self.visible then self:RefreshVisible(builds,refreshVisible);return end
+    if self.seen[key] then return end
     self:Remember(key)
     self.visible={key=key,id=context,spec=spec,builds=builds}
     A.UI:ShowReminder(self.visible)
@@ -137,5 +153,5 @@ function R:RefreshSettings()
         end)
     end
     for _,event in ipairs({"PLAYER_ENTERING_WORLD","ZONE_CHANGED_NEW_AREA","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_DISABLED","PLAYER_REGEN_ENABLED","ENCOUNTER_END"}) do self.events:RegisterEvent(event) end
-    self:Check()
+    self:Check(true)
 end

@@ -124,6 +124,37 @@ PlayerSpellsFrame:SetHeight(900);PlayerSpellsFrame.scripts.OnSizeChanged()
 assert(A.UI.frame:GetHeight()==900 and A.UI.frame.point[5]==0,"native resize preserves aligned edges")
 assert(#objects==beforeResize,"resize reuses row pools")
 PlayerSpellsFrame:SetHeight(820);PlayerSpellsFrame.scripts.OnSizeChanged()
+if arg[1]=="event-filter" then
+    local U=A.UI;local invalidations,refreshes=0,0
+    C_ClassTalents={GetActiveConfigID=function()return 1 end}
+    A.ActionBars:Spec(71).working={id=20,name="owned",spec=71}
+    A.Apply.InvalidateCurrent=function()invalidations=invalidations+1 end
+    U.Refresh=function()refreshes=refreshes+1 end
+    local function flush()
+        local timer=U.stateTimer;if timer then timer.fn();timer.cancelled=true end
+    end
+    for i=1,100 do U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED",10);flush() end
+    assert(invalidations==0 and refreshes==0,"unrelated config notices refresh/invalidate the UI")
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED",1)
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED",20);flush()
+    assert(invalidations==2 and refreshes==1,"active/working notices preserve deferred refresh")
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_NODE_CHANGED",99999);flush()
+    assert(invalidations==3 and refreshes==2,"node payload is a nodeID, never a config filter")
+    U.frame.scripts.OnEvent(U.frame,"PLAYER_SPECIALIZATION_CHANGED","party1");flush()
+    assert(invalidations==3 and refreshes==2)
+    U.frame.scripts.OnEvent(U.frame,"PLAYER_SPECIALIZATION_CHANGED","player");flush()
+    assert(invalidations==4 and refreshes==3)
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_CONFIG_UPDATED");assert(U.stateTimer)
+    U.frame:Hide();assert(not U.stateTimer,"hide cancels pending UI refresh")
+    local beforeShow=invalidations
+    U.Refresh=function()assert(invalidations>beforeShow,"reopen refresh must invalidate hidden tree changes first");refreshes=refreshes+1 end
+    U.frame:Show()
+    assert(U.frame.events.TRAIT_NODE_CHANGED_PARTIAL,"partial node notices are visible UI changes")
+    local beforePartial=invalidations
+    U.frame.scripts.OnEvent(U.frame,"TRAIT_NODE_CHANGED_PARTIAL",99999);flush()
+    assert(invalidations==beforePartial+1,"partial payload is node identity, not config identity")
+    print("PASS UI event filter: config identity, live node changes, player spec filtering and hide timer cleanup");return
+end
 if arg[1]=="hero-controls" then
     local U=A.UI;local starts=0
     A.Apply.Start=function()starts=starts+1;return true end

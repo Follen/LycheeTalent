@@ -50,6 +50,12 @@ local running=M.brand;M:Brand(first,54);assert(M.brand==running,'hover does not 
 M.brandDriver.scripts.OnUpdate(nil,1.3)
 assert(not M.brand and first.width==54 and first.height==54 and first.anchor[4]==15,'bounce settles to original geometry')
 assert(not M.brandDriver.shown and not M.brandDriver.scripts.OnUpdate,'bounce leaves no idle driver')
+M:Brand(first,54);M.brandDriver.scripts.OnUpdate(nil,.16)
+assert(first.width>54 and first.anchor[5]~=-100,'combat fixture starts from an intermediate pose')
+combat=true;M:StopBrand()
+assert(first.width==54 and first.height==54 and first.anchor[5]==-100 and not M.brand,'combat entry settles and releases an interrupted brand animation')
+assert(not M.brandDriver.shown and not M.brandDriver.scripts.OnUpdate,'combat entry leaves no brand driver')
+combat=false
 M:Brand(first,54);first:Hide();M.brandDriver.scripts.OnUpdate(nil,.1)
 assert(not M.brand,'hidden logo cancels bounce')
 first:Show();A.Store.db.reducedMotion=true;M:Brand(first,54);assert(not M.brand,'reduced motion skips bounce')

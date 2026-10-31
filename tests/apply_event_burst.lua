@@ -47,10 +47,10 @@ C_ClassTalents={
 }
 A.Talents={
  Code=function(_,build)return build.code end,Validate=function(_,code)return code,spec end,
- Entries=function(_,code)return {code=code}end,Export=function()return active end,
+ Entries=function(_,code)return {code=code,{nodeID=101,selectionEntryID=1001,ranksPurchased=1,ranksGranted=0}}end,Export=function()return active end,
  Frame=function()return {}end,
  ReadEntries=function(_,id)checks=checks+1;return {code=id==1 and active or saved}end,
- Matches=function(_,id,e)checks=checks+1;return (id==1 and active or saved)==e.code end,
+ Matches=function(_,id,e)checks=checks+1;local match=(id==1 and active or saved)==e.code;return match,not match and {kind='entry'} or nil end,
  StageEntries=function(_,id,e)active=e.code;drafted=true;return true end,
 }
 A.ActionBars={
@@ -109,5 +109,37 @@ assert(not X.advanceStep and not X.nextStep and not X.timer)
 X.op={spec=62,stage='creating',name=A.L.TITLE,before={}}
 X:OnEvent('TRAIT_CONFIG_CREATED',{ID=77,name=A.L.TITLE,type=1})
 assert(X.op.target==77 and X.op.targetName==A.L.TITLE)
+X:Finish(false,'TEST_STOP');settle()
+-- Repeated notifications in DIFFERENT frames can still refer to identical
+-- unstaged native contents. A fresh native token may reuse a negative result;
+-- accepting success must always perform the full native comparison again.
+A.Talents.StableConfigToken=function(_,id)return id==1 and active or saved end
+start();drafted=false
+emit('TRAIT_CONFIG_UPDATED',1);tick();before=checks
+for i=1,50 do emit('TRAIT_CONFIG_UPDATED',1);tick()end
+assert(checks==before,'unchanged native contents are fully reread in every frame: '..(checks-before))
+-- The expected entries are compared by value; callers cannot mutate a table
+-- under the same identity and keep an old negative result.
+X.op.entries[1].ranksPurchased=2
+emit('TRAIT_CONFIG_UPDATED',1);tick()
+assert(checks>before,'mutated expected entries reuse an old comparison')
+X.op.entries[1].ranksPurchased=1
+before=checks;saved=active;emit('TRAIT_CONFIG_UPDATED',20);settle()
+assert(checks>before and not X.op and char.lastAttempt.reason=='APPLY_SUCCESS','changed saved token still requires a complete final comparison')
+-- Unsupported/missing tokens preserve the previous fresh read behavior.
+A.Talents.StableConfigToken=function()return nil end
+start();drafted=false;emit('TRAIT_CONFIG_UPDATED',1);tick();before=checks
+emit('TRAIT_CONFIG_UPDATED',1);tick()
+assert(checks>before,'missing native token must not retain a rank snapshot')
+X:Finish(false,'TEST_STOP');settle()
+-- Native load settling uses the same bounded negative memo.
+A.Talents.StableConfigToken=function(_,id)return id==1 and active or saved end
+X.op={spec=62,stage='native-loading',loading=20,afterLoad=function()end}
+active='target';saved='old';drafted=false
+X:OnEvent('TRAIT_CONFIG_UPDATED',1);tick();before=checks
+for i=1,50 do X:OnEvent('TRAIT_CONFIG_UPDATED',1);tick()end
+assert(checks==before,'unchanged native loading contents reread across frames')
+saved=active;X:OnEvent('TRAIT_CONFIG_UPDATED',20);tick()
+assert(X.op.stage=='native-loaded' and checks>before)
 X:Finish(false,'TEST_STOP');settle()
 print('PASS apply event burst: one live check per frame, canonical saved verification, immediate failure/context/creation, timer cleanup')

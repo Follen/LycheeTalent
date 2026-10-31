@@ -2,7 +2,42 @@ param([string]$OutputDirectory=(Join-Path $PSScriptRoot '..\dist'))
 $ErrorActionPreference='Stop'
 $sourceRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\addon'))
 $outputRoot=[IO.Path]::GetFullPath($OutputDirectory)
-if ($outputRoot.StartsWith($sourceRoot,[StringComparison]::OrdinalIgnoreCase)) { throw 'Output must be outside addon sources.' }
+if ($outputRoot.Equals($sourceRoot,[StringComparison]::OrdinalIgnoreCase) -or $outputRoot.StartsWith($sourceRoot.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)) { throw 'Output must be outside addon sources.' }
+# Inspect directories before recursion so a junction cannot pull external files into a release.
+$pendingDirectories=New-Object 'System.Collections.Generic.Stack[string]'
+$pendingDirectories.Push($sourceRoot)
+while ($pendingDirectories.Count) {
+    $directory=$pendingDirectories.Pop()
+    if ((Get-Item -LiteralPath $directory -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Reparse point in addon sources: $directory" }
+    foreach ($item in Get-ChildItem -LiteralPath $directory -Force) {
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Reparse point in addon sources: $($item.FullName)" }
+        if ($item.PSIsContainer) { $pendingDirectories.Push($item.FullName) }
+    }
+}
+
+function Add-LoadedSource([string]$LoadPath,[string]$PackageRoot,[hashtable]$Loaded) {
+    $fullPath=[IO.Path]::GetFullPath($LoadPath)
+    if (-not $fullPath.StartsWith($PackageRoot.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)) { throw "Load path escaped package: $LoadPath" }
+    if ([IO.Path]::GetExtension($fullPath) -notin @('.lua','.xml')) { throw "Unsupported runtime load reference: $fullPath" }
+    if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) { throw "Missing runtime load reference: $fullPath" }
+    if ($Loaded.ContainsKey($fullPath)) { return }
+    $Loaded[$fullPath]=$true
+    if ([IO.Path]::GetExtension($fullPath) -eq '.xml') {
+        $settings=New-Object System.Xml.XmlReaderSettings
+        $settings.DtdProcessing=[Xml.DtdProcessing]::Prohibit
+        $settings.XmlResolver=$null
+        $reader=[Xml.XmlReader]::Create($fullPath,$settings)
+        try {
+            $document=New-Object System.Xml.XmlDocument
+            $document.Load($reader)
+        } finally { $reader.Dispose() }
+        foreach ($element in $document.SelectNodes('//*')) {
+            if ($element.LocalName -in @('Script','Include') -and $element.HasAttribute('file')) {
+                Add-LoadedSource (Join-Path (Split-Path $fullPath -Parent) $element.GetAttribute('file')) $PackageRoot $Loaded
+            }
+        }
+    }
+}
 $toc=Get-Content -LiteralPath (Join-Path $sourceRoot 'LycheeTalent\LycheeTalent.toc')
 $version=($toc | Where-Object { $_ -match '^## Version: ' }) -replace '^## Version: ',' '
 $version=$version.Trim()
@@ -28,10 +63,16 @@ foreach ($package in $packages) {
     $packageToc=Join-Path $package.FullName ($package.Name+'.toc')
     $packageVersion=((Get-Content -LiteralPath $packageToc | Where-Object { $_ -match '^## Version: ' }) -replace '^## Version: ','').Trim()
     if ($packageVersion -ne $version) { throw "Package version mismatch: $($package.Name)" }
+    $loaded=@{}
+    foreach ($line in Get-Content -LiteralPath $packageToc -Encoding UTF8) {
+        $reference=$line.Trim()
+        if ($reference -and -not $reference.StartsWith('#')) { Add-LoadedSource (Join-Path $package.FullName $reference) $package.FullName $loaded }
+    }
     foreach ($file in Get-ChildItem -LiteralPath $package.FullName -Recurse -File) {
         $isNotice=$package.Name -eq 'LycheeTalent' -and $file.DirectoryName -eq $package.FullName -and $file.Name -in @('LICENSE','THIRD_PARTY_NOTICES.md')
         $isLibraryLock=$file.FullName -eq $libraryLockPath
         if ($file.Extension -notin @('.lua','.toc','.tga','.xml') -and -not $isNotice -and -not $isLibraryLock) { throw "Unexpected release file: $($file.Name)" }
+        if ($file.Extension -in @('.lua','.xml') -and -not $loaded.ContainsKey($file.FullName)) { throw "Runtime file is not loaded by package TOC/XML: $($file.FullName)" }
         $relative=$file.FullName.Substring($sourceRoot.Length+1).Replace('\','/')
         $expected[$relative]=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
     }

@@ -157,4 +157,25 @@ before=reads;specState.applied.entries=equivalent;current();assert(reads==before
 specState.applied.entries=previous;current()
 -- Transaction validation itself is never memoized.
 before=reads;assert(A.Talents:Matches(activeID,expected));assert(A.Talents:Matches(activeID,expected));assert(reads==before+2)
+-- Native content tokens can confirm that a related notification changed no
+-- ranks. Identity/draft guards and changes to expected values remain immediate.
+local content='settled-a'
+A.Talents.StableConfigToken=function()return content end
+X:InvalidateCurrent();current();before=reads
+for i=1,100 do event('TRAIT_CONFIG_UPDATED',2);current()end
+assert(reads==before,'same native content token rereads every related notification: '..(reads-before))
+local originalRanks=expected[1].ranksPurchased
+expected[1].ranksPurchased=(originalRanks or 0)+1
+assert(not X:CurrentBuildID() and reads==before+1,'in-place expected mutation reused an old match')
+expected[1].ranksPurchased=originalRanks;current()
+before=reads;content='settled-b';event('PLAYER_TALENT_UPDATE');current()
+assert(reads==before+1,'changed native token must take a fresh full comparison')
+before=reads;X:InvalidateCurrent('UI_SHOWN');current()
+assert(reads==before+1,'reopening the window must refresh hidden node changes')
+A.Talents.StableConfigToken=function()return nil end
+before=reads;event('TRAIT_CONFIG_UPDATED',2);current();event('TRAIT_CONFIG_UPDATED',2);current()
+assert(reads==before+2,'unavailable native token must retain the original live behavior')
+specState.applied.entries=false
+assert(not X:CurrentBuildID(),'malformed persisted entries must not be treated as a current build')
+specState.applied.entries=expected;current()
 print('PASS bounded current state: native tree read reused; event invalidation, immediate drafts/identity, world/spec, partial ownership and live transaction validation')

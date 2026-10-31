@@ -10,6 +10,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+class WCLPermissionError(RuntimeError):
+    def __init__(self,message,payload):
+        super().__init__(message);self.payload=payload
+
 class WCL:
     def __init__(self, credential_file=None):
         self._combatants = {}
@@ -87,9 +91,12 @@ class WCL:
                     result = json.load(response)
                 if result.get("errors"):
                     # GraphQL errors contain schema errors, never authentication headers.
-                    raise RuntimeError("; ".join(e.get("message", "GraphQL error") for e in result["errors"]))
+                    message="; ".join(e.get("message", "GraphQL error") for e in result["errors"])
+                    if message=="You do not have permission to view this report.":raise WCLPermissionError(message,result)
+                    raise RuntimeError(message)
                 return result["data"]
             except urllib.error.HTTPError as exc:
+                if exc.code==403:raise WCLPermissionError("WCL HTTP 403",{"status":403}) from None
                 if exc.code not in (429, 500, 502, 503, 504) or attempt == 2:
                     raise RuntimeError(f"WCL HTTP {exc.code}") from None
                 time.sleep(min(4, 2 ** attempt))

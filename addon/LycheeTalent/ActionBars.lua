@@ -66,13 +66,24 @@ function B:SaveIndependent(spec,buildID,snapshot)
     state.profiles[key]=clone(snapshot)
     return true
 end
+-- A verified physical snapshot consumes both slot edits and macro revisions.
+-- Ordinary macro-only saves must not clear a queued real slot edit.
+function B:ConfirmSlots(spec)
+    if not self.slotDirtySpec or self.slotDirtySpec==spec then self.slotDirty=nil;self.slotDirtySpec=nil end
+    self.macroRevision=A.Macros.revision;self.macroDirty=nil
+end
 function B:SaveLayout(spec,buildID,shared,snapshot)
-    if not shared then return self:SaveIndependent(spec,buildID,snapshot) end
+    if not shared then
+        local ok,why=self:SaveIndependent(spec,buildID,snapshot)
+        if ok and snapshot==self.verified then self:ConfirmSlots(spec) end
+        return ok,why
+    end
     local state=self:Spec(spec)
     if not state then return nil,"SCHEMA" end
     if not self:Valid(snapshot,spec) then return nil,"BARS_INVALID" end
     state.default=clone(snapshot)
     state.defaultSource="user-save"
+    if snapshot==self.verified then self:ConfirmSlots(spec) end
     return true
 end
 function B:Get(spec,buildID,shared)
@@ -147,15 +158,17 @@ function B:CapturePhysical(spec,passive)
     end
     return {version=1,spec=spec,slots=slots}
 end
-function B:Capture(spec,passive)
+function B:Capture(spec,passive,previous)
     self.reading=true
     local ok,snapshot,why,slot=pcall(self.CapturePhysical,self,spec,passive)
     self.reading=nil
     if not ok then return nil,"BARS_MACRO_READ" end
     if not snapshot then return nil,why,slot end
     local packed,reason=A.Macros:Pack(snapshot);if not packed then return nil,reason end
-    local state=self:Spec(spec);local applied=state and state.applied
-    local previous=applied and self:Get(spec,applied.id,applied.shared)
+    if not previous then
+        local state=self:Spec(spec);local applied=state and state.applied
+        previous=applied and self:Get(spec,applied.id,applied.shared)
+    end
     return self:PreservePending(self:PreserveDeferred(packed,previous),previous)
 end
 local function baseSpell(id)
@@ -482,22 +495,26 @@ function B:Owner()
 end
 function B:ObserveMacros()
     if not self:Spec(A:GetSpec()) then return end
-    A.Macros:Current()
-    if self.writing or self.reading or A.Apply.op then return end
+    local _,changed=A.Macros:Current()
+    -- Another capture may have synchronized the registry before this notice.
+    -- Only a successful layout save consumes that content revision.
+    if changed==false and self.macroRevision==A.Macros.revision then self.macroDirty=nil;return end
+    self.macroDirty=true
+    if self.writing or self.reading or A.Apply.op or InCombatLockdown() then return end
     local spec,applied=self:Owner()
     if applied then
         local snapshot=self:Get(spec,applied.id,applied.shared)
         if snapshot then
             A.Macros:Refresh(snapshot)
-            self:SaveLayout(spec,applied.id,applied.shared,snapshot)
+            if self:SaveLayout(spec,applied.id,applied.shared,snapshot) then self.macroRevision=A.Macros.revision;self.macroDirty=nil end
         end
     end
 end
 function B:ObserveSlots()
-    if self.reading or self.writing or A.Apply.op then return end
+    if self.reading or self.writing or A.Apply.op or InCombatLockdown() then return end
     local spec,applied=self:Owner();if not applied then return end
     local previous=self:Get(spec,applied.id,applied.shared)
-    local snapshot=self:Capture(spec,true);if not snapshot then return end
+    local snapshot=self:Capture(spec,true,previous);if not snapshot then return end
     -- A passive read cannot resolve duplicate display names. Retain their
     -- last known content until the next explicit, cursor-assisted capture.
     if previous then
@@ -510,7 +527,8 @@ function B:ObserveSlots()
             end
         end
     end
-    self:SaveLayout(spec,applied.id,applied.shared,snapshot)
+    if not self:SaveLayout(spec,applied.id,applied.shared,snapshot) then return end
+    self:ConfirmSlots(spec)
     local pending=next(snapshot.pendingMacros or {})~=nil
     for _,entry in ipairs(snapshot.slots) do if entry.kind=="unreadableMacro" then pending=true;break end end
     if pending~=(applied.partial==true) then
@@ -531,8 +549,14 @@ function B:ResumeSpec()
             reason="BARS_PENDING",partial=true,actionBarsReason=why,stage="resume-bars",slot=detail and detail.slot}) end
         return
     end
+    local saved,saveWhy=self:SaveLayout(spec,applied.id,applied.shared,self.verified)
+    if not saved then
+        self.resumeFailed=true
+        if A.Apply.RememberFailure then A.Apply:RememberFailure({time=time(),spec=spec,buildID=applied.id,
+            reason="BARS_PENDING",partial=true,actionBarsReason=saveWhy,stage="resume-save"}) end
+        return
+    end
     self.pendingSpec=nil
-    self:SaveLayout(spec,applied.id,applied.shared,self.verified)
     applied.partial=detail and (detail.missingMacros~=nil or detail.preservedSlots~=nil) or false
     if applied.partial and A.Apply.RememberFailure then A.Apply:RememberFailure({time=time(),spec=spec,buildID=applied.id,
         reason="BARS_PENDING",partial=true,actionBarsReason="BARS_PARTIAL",stage="resume-bars",
@@ -542,8 +566,29 @@ function B:QueueObservation()
     if self.queued then return end
     self.queued=C_Timer.NewTimer(0,function()
         self.queued=nil
-        if self.pendingSpec then self:ResumeSpec() else self:ObserveSlots() end
+        if self.reading or self.writing or A.Apply.op or InCombatLockdown() then return end
+        if self.pendingSpec then self:ResumeSpec() end
+        if self.pendingSpec then return end
+        if self.slotDirty then self:ObserveSlots() end
+        if self.macroDirty or self.macroRevision~=A.Macros.revision then self:ObserveMacros() end
     end)
+end
+-- TRAIT_CONFIG_UPDATED carries a config ID. Unrelated saved loadouts do
+-- not change our active talents, owned layout, or a pending recovery target.
+function B:RelevantConfig(config)
+    if type(config)~="number" or config<=0 then return true end
+    local active=C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
+    if not active then return true end -- data not ready: do not discard a notice
+    if config==active then return true end
+    local spec=A:GetSpec();local state=self:Spec(spec)
+    if state and C_ClassTalents.GetLastSelectedSavedConfigID and config==C_ClassTalents.GetLastSelectedSavedConfigID(spec) then return true end
+    if state and state.working and config==state.working.id then return true end
+    if state and state.applied and (state.pendingBars or self.pendingSpec==spec) and config==state.applied.config then return true end
+    local op=A.Apply and A.Apply.op
+    if op and (config==op.target or config==op.loading) then return true end
+    local recovery=A.Store.character and A.Store.character.recovery
+    if recovery and recovery.spec==spec and recovery.status~="complete" and config==recovery.targetConfig then return true end
+    return false
 end
 local currentEvents={PLAYER_ENTERING_WORLD=true,PLAYER_LEAVING_WORLD=true,ACTIVE_PLAYER_SPECIALIZATION_CHANGED=true,
     PLAYER_TALENT_UPDATE=true,SELECTED_LOADOUT_CHANGED=true,ACTIVE_COMBAT_CONFIG_CHANGED=true,
@@ -552,36 +597,47 @@ local currentEvents={PLAYER_ENTERING_WORLD=true,PLAYER_LEAVING_WORLD=true,ACTIVE
 function B:Init()
     if self.events then return end
     local current=self:Spec(A:GetSpec())
-    if current then A.Macros:Initialize() end
+    if current then A.Macros:Initialize();self.macroRevision=A.Macros.revision end
     if current and current.pendingBars then self.pendingSpec=A:GetSpec();self.resumeFailed=true end
     local events=CreateFrame("Frame");self.events=events
     for _,event in ipairs({"UPDATE_MACROS","ACTIONBAR_SLOT_CHANGED","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD",
         "ACTIVE_PLAYER_SPECIALIZATION_CHANGED","PLAYER_REGEN_ENABLED","CURSOR_CHANGED","PLAYER_TALENT_UPDATE",
         "SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED",
         "TRAIT_CONFIG_CREATED","CONFIG_COMMIT_FAILED","PLAYER_LEAVING_WORLD"}) do events:RegisterEvent(event) end
-    events:SetScript("OnEvent",function(_,event)
+    events:SetScript("OnEvent",function(_,event,value)
+        if event=="TRAIT_CONFIG_UPDATED" and not self:RelevantConfig(value) then return end
+        if event=="ACTIONBAR_SLOT_CHANGED" then self.slotDirty=true;self.slotDirtySpec=A:GetSpec() end
         if event=="PLAYER_LOGOUT" then
+            if self.queued then self.queued:Cancel();self.queued=nil end
             if not self.reading and not self.writing and not A.Apply.op then self:ObserveMacros();self:ObserveSlots() end
             if A.Apply.InvalidateCurrent then A.Apply:InvalidateCurrent(event) end
             return
         end
         if currentEvents[event] and A.Apply.InvalidateCurrent then A.Apply:InvalidateCurrent(event) end
-        if event=="PLAYER_LEAVING_WORLD" then return end
+        if event=="PLAYER_LEAVING_WORLD" then
+            if self.queued then self.queued:Cancel();self.queued=nil end
+            return
+        end
         if (event=="PLAYER_ENTERING_WORLD" or event=="ACTIVE_PLAYER_SPECIALIZATION_CHANGED") and self.observedSpec~=A:GetSpec() then
             self.observedSpec=A:GetSpec();self.pendingSpec=self.observedSpec
+            if self.slotDirtySpec and self.slotDirtySpec~=self.observedSpec then self.slotDirty=nil;self.slotDirtySpec=nil end
             local state=self:Spec(self.observedSpec)
             self.resumeFailed=state and state.pendingBars and true or nil
-            self:QueueObservation()
         end
-        if self.reading or self.writing or A.Apply.op then return end
-        -- Cursor artwork/held content does not change action slots. Only a
-        -- pending specialization restore needs to wake when the cursor clears.
+        if event=="UPDATE_MACROS" then
+            self.macroDirty=true;self:ObserveMacros()
+            if self.macroDirty and not InCombatLockdown() then self:QueueObservation() end
+            return
+        end
+        -- Talent/config notices invalidate matching state, not action slots.
+        -- Real edits blocked by combat/native writes stay dirty until a later
+        -- safe boundary; the timer never requeues itself or polls native state.
+        if InCombatLockdown() then return end
         if event=="CURSOR_CHANGED" then
             if self.pendingSpec and not self.resumeFailed then self:QueueObservation() end
             return
         end
-        if event=="UPDATE_MACROS" then self:ObserveMacros();return end
-        self:QueueObservation()
+        if self.slotDirty or self.macroDirty or self.pendingSpec or self.macroRevision~=A.Macros.revision then self:QueueObservation() end
     end)
 end
 -- Trust only the exact saved ID and name, including our pending rename.

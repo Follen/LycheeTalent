@@ -1054,12 +1054,14 @@ function U:Create()
     f:HookScript("OnMouseDown",function() if U.options then U.options:Hide() end end)
     f:SetScript("OnShow",function()
         U.context:Resume()
-        for _,event in ipairs({"TRAIT_NODE_CHANGED","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED","SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED"}) do f:RegisterEvent(event) end
+        if A.Apply.InvalidateCurrent then A.Apply:InvalidateCurrent("UI_SHOWN") end
+        for _,event in ipairs({"TRAIT_NODE_CHANGED","TRAIT_NODE_CHANGED_PARTIAL","TRAIT_CONFIG_UPDATED","TRAIT_CONFIG_LIST_UPDATED","SELECTED_LOADOUT_CHANGED","ACTIVE_COMBAT_CONFIG_CHANGED"}) do f:RegisterEvent(event) end
         f:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED"); f:RegisterEvent("UI_SCALE_CHANGED"); f:RegisterEvent("PLAYER_REGEN_DISABLED")
         U.escape:Show(); U:Scale(); U:Refresh();A.Motion:Brand(U.logo,54)
     end)
     f:SetScript("OnEvent",function(_,event,unit)
         if event=="PLAYER_SPECIALIZATION_CHANGED" and unit and unit~="player" then return end
+        if event=="TRAIT_CONFIG_UPDATED" and not A.ActionBars:RelevantConfig(unit) then return end
         if event~="UI_SCALE_CHANGED" and event~="PLAYER_REGEN_DISABLED" then A.Apply:InvalidateCurrent(event) end
         if event=="PLAYER_REGEN_DISABLED" then U:CancelDrag();A.Motion:Finish(f);A.Motion:StopBrand();U:CloseSocial(); if U.dialog then U.dialog:Hide() end; if U.contextSettings then U.contextSettings:Hide() end; if U.settings then U.settings:Hide() end
         elseif event=="UI_SCALE_CHANGED" then U:Scale(); U:Refresh()

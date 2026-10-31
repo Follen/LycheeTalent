@@ -1,6 +1,29 @@
 local _,A=...
 local X={revision="20261031-native-macros"}
 A.Apply=X
+local function expectedEqual(previous,entries)
+    if not entries then return previous==false end
+    if not previous or previous==false or previous.count~=#entries then return false end
+    for i,entry in ipairs(entries)do
+        local offset=(i-1)*4
+        if previous[offset+1]~=(entry.nodeID or 0) or previous[offset+2]~=(entry.selectionEntryID or 0)
+            or previous[offset+3]~=(entry.ranksPurchased or 0) or previous[offset+4]~=(entry.ranksGranted or 0) then return false end
+    end
+    return true
+end
+local function copyExpected(entries)
+    if not entries then return false end
+    local result={count=#entries}
+    for i,entry in ipairs(entries)do
+        local offset=(i-1)*4
+        result[offset+1]=entry.nodeID or 0;result[offset+2]=entry.selectionEntryID or 0
+        result[offset+3]=entry.ranksPurchased or 0;result[offset+4]=entry.ranksGranted or 0
+    end
+    return result
+end
+local contentEvents={TRAIT_CONFIG_UPDATED=true,TRAIT_CONFIG_LIST_UPDATED=true,TRAIT_CONFIG_CREATED=true,
+    PLAYER_TALENT_UPDATE=true,TRAIT_NODE_CHANGED=true,TRAIT_NODE_CHANGED_PARTIAL=true,
+    SELECTED_LOADOUT_CHANGED=true,ACTIVE_COMBAT_CONFIG_CHANGED=true,CONFIG_COMMIT_FAILED=true,PLAYER_REGEN_ENABLED=true}
 function X:GuardCreation(frame)
     if not frame or not frame.IsEventRegistered then return end
     self.creationGuard={frame=frame,registered=frame:IsEventRegistered("TRAIT_CONFIG_CREATED")}
@@ -79,7 +102,8 @@ end
 -- One result for the current active tree. Identity and draft guards remain
 -- live on every read; native talent/lifecycle events invalidate this result.
 function X:InvalidateCurrent(event)
-    self.current=nil
+    if self.current and self.current.token and contentEvents[event] then self.current.dirty=true
+    else self.current=nil end
     if event=="PLAYER_LEAVING_WORLD" or event=="PLAYER_LOGOUT" then self.currentWorldInactive=true
     elseif event=="PLAYER_ENTERING_WORLD" then self.currentWorldInactive=nil end
 end
@@ -95,7 +119,8 @@ function X:CurrentBuildID(allowPendingBars)
     local state=A.ActionBars:Spec(spec)
     local saved=state and state.applied
     if state and state.pendingBars and not allowPendingBars then return end
-    if not saved or self.op or saved.spec~=spec then return self:InvalidateCurrent() end
+    if type(saved)~="table" or type(saved.entries)~="table" or type(saved.code)~="string"
+        or self.op or saved.spec~=spec then return self:InvalidateCurrent() end
     if C_ClassTalents.GetStarterBuildActive() then return self:InvalidateCurrent() end
     local binding,info=A.ActionBars:Working(spec)
     if not binding or binding.id~=saved.config or info.usesSharedActionBars then return self:InvalidateCurrent() end
@@ -108,8 +133,14 @@ function X:CurrentBuildID(allowPendingBars)
     local current=self.current
     if current and current.character==A.Store.character and current.applied==saved and current.entries==saved.entries
         and current.id==saved.id and current.code==saved.code and current.active==active
-        and current.config==binding.id and current.name==binding.name and current.spec==spec then
-        return current.matches and saved.id or nil
+        and current.config==binding.id and current.name==binding.name and current.spec==spec
+        and expectedEqual(current.expected,saved.entries) then
+        if not current.dirty then return current.matches and saved.id or nil end
+        local token=A.Talents.StableConfigToken and A.Talents:StableConfigToken(active)
+        if token and token==current.token then
+            current.dirty=nil
+            return current.matches and saved.id or nil
+        end
     end
     local matches,difference=A.Talents:Matches(active,saved.entries)
     -- Missing native UI/data may become available without a talent mutation.
@@ -117,7 +148,8 @@ function X:CurrentBuildID(allowPendingBars)
     -- until a native event or one of the immediate identity guards changes.
     if matches or (difference and difference.kind~="unavailable") then
         self.current={character=A.Store.character,applied=saved,entries=saved.entries,id=saved.id,code=saved.code,
-            active=active,config=binding.id,name=binding.name,spec=spec,matches=matches==true}
+            active=active,config=binding.id,name=binding.name,spec=spec,matches=matches==true,
+            expected=copyExpected(saved.entries),token=A.Talents.StableConfigToken and A.Talents:StableConfigToken(active)}
     else self.current=nil end
     return matches and saved.id or nil
 end
@@ -260,13 +292,38 @@ function X:ActivateWorking()
         self:StageWorking()
     else self:LoadNative(op.target,function()self:StageWorking()end) end
 end
-function X:MatchesWorking(op,active)
-    if not A.Talents:Matches(active,op.entries) then return false end
+function X:MatchesConfigurations(op,active,target,expected)
+    local activeToken,savedToken
+    if A.Talents.StableConfigToken then
+        activeToken=A.Talents:StableConfigToken(active);savedToken=A.Talents:StableConfigToken(target)
+    end
+    local previous=op.failedComparison
+    if activeToken and savedToken and previous and previous.active==active and previous.target==target
+        and previous.spec==op.spec and previous.stage==op.stage and previous.activeToken==activeToken
+        and previous.savedToken==savedToken and expectedEqual(previous.expected,expected) then return false end
+    op.failedComparison=nil
+    local matches,difference,canonical
+    if expected then matches,difference,canonical=A.Talents:Matches(active,expected)
+    else canonical=A.Talents:ReadEntries(active);matches=canonical~=nil end
     -- Server-derived free ranks may be encoded as purchased in imported data,
     -- but omitted by saved configs. Compare the saved config with the verified
     -- active tree's canonical representation, not the imported representation.
-    local canonical=A.Talents:ReadEntries(active)
-    return canonical and A.Talents:Matches(op.target,canonical)
+    if matches then
+        canonical=canonical or A.Talents:ReadEntries(active)
+        if canonical then matches,difference=A.Talents:Matches(target,canonical)
+        else matches=false;difference={kind="unavailable"} end
+    end
+    -- Memoize only a known mismatch, bounded to this one operation. A fresh
+    -- native token is read on every notice; success always takes the full live
+    -- comparison path. Unavailable data and drafts are never memoized.
+    if not matches and difference and difference.kind~="unavailable" and activeToken and savedToken then
+        op.failedComparison={active=active,target=target,spec=op.spec,stage=op.stage,
+            activeToken=activeToken,savedToken=savedToken,expected=copyExpected(expected)}
+    end
+    return matches==true
+end
+function X:MatchesWorking(op,active)
+    return self:MatchesConfigurations(op,active,op.target,op.entries)
 end
 function X:StageWorking()
     local op=self.op
@@ -356,8 +413,7 @@ function X:Advance()
     elseif op.stage=="creating" and op.target and C_ClassTalents.IsConfigPopulated(op.target) then
         self:Defer(function()self:ConfigureWorking()end)
     elseif op.stage=="native-loading" and not C_Traits.ConfigHasStagedChanges(active) then
-        local entries=A.Talents:ReadEntries(active)
-        if entries and A.Talents:Matches(op.loading,entries) then
+        if self:MatchesConfigurations(op,active,op.loading) then
             op.stage="native-loaded"
             C_ClassTalents.UpdateLastSelectedSavedConfigID(op.spec,op.loading)
             self.nativeReadyAt=GetTime()+1
