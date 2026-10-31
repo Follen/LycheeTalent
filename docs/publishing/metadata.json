@@ -1,7 +1,7 @@
 {
   "name": "荔枝天赋",
   "name_en": "Lychee Talent",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "author": "Follen",
   "game": "World of Warcraft",
   "branch": "retail",
@@ -10,10 +10,10 @@
   "summary_en": "Encounter-based WCL builds, personal loadouts, independent action bars and timely switch reminders.",
   "repository": "https://github.com/Follen/LycheeTalent",
   "license": "LicenseRef-Lychee-NC-1.0",
-  "package": "dist/LycheeTalent-1.1.2.zip",
+  "package": "dist/LycheeTalent-1.1.3.zip",
   "cover": "docs/media/release-cover.png",
   "logo": "docs/media/talent-logo.png",
-  "status": "platform-versions-verified-dd-approval-unconfirmed",
+  "status": "release-prepared",
   "platforms": {
     "dd": {
       "status": "uploaded-version-verified-approval-unconfirmed",
@@ -31,5 +31,12 @@
       "logo_status": "preserved"
     }
   },
-  "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word"
+  "description_revision_status": "newbeebox-synced-dd-rejected-sensitive-word",
+  "release": {
+    "tag": "v1.1.3",
+    "date": "2026-11-01",
+    "merged_prs": [
+      32
+    ]
+  }
 }
